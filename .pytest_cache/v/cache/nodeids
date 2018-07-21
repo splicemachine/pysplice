@@ -1,0 +1,10 @@
+[
+  "splicemachine/test_context.py::TestContext::()::test_getConnection",
+  "splicemachine/test_context.py::TestContext::()::test_tableExists",
+  "splicemachine/test_context.py::TestContext::()::test_dropTable",
+  "splicemachine/test_context.py::TestContext::()::test_df",
+  "splicemachine/test_context.py::TestContext::()::test_insert",
+  "splicemachine/test_context.py::TestContext::()::test_delete",
+  "splicemachine/test_context.py::TestContext::()::test_update",
+  "splicemachine/test_context.py::TestContext::()::test_getSchema"
+]
