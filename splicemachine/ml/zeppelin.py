@@ -39,7 +39,8 @@ class Run:
     def log_metadata(self, handler, *args, **kwargs):
         if not self.run_uuid:
             with mlflow.start_run():
-                self.run_uuid = (mlflow.active_run().__dict__['_info'].__dict__['_run_uuid'])
+                self.run_uuid = (mlflow.active_run().__dict__[
+                                 '_info'].__dict__['_run_uuid'])
                 print("Logged using handler " + handler)
                 Run.handle_handlers(handler, *args, **kwargs)
         else:
@@ -77,7 +78,8 @@ def show_confusion_matrix(TP, TN, FP, FN):
     :param FN: False Negatives
     """
     confusion_rdd = sc.parallelize([['Predicted', TP, FN], ['Actual', FP, TN]])
-    confusion_matrix = sqlContext.createDataFrame(confusion_rdd, ['', 'Actual', 'Predicted'])
+    confusion_matrix = sqlContext.createDataFrame(
+        confusion_rdd, ['', 'Actual', 'Predicted'])
     confusion_matrix.show()
 
 
@@ -98,7 +100,8 @@ def experiment_maker(experiment_id):
                     e._experiment_id)  # use already created experiment
 
         if not found:
-            _id = mlflow.tracking.create_experiment(experiment_id)  # create new experiment
+            _id = mlflow.tracking.create_experiment(
+                experiment_id)  # create new experiment
             print('Success! Created Experiment')
             os.environ['MLFLOW_EXPERIMENT_ID'] = str(_id)  # use it
     else:
@@ -135,7 +138,7 @@ class ModelEvaluator(object):
                                                   self.prediction_column)  # Select the actual and the predicted labels
 
         self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1) & (
-                pred_v_lab.prediction == 1)].count())  # Add confusion stats
+            pred_v_lab.prediction == 1)].count())  # Add confusion stats
         self.avg_tn.append(
             pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 0)].count())
         self.avg_fp.append(
@@ -177,13 +180,14 @@ class ModelEvaluator(object):
             return computed_metrics
 
         else:
-            metrics_row = Row('TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC')
+            metrics_row = Row('TPR', 'SPC', 'PPV', 'NPV',
+                              'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC')
             computed_row = metrics_row(*computed_metrics.values())
             computed_df = sqlContext.createDataFrame([computed_row])
             return computed_df
 
 
-def print_horizantal_line(l):
+def print_horizontal_line(l):
     print("".join(['-' * l]))
 
 
@@ -235,8 +239,9 @@ class DecisionTreeVisualizer(object):
         time.sleep(3)
 
         print('You can find your visualization at "https://docs.google.com/gview?url=https'
-              '://<cluster_name>.splicemachine.io/assets/images/' + tree_name + '.pdf&embedded=tru'
-                                                                                'e#view=fith')
+              '://<cluster_name>.splicemachine.io/assets/images/' +
+              tree_name + '.pdf&embedded=tru'
+              'e#view=fith')
 
     @staticmethod
     def replacer(string, bad, good):
@@ -269,10 +274,13 @@ class DecisionTreeVisualizer(object):
                 dot.edge(node_hash, node_id)
             if root.get('children'):
                 if not root['children'][0].get('children'):
-                    DecisionTreeVisualizer.add_node(dot, root['name'], node_id, root['children'][0])
+                    DecisionTreeVisualizer.add_node(
+                        dot, root['name'], node_id, root['children'][0])
                 else:
-                    DecisionTreeVisualizer.add_node(dot, root['name'], node_id, root['children'][0])
-                    DecisionTreeVisualizer.add_node(dot, root['name'], node_id, root['children'][1])
+                    DecisionTreeVisualizer.add_node(
+                        dot, root['name'], node_id, root['children'][0])
+                    DecisionTreeVisualizer.add_node(
+                        dot, root['name'], node_id, root['children'][1])
 
     @staticmethod
     def parse(lines):
@@ -285,12 +293,16 @@ class DecisionTreeVisualizer(object):
         while lines:
 
             if lines[0].startswith('If'):
-                bl = ' '.join(lines.pop(0).split()[1:]).replace('(', '').replace(')', '')
-                block.append({'name': bl, 'children': DecisionTreeVisualizer.parse(lines)})
+                bl = ' '.join(lines.pop(0).split()[1:]).replace(
+                    '(', '').replace(')', '')
+                block.append(
+                    {'name': bl, 'children': DecisionTreeVisualizer.parse(lines)})
 
                 if lines[0].startswith('Else'):
-                    be = ' '.join(lines.pop(0).split()[1:]).replace('(', '').replace(')', '')
-                    block.append({'name': be, 'children': DecisionTreeVisualizer.parse(lines)})
+                    be = ' '.join(lines.pop(0).split()[1:]).replace(
+                        '(', '').replace(')', '')
+                    block.append(
+                        {'name': be, 'children': DecisionTreeVisualizer.parse(lines)})
             elif not lines[0].startswith(('If', 'Else')):
                 block2 = lines.pop(0)
                 block.append({'name': block2})
@@ -314,5 +326,6 @@ class DecisionTreeVisualizer(object):
                 break
             if not line:
                 break
-        res = [{'name': 'Root', 'children': DecisionTreeVisualizer.parse(data[1:])}]
+        res = [
+            {'name': 'Root', 'children': DecisionTreeVisualizer.parse(data[1:])}]
         return res[0]

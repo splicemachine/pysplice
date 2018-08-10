@@ -25,7 +25,11 @@ dependencies = [
     "py4j==0.10.7",
     "pyspark==2.3.1",
     "pytest==3.6.1",
-    "six==1.11.0"
+    "six==1.11.0",
+    "mlflow==0.4.2",
+    "graphviz==0.8.4",
+    "pyspark==2.1.0",
+    "numpy==1.14.3"
 ]
 setup(
     name="splicemachine",
