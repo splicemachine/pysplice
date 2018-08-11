@@ -23,7 +23,7 @@ dependencies = [
     "pluggy==0.6.0",
     "py==1.5.3",
     "py4j==0.10.7",
-    "pyspark==2.2.2",
+    "pyspark==2.1.1",
     "pytest==3.6.1",
     "six==1.11.0",
     "mlflow==0.4.2",
@@ -32,7 +32,7 @@ dependencies = [
 ]
 setup(
     name="splicemachine",
-    version="0.2.2",
+    version="0.2.5",
     install_requires=dependencies,
     packages=find_packages(),
 )
