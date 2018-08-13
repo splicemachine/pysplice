@@ -69,9 +69,11 @@ class Run:
         self.run_uuid = None
 
 
-def show_confusion_matrix(TP, TN, FP, FN):
+def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
     """
     function that shows you a device called a confusion matrix... will be helpful when evaluating. It allows you to see how well your model performs
+    :param sc: Spark Context
+    :param sqlCtx: SQL Context
     :param TP: True Positives
     :param TN: True Negatives
     :param FP: False Positives
@@ -113,8 +115,10 @@ class ModelEvaluator(object):
     A Function that provides an easy way to evaluate models once, or over random iterations
     """
 
-    def __init__(self, label_column='label', prediction_column='prediction', confusion_matrix=True):
+    def __init__(self, sc, sqlContext, label_column='label', prediction_column='prediction', confusion_matrix=True):
         """
+        :param sc: Spark Context
+        :param sqlContext: SQLContext
         :param label_column: the column in the dataframe containing the correct output
         :param prediction_column: the column in the dataframe containing the prediction
         :param confusion_matrix: whether or not to show a confusion matrix after each input
