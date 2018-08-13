@@ -115,7 +115,7 @@ class ModelEvaluator(object):
     A Function that provides an easy way to evaluate models once, or over random iterations
     """
 
-    def __init__(self, sc, sqlContext, label_column='label', prediction_column='prediction', confusion_matrix=True):
+    def __init__(self, sqlContext, label_column='label', prediction_column='prediction', confusion_matrix=True):
         """
         :param sc: Spark Context
         :param sqlContext: SQLContext
@@ -127,7 +127,7 @@ class ModelEvaluator(object):
         self.avg_tn = []
         self.avg_fn = []
         self.avg_fp = []
-
+        self.sqlContext = sqlContext
         self.label_column = label_column
         self.prediction_column = prediction_column
         self.confusion_matrix = confusion_matrix
@@ -187,7 +187,7 @@ class ModelEvaluator(object):
             metrics_row = Row('TPR', 'SPC', 'PPV', 'NPV',
                               'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC')
             computed_row = metrics_row(*computed_metrics.values())
-            computed_df = sqlContext.createDataFrame([computed_row])
+            computed_df = self.sqlContext.createDataFrame([computed_row])
             return computed_df
 
 
