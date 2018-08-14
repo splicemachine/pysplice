@@ -88,7 +88,7 @@ def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
 def experiment_maker(experiment_id):
     """
     a function that creates a new experiment if "experiment_name" doesn't exist
-    or will use the current one if it already does 
+    or will use the current one if it already does
     :param experiment_id the experiment name you would like to get or create
     """
     print("Tracking Path " + mlflow.get_tracking_uri())
@@ -115,7 +115,7 @@ class ModelEvaluator(object):
     A Function that provides an easy way to evaluate models once, or over random iterations
     """
 
-    def __init__(self, sqlContext, label_column='label', prediction_column='prediction', confusion_matrix=True):
+    def __init__(self, label_column='label', prediction_column='prediction', confusion_matrix=True):
         """
         :param sc: Spark Context
         :param sqlContext: SQLContext
@@ -127,10 +127,20 @@ class ModelEvaluator(object):
         self.avg_tn = []
         self.avg_fn = []
         self.avg_fp = []
-        self.sqlContext = sqlContext
+        self.sqlContext = None
+        self.sc = None
         self.label_column = label_column
         self.prediction_column = prediction_column
         self.confusion_matrix = confusion_matrix
+
+    def setup_contexts(self, sc, sqlContext):
+        """
+        Setup contexts for ModelEvaluator
+        :param sc: spark context
+        :param sqlContext: sql context
+        """
+        self.sc = sc
+        self.sqlContext = sqlContext
 
     def input(self, predictions_dataframe):
         """
@@ -151,14 +161,15 @@ class ModelEvaluator(object):
             pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 1)].count())
 
         if self.confusion_matrix:
-            show_confusion_matrix(self.avg_tp[-1], self.avg_tn[-1], self.avg_fp[-1],
-                                  self.avg_fn[-1])  # show the confusion matrix to the user
+            show_confusion_matrix(self.sc, self.sqlContext, self.avg_tp[-1],
+                                  self.avg_tn[-1], self.avg_fp[-1], self.avg_fn[-1])
+            # show the confusion matrix to the user
 
     def get_results(self, output_type='dataframe'):
         """
         Return a dictionary containing evaluated results
-        :param output_type: either a dataframe or a dict (which to return)      
-        :return results: computed_metrics (dict) or computed_df (df) 
+        :param output_type: either a dataframe or a dict (which to return)
+        :return results: computed_metrics (dict) or computed_df (df)
         """
 
         TP = np.mean(self.avg_tp)
