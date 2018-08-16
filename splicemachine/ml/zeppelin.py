@@ -197,7 +197,7 @@ class ModelEvaluator(object):
         else:
             metrics_row = Row('TPR', 'SPC', 'PPV', 'NPV',
                               'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC')
-            computed_row = metrics_row(*computed_metrics.values())
+            computed_row = metrics_row(*[float(i) for i in computed_metrics.values()])
             computed_df = self.sqlContext.createDataFrame([computed_row])
             return computed_df
 
