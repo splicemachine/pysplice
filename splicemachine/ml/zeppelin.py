@@ -81,7 +81,7 @@ def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
     """
     row = Row('', 'True', 'False')
     confusion_matrix = sqlContext.createDataFrame(
-        [row('True', TP, FN), row('False', FP, TN)
+        [row('True', TP, FN), row('False', FP, TN)])
     confusion_matrix.show()
 
 
