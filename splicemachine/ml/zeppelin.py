@@ -187,8 +187,7 @@ class ModelEvaluator(object):
             "FNR": float(FN) / (FN + TP),
             "ACC": float(TP + TN) / (TP + FN + FP + TN),
             "F1": float((2 * TP)) / ((2 * TP) + FP + FN),
-            "MCC": float((TP * TN) - (FP * FN)) / (
-                np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)))
+            "MCC": float((TP*TN) - (FP*FN)) / (np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)))
         }
 
         if output_type == 'dict':
