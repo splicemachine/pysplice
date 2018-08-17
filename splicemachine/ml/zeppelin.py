@@ -79,9 +79,9 @@ def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
     :param FP: False Positives
     :param FN: False Negatives
     """
-    confusion_rdd = sc.parallelize([['True', TP, FN], ['False', FP, TN]])
+    row = Row('', 'True', 'False')
     confusion_matrix = sqlContext.createDataFrame(
-        confusion_rdd, ['', 'False', 'True'])
+        [row('True', TP, FN), row('False', FP, TN)
     confusion_matrix.show()
 
 
