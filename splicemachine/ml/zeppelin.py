@@ -176,7 +176,10 @@ class ModelEvaluator(object):
         TN = np.mean(self.avg_tn)
         FP = np.mean(self.avg_fp)
         FN = np.mean(self.avg_fn)
-
+        
+        if self.confusion_matrix:
+            show_confusion_matrix(self.sc, self.sqlContext, TP, TN, FP, FN)
+            
         computed_metrics = {
             'TPR': float(TP) / (TP + FN),
             'SPC': float(TP) / (TP + FN),
