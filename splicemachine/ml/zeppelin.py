@@ -155,9 +155,9 @@ class ModelEvaluator(object):
             pred_v_lab.prediction == 1)].count())  # Add confusion stats
         self.avg_tn.append(
             pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 0)].count())
-        self.avg_fp.append(
-            pred_v_lab[(pred_v_lab.label == 1) & (pred_v_lab.prediction == 0)].count())
         self.avg_fn.append(
+            pred_v_lab[(pred_v_lab.label == 1) & (pred_v_lab.prediction == 0)].count())
+        self.avg_fp.append(
             pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 1)].count())
 
         if self.confusion_matrix:
