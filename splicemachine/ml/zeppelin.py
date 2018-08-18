@@ -182,15 +182,15 @@ class ModelEvaluator(object):
             
         computed_metrics = {
             'TPR': float(TP) / (TP + FN),
-            'SPC': float(TP) / (TP + FN),
+            'SPC': float(TN) / (FP + TN),
             'PPV': float(TP) / (TP + FP),
             "NPV": float(TN) / (TN + FN),
             "FPR": float(FP) / (FP + TN),
             "FDR": float(FP) / (FP + TP),
-            "FNR": float(FN) / (FN + TP),
+            "FNR": float(FN) / (FN + TP)
             "ACC": float(TP + TN) / (TP + FN + FP + TN),
-            "F1": float((2 * TP)) / ((2 * TP) + FP + FN),
-            "MCC": float((TP*TN) - (FP*FN)) / (np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)))
+            "F1":  float(2 * TP) / (2 * TP + FP + FN)
+            "MCC": float(float(TP*TN - FP*FN) / np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)))
         }
 
         if output_type == 'dict':
