@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os
 import random
 import time
@@ -8,12 +10,9 @@ import mlflow.spark
 import numpy as np
 from pyspark.sql import Row
 
-"""
-Some utilities for use in Zeppelin when doing machine learning
-"""
-
 
 class Run:
+
     """
     An abstraction over MLFlow Runs, allowing you to do cross cell runs
     """
@@ -32,21 +31,25 @@ class Run:
         elif handler == 'spark_model':
             mlflow.spark.log_model(*args, **kwargs)
         else:
-            raise Exception(
-                "Handler {0} not understood. Please use one in ['param', 'metric', "
-                "'artifact', 'spark_model']")
+            raise Exception("Handler {0} not understood. Please use one in ['param', 'metric', 'artifact', 'spark_model']"
+                            )
 
-    def log_metadata(self, handler, *args, **kwargs):
+    def log_metadata(
+        self,
+        handler,
+        *args,
+        **kwargs
+        ):
         if not self.run_uuid:
             with mlflow.start_run():
-                self.run_uuid = (mlflow.active_run().__dict__[
-                                 '_info'].__dict__['_run_uuid'])
-                print("Logged using handler " + handler)
+                self.run_uuid = mlflow.active_run().__dict__['_info'
+                        ].__dict__['_run_uuid']
+                print 'Logged using handler ' + handler
                 Run.handle_handlers(handler, *args, **kwargs)
         else:
             with mlflow.start_run(run_uuid=self.run_uuid):
                 Run.handle_handlers(handler, *args, **kwargs)
-                print("Logged using handler " + handler)
+                print 'Logged using handler ' + handler
         return True
 
     def log_param(self, *args, **kwargs):
@@ -66,10 +69,18 @@ class Run:
         Create a new Run
         :return:
         """
+
         self.run_uuid = None
 
 
-def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
+def show_confusion_matrix(
+    sc,
+    sqlContext,
+    TP,
+    TN,
+    FP,
+    FN,
+    ):
     """
     function that shows you a device called a confusion matrix... will be helpful when evaluating. It allows you to see how well your model performs
     :param sc: Spark Context
@@ -79,9 +90,10 @@ def show_confusion_matrix(sc, sqlContext, TP, TN, FP, FN):
     :param FP: False Positives
     :param FN: False Negatives
     """
+
     row = Row('', 'True', 'False')
-    confusion_matrix = sqlContext.createDataFrame(
-        [row('True', TP, FN), row('False', FP, TN)])
+    confusion_matrix = sqlContext.createDataFrame([row('True', TP, FN),
+            row('False', FP, TN)])
     confusion_matrix.show()
 
 
@@ -91,31 +103,37 @@ def experiment_maker(experiment_id):
     or will use the current one if it already does
     :param experiment_id the experiment name you would like to get or create
     """
-    print("Tracking Path " + mlflow.get_tracking_uri())
+
+    print 'Tracking Path ' + mlflow.get_tracking_uri()
     found = False
     if not len(experiment_id) in [0, 1]:
         for e in [i for i in mlflow.tracking.list_experiments()]:  # Check all experiments
             if experiment_id == e.name:
-                print('Experiment has already been created')
+                print 'Experiment has already been created'
                 found = True
-                os.environ['MLFLOW_EXPERIMENT_ID'] = str(
-                    e._experiment_id)  # use already created experiment
+                os.environ['MLFLOW_EXPERIMENT_ID'] = \
+                    str(e._experiment_id)  # use already created experiment
 
         if not found:
-            _id = mlflow.tracking.create_experiment(
-                experiment_id)  # create new experiment
-            print('Success! Created Experiment')
+            _id = mlflow.tracking.create_experiment(experiment_id)  # create new experiment
+            print 'Success! Created Experiment'
             os.environ['MLFLOW_EXPERIMENT_ID'] = str(_id)  # use it
     else:
-        print("Please fill out this field")
+        print 'Please fill out this field'
 
 
 class ModelEvaluator(object):
+
     """
     A Function that provides an easy way to evaluate models once, or over random iterations
     """
 
-    def __init__(self, label_column='label', prediction_column='prediction', confusion_matrix=True):
+    def __init__(
+        self,
+        label_column='label',
+        prediction_column='prediction',
+        confusion_matrix=True,
+        ):
         """
         :param sc: Spark Context
         :param sqlContext: SQLContext
@@ -123,6 +141,7 @@ class ModelEvaluator(object):
         :param prediction_column: the column in the dataframe containing the prediction
         :param confusion_matrix: whether or not to show a confusion matrix after each input
         """
+
         self.avg_tp = []
         self.avg_tn = []
         self.avg_fn = []
@@ -139,6 +158,7 @@ class ModelEvaluator(object):
         :param sc: spark context
         :param sqlContext: sql context
         """
+
         self.sc = sc
         self.sqlContext = sqlContext
 
@@ -149,20 +169,27 @@ class ModelEvaluator(object):
         """
 
         pred_v_lab = predictions_dataframe.select(self.label_column,
-                                                  self.prediction_column)  # Select the actual and the predicted labels
+                self.prediction_column)  # Select the actual and the predicted labels
 
-        self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1) & (
-            pred_v_lab.prediction == 1)].count())  # Add confusion stats
-        self.avg_tn.append(
-            pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 0)].count())
-        self.avg_fn.append(
-            pred_v_lab[(pred_v_lab.label == 1) & (pred_v_lab.prediction == 0)].count())
-        self.avg_fp.append(
-            pred_v_lab[(pred_v_lab.label == 0) & (pred_v_lab.prediction == 1)].count())
+        self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1)
+                           & (pred_v_lab.prediction == 1)].count())  # Add confusion stats
+        self.avg_tn.append(pred_v_lab[(pred_v_lab.label == 0)
+                           & (pred_v_lab.prediction == 0)].count())
+        self.avg_fp.append(pred_v_lab[(pred_v_lab.label == 1)
+                           & (pred_v_lab.prediction == 0)].count())
+        self.avg_fn.append(pred_v_lab[(pred_v_lab.label == 0)
+                           & (pred_v_lab.prediction == 1)].count())
 
         if self.confusion_matrix:
-            show_confusion_matrix(self.sc, self.sqlContext, self.avg_tp[-1],
-                                  self.avg_tn[-1], self.avg_fp[-1], self.avg_fn[-1])
+            show_confusion_matrix(
+                self.sc,
+                self.sqlContext,
+                self.avg_tp[-1],
+                self.avg_tn[-1],
+                self.avg_fp[-1],
+                self.avg_fn[-1],
+                )
+
             # show the confusion matrix to the user
 
     def get_results(self, output_type='dataframe'):
@@ -176,50 +203,79 @@ class ModelEvaluator(object):
         TN = np.mean(self.avg_tn)
         FP = np.mean(self.avg_fp)
         FN = np.mean(self.avg_fn)
-        
+
         if self.confusion_matrix:
-            show_confusion_matrix(self.sc, self.sqlContext, float(TP), float(TN), float(FP), float(FN))
-            
+            show_confusion_matrix(
+                self.sc,
+                self.sqlContext,
+                float(TP),
+                float(TN),
+                float(FP),
+                float(FN),
+                )
+
         computed_metrics = {
             'TPR': float(TP) / (TP + FN),
-            'SPC': float(TN) / (FP + TN),
+            'SPC': float(TP) / (TP + FN),
             'PPV': float(TP) / (TP + FP),
-            "NPV": float(TN) / (TN + FN),
-            "FPR": float(FP) / (FP + TN),
-            "FDR": float(FP) / (FP + TP),
-            "FNR": float(FN) / (FN + TP),
-            "ACC": float(TP + TN) / (TP + FN + FP + TN),
-            "F1":  float(2 * TP) / (2 * TP + FP + FN),
-            "MCC": float(float(TP*TN - FP*FN) / np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)))
-        }
+            'NPV': float(TN) / (TN + FN),
+            'FPR': float(FP) / (FP + TN),
+            'FDR': float(FP) / (FP + TP),
+            'FNR': float(FN) / (FN + TP),
+            'ACC': float(TP + TN) / (TP + FN + FP + TN),
+            'F1': float(2 * TP) / (2 * TP + FP + FN),
+            'MCC': float(TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP
+                    + FN) * (TN + FP) * (TN + FN)),
+            }
 
         if output_type == 'dict':
             return computed_metrics
-
         else:
-            metrics_row = Row('TPR', 'SPC', 'PPV', 'NPV',
-                              'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC')
-            computed_row = metrics_row(*[float(i) for i in computed_metrics.values()])
-            computed_df = self.sqlContext.createDataFrame([computed_row])
+
+            ordered_cols = [
+                'TPR',
+                'SPC',
+                'PPV',
+                'NPV',
+                'FPR',
+                'FDR',
+                'FNR',
+                'ACC',
+                'F1',
+                'MCC',
+                ]
+
+            metrics_row = Row(*ordered_cols)
+            computed_row = metrics_row(*[float(computed_metrics[i])
+                    for i in ordered_cols])
+            computed_df = \
+                self.sqlContext.createDataFrame([computed_row])
             return computed_df
 
 
 def print_horizontal_line(l):
-    print("".join(['-' * l]))
+    print ''.join(['-' * l])
 
 
 def display(html):
-    print("%angular")
-    print(html)
+    print '%angular'
+    print html
 
 
 class DecisionTreeVisualizer(object):
+
     """
     Visualize a decision tree, either in code like format, or graphviz
     """
 
     @staticmethod
-    def visualize(model, feature_column_names, label_names, tree_name, visual=True):
+    def visualize(
+        model,
+        feature_column_names,
+        label_names,
+        tree_name,
+        visual=True,
+        ):
         """
         Visualize a decision tree, either in a code like format, or graphviz
         :param model: the fitted decision tree classifier
@@ -230,35 +286,35 @@ class DecisionTreeVisualizer(object):
         :return: none
         """
 
-        tree_to_json = DecisionTreeVisualizer.replacer(model.toDebugString,
-                                                       ['feature ' + str(i) for i in
-                                                        range(0, len(feature_column_names))],
-                                                       feature_column_names)
+        tree_to_json = \
+            DecisionTreeVisualizer.replacer(model.toDebugString,
+                ['feature ' + str(i) for i in range(0,
+                len(feature_column_names))], feature_column_names)
         tree_to_json = DecisionTreeVisualizer.replacer(tree_to_json,
-                                                       ['Predict ' + str(i) + '.0' for i in
-                                                        range(0, len(label_names))], label_names)
+                ['Predict ' + str(i) + '.0' for i in range(0,
+                len(label_names))], label_names)
         if not visual:
             return tree_to_json
 
         dot = graphviz.Digraph(comment='Decision Tree')
-        dot.attr(size="7.75,15.25")
+        dot.attr(size='7.75,15.25')
         dot.node_attr.update(color='lightblue2', style='filled')
         json_d = DecisionTreeVisualizer.tree_json(tree_to_json)
         dot.format = 'pdf'
 
-        DecisionTreeVisualizer.add_node(dot, '', '', json_d, realroot=True)
-        dot.render('/zeppelin/webapps/webapp/assets/images/' + tree_name)
-        print('Successfully uploaded file to Zeppelin Assests on this cluster')
-        print('Uploading.')
+        DecisionTreeVisualizer.add_node(dot, '', '', json_d,
+                realroot=True)
+        dot.render('/zeppelin/webapps/webapp/assets/images/'
+                   + tree_name)
+        print 'Successfully uploaded file to Zeppelin Assests on this cluster'
+        print 'Uploading.'
 
         time.sleep(3)
-        print('Uploading..')
+        print 'Uploading..'
         time.sleep(3)
 
-        print('You can find your visualization at "https://docs.google.com/gview?url=https'
-              '://<cluster_name>.splicemachine.io/assets/images/' +
-              tree_name + '.pdf&embedded=tru'
-              'e#view=fith')
+        print 'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
+            + tree_name + '.pdf&embedded=true#view=fith'
 
     @staticmethod
     def replacer(string, bad, good):
@@ -269,12 +325,19 @@ class DecisionTreeVisualizer(object):
         :param good: array of strings to replace with
         :return:
         """
-        for b, g in zip(bad, good):
+
+        for (b, g) in zip(bad, good):
             string = string.replace(b, g)
         return string
 
     @staticmethod
-    def add_node(dot, parent, node_hash, root, realroot=False):
+    def add_node(
+        dot,
+        parent,
+        node_hash,
+        root,
+        realroot=False,
+        ):
         """
         Traverse through the .debugString json and generate a graphviz tree
         :param dot: dot file objevt
@@ -284,6 +347,7 @@ class DecisionTreeVisualizer(object):
         :param realroot: whether or not it is the real root, or a recursive root
         :return:
         """
+
         node_id = str(hash(root['name'])) + str(random.randint(0, 100))
         if root:
             dot.node(node_id, root['name'])
@@ -291,13 +355,13 @@ class DecisionTreeVisualizer(object):
                 dot.edge(node_hash, node_id)
             if root.get('children'):
                 if not root['children'][0].get('children'):
-                    DecisionTreeVisualizer.add_node(
-                        dot, root['name'], node_id, root['children'][0])
+                    DecisionTreeVisualizer.add_node(dot, root['name'],
+                            node_id, root['children'][0])
                 else:
-                    DecisionTreeVisualizer.add_node(
-                        dot, root['name'], node_id, root['children'][0])
-                    DecisionTreeVisualizer.add_node(
-                        dot, root['name'], node_id, root['children'][1])
+                    DecisionTreeVisualizer.add_node(dot, root['name'],
+                            node_id, root['children'][0])
+                    DecisionTreeVisualizer.add_node(dot, root['name'],
+                            node_id, root['children'][1])
 
     @staticmethod
     def parse(lines):
@@ -306,20 +370,21 @@ class DecisionTreeVisualizer(object):
         :param lines:
         :return: block json
         """
+
         block = []
         while lines:
 
             if lines[0].startswith('If'):
-                bl = ' '.join(lines.pop(0).split()[1:]).replace(
-                    '(', '').replace(')', '')
-                block.append(
-                    {'name': bl, 'children': DecisionTreeVisualizer.parse(lines)})
+                bl = ' '.join(lines.pop(0).split()[1:]).replace('(', ''
+                        ).replace(')', '')
+                block.append({'name': bl,
+                             'children': DecisionTreeVisualizer.parse(lines)})
 
                 if lines[0].startswith('Else'):
-                    be = ' '.join(lines.pop(0).split()[1:]).replace(
-                        '(', '').replace(')', '')
-                    block.append(
-                        {'name': be, 'children': DecisionTreeVisualizer.parse(lines)})
+                    be = ' '.join(lines.pop(0).split()[1:]).replace('('
+                            , '').replace(')', '')
+                    block.append({'name': be,
+                                 'children': DecisionTreeVisualizer.parse(lines)})
             elif not lines[0].startswith(('If', 'Else')):
                 block2 = lines.pop(0)
                 block.append({'name': block2})
@@ -334,6 +399,7 @@ class DecisionTreeVisualizer(object):
         :param tree: tree debug string
         :return: json
         """
+
         data = []
         for line in tree.splitlines():
             if line.strip():
@@ -343,6 +409,10 @@ class DecisionTreeVisualizer(object):
                 break
             if not line:
                 break
-        res = [
-            {'name': 'Root', 'children': DecisionTreeVisualizer.parse(data[1:])}]
+        res = [{'name': 'Root',
+               'children': DecisionTreeVisualizer.parse(data[1:])}]
         return res[0]
+
+
+
+			
