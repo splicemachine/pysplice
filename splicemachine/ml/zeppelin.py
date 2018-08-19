@@ -44,12 +44,12 @@ class Run:
             with mlflow.start_run():
                 self.run_uuid = mlflow.active_run().__dict__['_info'
                         ].__dict__['_run_uuid']
-                print 'Logged using handler ' + handler
+                print('Logged using handler ' + handler)
                 Run.handle_handlers(handler, *args, **kwargs)
         else:
             with mlflow.start_run(run_uuid=self.run_uuid):
                 Run.handle_handlers(handler, *args, **kwargs)
-                print 'Logged using handler ' + handler
+                print('Logged using handler ' + handler)
         return True
 
     def log_param(self, *args, **kwargs):
@@ -104,22 +104,22 @@ def experiment_maker(experiment_id):
     :param experiment_id the experiment name you would like to get or create
     """
 
-    print 'Tracking Path ' + mlflow.get_tracking_uri()
+    print('Tracking Path ' + mlflow.get_tracking_uri())
     found = False
     if not len(experiment_id) in [0, 1]:
         for e in [i for i in mlflow.tracking.list_experiments()]:  # Check all experiments
             if experiment_id == e.name:
-                print 'Experiment has already been created'
+                print('Experiment has already been created')
                 found = True
                 os.environ['MLFLOW_EXPERIMENT_ID'] = \
                     str(e._experiment_id)  # use already created experiment
 
         if not found:
             _id = mlflow.tracking.create_experiment(experiment_id)  # create new experiment
-            print 'Success! Created Experiment'
+            print('Success! Created Experiment')
             os.environ['MLFLOW_EXPERIMENT_ID'] = str(_id)  # use it
     else:
-        print 'Please fill out this field'
+        print('Please fill out this field')
 
 
 class ModelEvaluator(object):
@@ -254,12 +254,12 @@ class ModelEvaluator(object):
 
 
 def print_horizontal_line(l):
-    print ''.join(['-' * l])
+    print(''.join(['-' * l]))
 
 
 def display(html):
-    print '%angular'
-    print html
+    print('%angular')
+    print(html)
 
 
 class DecisionTreeVisualizer(object):
@@ -306,15 +306,15 @@ class DecisionTreeVisualizer(object):
                 realroot=True)
         dot.render('/zeppelin/webapps/webapp/assets/images/'
                    + tree_name)
-        print 'Successfully uploaded file to Zeppelin Assests on this cluster'
-        print 'Uploading.'
+        print('Successfully uploaded file to Zeppelin Assests on this cluster')
+        print('Uploading.')
 
         time.sleep(3)
-        print 'Uploading..'
+        print('Uploading..')
         time.sleep(3)
 
-        print 'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
-            + tree_name + '.pdf&embedded=true#view=fith'
+        print('You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
+            + tree_name + '.pdf&embedded=true#view=fith')
 
     @staticmethod
     def replacer(string, bad, good):
