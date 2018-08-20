@@ -15,10 +15,11 @@ class Run:
 
     """
     An abstraction over MLFlow Runs, allowing you to do cross cell runs
+    :param resume_run_uuid: a run uuid to resume a run with
     """
 
-    def __init__(self):
-        self.run_uuid = None
+    def __init__(self, resume_run_uuid=None):
+        self.run_uuid = resume_run_uuid
 
     @staticmethod
     def handle_handlers(handler, *args, **kwargs):
@@ -29,7 +30,7 @@ class Run:
         elif handler == 'artifact':
             mlflow.log_artifact(*args, **kwargs)
         elif handler == 'spark_model':
-            mlflow.spark.log_model(*args, **kwargs)
+            mlflow.spark.log_model(args[0], 'pysparkmodel')
         else:
             raise Exception("Handler {0} not understood. Please use one in ['param', 'metric', 'artifact', 'spark_model']"
                             )
@@ -415,4 +416,4 @@ class DecisionTreeVisualizer(object):
 
 
 
-			
+
