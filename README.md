@@ -11,10 +11,10 @@ import os
 os.system("wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py --user")
 
 # install splicemachine python package
-os.system("""cd ~/.local/bin && wget https://github.com/splicemachine/pysplice/archive/[pysplice RELEASE_VERSION].zip && 
+os.system("""wget https://github.com/splicemachine/pysplice/archive/[pysplice RELEASE_VERSION].zip && 
             unzip [pysplice RELEASE_VERSION].zip && 
             cd pysplice-[pysplice RELEASE VERSION] &&
-            ./pip install . --user""")
+            ~/.local/bin/pip install . --user""")
 ```
 
 ## Modules
