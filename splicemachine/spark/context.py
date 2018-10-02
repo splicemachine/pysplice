@@ -90,6 +90,15 @@ class PySpliceContext:
         """
         return self.context.insert(dataframe._jdf, schema_table_name)
 
+    def upsert(self, dataframe, schema_table_name):
+        """
+        Upsert the data from a dataframe into a table (schema.table).
+
+        :param dataframe: (DF) The dataframe you would like to upsert
+        :param schema_table_name: (string) The table in which you would like to upsert the RDD
+        """
+        return self.context.upsert(dataframe._jdf, schema_table_name)
+
     def delete(self, dataframe, schema_table_name):
         """
         Delete records in a dataframe based on joining by primary keys from the data frame.
