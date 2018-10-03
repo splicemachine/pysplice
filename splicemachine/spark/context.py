@@ -24,16 +24,16 @@ class PySpliceContext:
     This class implements a SpliceMachineContext object (similar to the SparkContext object)
     """
 
-    def __init__(self, JDBC_URL, spark_sql_context, _unit_testing=False):
+    def __init__(self, JDBC_URL, sparkSession, _unit_testing=False):
         """
         :param JDBC_URL: (string) The JDBC URL Connection String for your Splice Machine Cluster
-        :param spark_sql_context: (sparkContext) A SparkContext Object for executing Spark Queries
+        :param spark_sql_context: (sparkContext) A SparkSession object for talking to Spark
         """
         self.jdbcurl = JDBC_URL
         self._unit_testing = _unit_testing
 
         if not _unit_testing:  # Private Internal Argument to Override Using JVM
-            self.spark_sql_context = spark_sql_context
+            self.spark_sql_context = sparkSession._wrapped
             self.jvm = self.spark_sql_context._sc._jvm
             java_import(self.jvm, "com.splicemachine.spark.splicemachine.*")
             java_import(self.jvm,
