@@ -44,7 +44,7 @@ class PySpliceContext:
 
         else:
             from .utils import FakeJContext
-            self.spark_sql_context = spark_sql_context
+            self.spark_sql_context = sparkSession._wrapped
             self.jvm = ''
             self.context = FakeJContext(self.jdbcurl)
 
