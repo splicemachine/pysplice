@@ -61,7 +61,7 @@ splice.insert(filtered_df, 'DEMO.FILTERED_CUPCAKES)
  from splicemachine.ml.zeppelin import Run
  +---------Cell i-----------+
  baking_run = Run()
- baking_run.create_new_run
+ baking_run.create_new_run()
  
  +---------Cell i+1---------+
  baking_run.log_param('dataset', 'banking')
