@@ -9,7 +9,7 @@ import graphviz
 import mlflow
 import mlflow.spark
 import numpy as np
-from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
 from pyspark.sql import Row
 
 
@@ -164,8 +164,6 @@ class SpliceBinaryClassificationEvaluator(object):
         self.avg_tn = []
         self.avg_fn = []
         self.avg_fp = []
-        self.sqlContext = None
-        self.sc = None
         self.label_column = label_column
         self.prediction_column = prediction_column
         self.confusion_matrix = confusion_matrix
@@ -247,26 +245,37 @@ class SpliceBinaryClassificationEvaluator(object):
             return computed_df
 
 
-class SpliceRegressionEvaluator(object):
+class SpliceBaseEvaluator(object):
     """
-    Evaluate a Regression Model
+    Base ModelEvaluator
     """
 
-    def __init__(self, spark, prediction_column="prediction", label_column="label"):
+    def __init__(self, spark, evaluator, supported_metrics, prediction_column="prediction",
+                 label_column="label"):
+        """
+        Constructor for SpliceBaseEvaluator
+        :param spark: spark from zeppelin
+        :param evaluator: evaluator class from spark
+        :param supported_metrics: supported metrics list
+        :param prediction_column: prediction column
+        :param label_column: label column
+        """
         self.spark = spark
+        self.ev = evaluator
         self.prediction_col = prediction_column
         self.label = label_column
-        self.supported_metrics = ['rmse', 'mse', 'r2', 'mae']
+        self.supported_metrics = supported_metrics
         self.avgs = defaultdict(list)
 
     def input(self, predictions_dataframe):
         """
         Input a dataframe
+        :param ev: evaluator class
         :param predictions_dataframe: input df
         :return: none
         """
         for metric in self.supported_metrics:
-            evaluator = RegressionEvaluator(
+            evaluator = self.ev(
                 labelCol=self.label, predictionCol=self.prediction_col, metricName=metric)
             self.avgs[metric].append(evaluator.evaluate(predictions_dataframe))
             print("Current {metric}: {metric_val}".format(metric=metric,
@@ -290,11 +299,40 @@ class SpliceRegressionEvaluator(object):
         return self.spark._wrapped.createDataFrame([computed_row])
 
 
+class SpliceRegressionEvaluator(SpliceBaseEvaluator):
+    """
+    Splice Regression Evaluator
+    """
+    def __init__(self, spark, prediction_column="prediction", label_column="label"):
+        supported = ['rmse', 'mse', 'r2', 'mae']
+        SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported,
+                                     prediction_column=prediction_column, label_column=label_column)
+
+
+class SpliceMultiClassificationEvaluator(SpliceBaseEvaluator):
+    def __init__(self, spark, prediction_column="prediction", label_column="label"):
+        supported = ["f1", "weightedPrecision", "weightedRecall", "accuracy"]
+        SpliceBaseEvaluator.__init__(self, spark, MulticlassClassificationEvaluator, supported,
+                                     prediction_column=prediction_column, label_column=label_column)
+
+
 def print_horizontal_line(l):
+    """
+    Print a horizontal line l digits long
+    :param l: num
+    :return: none
+    """
     print(''.join(['-' * l]))
 
 
 def display(html):
+    """
+    Display HTML from python in html
+    :param html: html string
+    :return:
+    * note! you may not print out anything in normal python after using this function
+    in that cell
+    """
     print('%angular')
     print(html)
 
@@ -371,8 +409,8 @@ class DecisionTreeVisualizer(object):
         time.sleep(3)
 
         print(
-                    'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
-                    + tree_name + '.pdf&embedded=true#view=fith')
+                'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
+                + tree_name + '.pdf&embedded=true#view=fith')
 
     @staticmethod
     def replacer(string, bad, good):
