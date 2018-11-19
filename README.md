@@ -2,7 +2,7 @@
 This package contains all of the classes and functions you need to interact with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains several machine learning utilities for use with Apache Spark.
 
 ## Installation Instructions: with Pip
-`(sudo) pip install git+https://github.com/splicemachine/pysplice --process-dependency-links`
+`(sudo) pip install git+https://github.com/splicemachine/pysplice
 
 ## Installation Instructions: Zeppelin- [x]= format x correctly
 ```
