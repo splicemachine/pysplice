@@ -45,13 +45,13 @@ filtered_df = my_dataframe.filter(my_dataframe.FLAVOR == 'red_velvet')
 splice.insert(filtered_df, 'DEMO.FILTERED_CUPCAKES)
 ```
 
-  The `splicemachine.spark.context.SpliceCloudContext` class is our native spark datasource implemented in Python for use with the cloud service. Although you can use the regular PySpliceContext on the cloud service, this provides ease of use (auto finding jdbc url, h2o support etc). 
+  The `splicemachine.spark.context.SpliceMLContext` class is our native spark datasource implemented in Python for use with the cloud service. Although you can use the regular PySpliceContext on the cloud service, this provides ease of use (auto finding jdbc url, h2o support etc). 
  
 ```
 Usage:
 %spark.pyspark
-from splicemachine.spark.context import SpliceCloudContext
-splice = SpliceCloudContext(spark, use_h2o=True) # sparksession is already created on Zeppelin startup, so enter this code #exactly as written here
+from splicemachine.spark.context import SpliceMLContext
+splice = SpliceMLContext(spark, use_h2o=True) # sparksession is already created on Zeppelin startup, so enter this code #exactly as written here
 splice.hc # h2o context
 #use normally as well
 my_dataframe = splice.df('SELECT * FROM DEMO.BAKING_CUPCAKES')
