@@ -29,11 +29,11 @@ dependencies = [
     "graphviz==0.8.4",
     "numpy==1.15.0",
     "h2o_pysparkling_2.2",
-    "pandas==0.23.4"
+    "pandas==0.22.0"
 ]
 setup(
     name="splicemachine",
-    version="0.2.5",
+    version="0.3.1",
     install_requires=dependencies,
     packages=find_packages(),
 )
