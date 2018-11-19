@@ -27,7 +27,7 @@ class PySpliceContext:
     def __init__(self, JDBC_URL, sparkSession, _unit_testing=False):
         """
         :param JDBC_URL: (string) The JDBC URL Connection String for your Splice Machine Cluster
-        :param spark_sql_context: (sparkContext) A SparkSession object for talking to Spark
+        :param sparkSession: (sparkContext) A SparkSession object for talking to Spark
         """
         self.jdbcurl = JDBC_URL
         self._unit_testing = _unit_testing
@@ -128,3 +128,38 @@ class PySpliceContext:
         :param schema_table_name: (DF) Table name
         """
         return self.context.getSchema(schema_table_name)
+
+
+class SpliceCloudContext(PySpliceContext):
+    """
+    PySpliceContext for use with the cloud service.
+    Although the original pysplicecontext *will work*
+    on the Cloud Service (Zeppelin Notebook), this class
+    does many things for ease of use.
+    """
+    @staticmethod
+    def get_jdbc_url():
+        """
+        Get the JDBC Url for the current cluster (internal w/ no timeout)
+        :return: (string) jdbc url
+        """
+        import os
+        framework = os.environ['FRAMEWORK_NAME']
+        return 'jdbc:splice://{framework}-proxy.marathon.mesos:1527/splicedb'.format(
+            framework=framework)
+
+    def __init__(self, sparkSession, useH2O=False, _unit_testing=False):
+        """
+        "Automagically" find the JDBC URL and establish a connection
+        to the current Splice Machine database
+        :param sparkSession: the sparksession object
+        :param useH2O: whether or not to
+        :param _unit_testing: whether or not we are unit testing
+        """
+        PySpliceContext.__init__(self, self.get_jdbc_url(), sparkSession, _unit_testing)
+
+        if useH2O:
+            from pysparkling import H2OConf, H2OContext
+            h2oConf = H2OConf(sparkSession)
+            h2oConf.set_fail_on_unsupported_spark_param_disabled()
+            self.hc = H2OContext.getOrCreate(sparkSession, h2oConf)
