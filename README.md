@@ -19,9 +19,11 @@ os.system("""wget https://github.com/splicemachine/pysplice/archive/[pysplice RE
 
 ## Modules
   There are two modules inside the Python splicemachine package currently-- `splicemachine.spark.context` and `splicemachine.ml.zeppelin`
-  `splicemachine.spark.context` contains one extremely important class that helps you interact with our database with Spark.
+  The `splicemachine.spark.context` contains two extremely important classes that help you interact with our database with Spark.
+You can find the source code for this module here ('https://github.com/splicemachine/pysplice/splicemachine/spark/context.py')
+
   The `splicemachine.spark.context.PySpliceContext` class is our native spark data source implemented in Python. Currently,
-  it offers these, among other functions:
+  it offers these, among other functions. YOU SHOULD USE THE SpliceCloudContext CLASS FOR USE WITH THE SPLICE MACHINE CLOUD SERVICE (ZEPPELIN NOTEBOOKS):
 1. df: turn the results of a sql query into dataframe
 2. tableExists: returns a boolean of whether or not a table exists
 3. getConnection: get a connection to the database (used to renew the connection)
@@ -30,13 +32,28 @@ os.system("""wget https://github.com/splicemachine/pysplice/archive/[pysplice RE
 6. update: update records in a table based on joining primary keys from the datafrane
 7. dropTable: drop a table from database
 8. getSchema: return the schema of a table from the database
+9. upsert: upsert into a table
 
-You can find the source code for this module here ('https://github.com/splicemachine/pysplice/splicemachine/spark/context.py')
 ```
 Usage:
 %spark.pyspark
 from splicemachine.spark.context import PySpliceContext
-splice = PySpliceContext('jdbc:splice://<SOME FRAMEWORK NAME>.splicemachine.io:1527/splicedb;ssl=basic;user=<USER>;password=<PASSWORD>', sqlContext)
+splice = PySpliceContext('jdbc:splice://<SOME FRAMEWORK NAME>.splicemachine.io:1527/splicedb;ssl=basic;user=<USER>;password=<PASSWORD>', spark) # takes in a jdbc url and a spark context
+my_dataframe = splice.df('SELECT * FROM DEMO.BAKING_CUPCAKES')
+filtered_df = my_dataframe.filter(my_dataframe.FLAVOR == 'red_velvet')
+# Assume you have created a table with a schema that conforms to filtered_df
+splice.insert(filtered_df, 'DEMO.FILTERED_CUPCAKES)
+```
+
+  The `splicemachine.spark.context.SpliceCloudContext` class is our native spark datasource implemented in Python for use with the cloud service. Although you can use the regular PySpliceContext on the cloud service, this provides ease of use (auto finding jdbc url, h2o support etc). 
+ 
+```
+Usage:
+%spark.pyspark
+from splicemachine.spark.context import SpliceCloudContext
+splice = SpliceCloudContext(spark, use_h2o=True) # sparksession is already created on Zeppelin startup, so enter this code #exactly as written here
+splice.hc # h2o context
+#use normally as well
 my_dataframe = splice.df('SELECT * FROM DEMO.BAKING_CUPCAKES')
 filtered_df = my_dataframe.filter(my_dataframe.FLAVOR == 'red_velvet')
 # Assume you have created a table with a schema that conforms to filtered_df
@@ -79,7 +96,7 @@ splice.insert(filtered_df, 'DEMO.FILTERED_CUPCAKES)
  ```
  
 ### Show Confusion Matrix - Function that shows a nicely formatted confusion matrix for binary classification
-1. show_confusion_matrix(sc: spark context from zeppelin, sqlContext: sql context from zeppelin, TP: True positives, TN: true negatves, FP: false positives, FN: False Negatives)
+1. show_confusion_matrix(spark: spark session from zeppelin, TP: True positives, TN: true negatves, FP: false positives, FN: False Negatives)
 ```
 Usage:
 from splicemachine.ml.zeppelin import show_confusion_matrix
@@ -104,10 +121,9 @@ experiment_name = z.input('Experiment name')
 experiment_maker(experiment_name)
 ```
 
-### Model Evaluator -- Class that Evaluates Binary Classification Models written in PySpark
+### SpliceBinaryClassificationEvaluator -- Class that Evaluates Binary Classification Models written in PySpark
 Methods:
-1. __init__(label_column='label': string (input dataframe label col), prediction_column='prediction': string (input dataframe pred col), confusion_matrix=True: bool (show confusion matrix after each input df?))
-2. ModelEvaluator.setup_contexts(sc: spark_context from zeppelin, sqlContext: sqlContext from zeppelin) (required to run): Setup Spark Contexts 
+1. __init__(spark: zeppelin spark context, label_column='label': string (input dataframe label col), prediction_column='prediction': string (input dataframe pred col), confusion_matrix=True: bool (show confusion matrix after each input df?))
 3. ModelEvaluator.input(predictions_dataframe: dataframe (containing row with label col and prediction col) # Input a new run to average
 4. ModelEvalautor.get_results(output_type: 'dataframe'/'dict') # print out in either dataframe or dict format calculated metrics
 Here are the metrics this calculates:
@@ -129,8 +145,7 @@ computed_metrics = {
  ```
  Usage:
  from splicemachine.ml.zeppelin import ModelEvaluator
- evaluator = ModelEvaluator()
- evaluator.setup_contexts(sc, sqlContext)
+ evaluator = ModelEvaluator(spark)
  
  CV_ITERATIONS = 5
  
@@ -145,6 +160,7 @@ computed_metrics = {
 ### Decision Tree Visualizer - Class that allows you to visualize binary/multiclass Decision Tree classification models in PySpark
 Methods:
 1. DecisionTreeVisualizer.visualize(model: fitted DecisionTreeClassifier model, feature_column_names: list (in order of the features included in your VectorAssembler), label_classes: list (in order of your classes), visual=True (png output via graphviz, or code like structure False))
+2. DecisionTreeVisualizer.feature_importance(spark: spark session from zeppelin, model: fitted machine learning model, dataset: dataframe containing your preprocessed features (from vectorassembler), featuresCol: column containing your feature vector)
 
 ```
 Usage:
@@ -152,5 +168,7 @@ from splicemachine.ml.zeppelin import DecisionTreeVisualizer
 
 myfittedDecisionTreeClassifier = unfittedClf.fit(df)
 DecisionTreeVisualizer.visualize(myfittedDecisionTreeClassifier, ['flavor', 'color', 'frosting'], ['juicy', 'not juciy'], True)
+
+DecisionTreeVisualizer.featureImportance(spark, myfittedDecisionTreeClassifier, training_dataframe, "features")
 --> You can see your tree at this URL: <SOME URL>
 
