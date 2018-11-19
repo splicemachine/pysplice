@@ -130,7 +130,7 @@ class PySpliceContext:
         return self.context.getSchema(schema_table_name)
 
 
-class SpliceCloudContext(PySpliceContext):
+class SpliceMLContext(PySpliceContext):
     """
     PySpliceContext for use with the cloud service.
     Although the original pysplicecontext *will work*
