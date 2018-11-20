@@ -25,7 +25,7 @@ dependencies = [
     "py4j==0.10.7",
     "pytest==3.6.1",
     "six==1.11.0",
-    "mlflow==0.4.2",
+    "mlflow==0.8.0",
     "graphviz==0.8.4",
     "numpy==1.15.0",
     "h2o_pysparkling_2.2",
