@@ -1,0 +1,14 @@
+artifact_uri: /Users/amritbaveja/Desktop/pysplice/splicemachine/ml/mlruns/0/2cd940b60b3d4aa28958c83e4d80f5b7/artifacts
+end_time: null
+entry_point_name: null
+experiment_id: 0
+lifecycle_stage: active
+name: ''
+run_uuid: 2cd940b60b3d4aa28958c83e4d80f5b7
+source_name: /anaconda2/bin/ipython
+source_type: 4
+source_version: null
+start_time: 1542770712752
+status: 1
+tags: []
+user_id: amritbaveja
