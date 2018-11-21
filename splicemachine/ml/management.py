@@ -12,8 +12,12 @@ class MLManager(MlflowClient):
     def __init__(self, _tracking_uri='http://mlflow:5001'):
         mlflow.set_tracking_uri(_tracking_uri)
         print("Tracking Model Metadata on MLFlow Server @ " + mlflow.get_tracking_uri())
+
+       if not mlflow.get_tracking_uri() == _tracking_uri:
+           Warning("MLManager doesn't seem to be communicating with the right server endpoint. \
+           Try instantiating this class again!")
+
         MlflowClient.__init__(self, _tracking_uri)
-        self.artifact_uri = _artifact_uri
         self.active_run = None
         self.active_experiment = None
     
