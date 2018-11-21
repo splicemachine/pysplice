@@ -1,0 +1,14 @@
+README.md
+setup.py
+splicemachine/__init__.py
+splicemachine.egg-info/PKG-INFO
+splicemachine.egg-info/SOURCES.txt
+splicemachine.egg-info/dependency_links.txt
+splicemachine.egg-info/requires.txt
+splicemachine.egg-info/top_level.txt
+splicemachine/ml/__init__.py
+splicemachine/ml/zeppelin.py
+splicemachine/spark/__init__.py
+splicemachine/spark/context.py
+splicemachine/spark/test_context.py
+splicemachine/spark/utils.py
