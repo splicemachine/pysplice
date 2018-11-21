@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
 import random
 import time
 from collections import defaultdict
@@ -10,6 +9,7 @@ import numpy as np
 from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
 from pyspark.sql import Row
 
+
 class Run(object):
     def __init__(self, *args, **kwargs):
         ERROR = """
@@ -18,6 +18,7 @@ class Run(object):
         new splicemachine.ml.management.MLManager class.
         """
         raise Exception(ERROR)
+
 
 def get_confusion_matrix(spark, TP, TN, FP, FN):
     """
@@ -41,12 +42,14 @@ def experiment_maker(experiment_id):
     """
     raise Exception(ERROR)
 
+
 class ModelEvaluator():
     def __init__(self, *args, **kwargs):
         ERROR = """
         This class has been renamed to SpliceBinaryClassificationEvaluator
         """
         raise Exception(ERROR)
+
 
 class SpliceBinaryClassificationEvaluator(object):
     """
@@ -204,6 +207,7 @@ class SpliceRegressionEvaluator(SpliceBaseEvaluator):
     """
     Splice Regression Evaluator
     """
+
     def __init__(self, spark, prediction_column="prediction", label_column="label"):
         supported = ['rmse', 'mse', 'r2', 'mae']
         SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported,
