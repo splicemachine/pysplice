@@ -107,6 +107,11 @@ class MLManager(MlflowClient):
         :param model: the fitted model/pipeline (in spark) to log
         :param module: the module that this is part of (mlflow.spark, mlflow.sklearn etc)
         """
+        try:
+            mlflow.end_run()
+        except:
+            pass
+            
         with mlflow.start_run(run_uuid=self.active_run.info.run_uuid):
             module.log_model(model, "spark_model")
 
