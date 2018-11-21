@@ -9,10 +9,9 @@ class MLManager(MlflowClient):
     A class for managing your MLFlow Runs/Experiments
     """
 
-    def __init__(self, _tracking_uri=mlflow.get_tracking_uri(), _artifact_uri=mlflow.get_artifact_uri()):
-        mlflow.set_tracking_uri(_tracking_uri)
-        MlflowClient.__init__(self, _tracking_uri)
-        self.artifact_uri = _artifact_uri
+    def __init__(self, tracking_uri=mlflow.get_tracking_uri()):
+        mlflow.set_tracking_uri(tracking_uri)
+        MlflowClient.__init__(self, tracking_uri)
         self.active_run = None
         self.active_experiment = None
     
