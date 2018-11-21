@@ -4,4 +4,4 @@ Additionally, splicemachine.ml.zeppelin.Run has been incorporated into the new
 class, splicemachine.ml.management.MLManager. 
 """
 
-Exception(ERROR_MESSAGE)
+raise Exception(ERROR_MESSAGE)
