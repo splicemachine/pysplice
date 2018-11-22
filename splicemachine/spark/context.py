@@ -132,29 +132,81 @@ class PySpliceContext:
         return self.context.getSchema(schema_table_name)
 
     def execute(self, query_string):
+        '''
+        execute a query
+        :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+        :return:
+        '''
         return self.context.execute(query_string)
 
     def executeUpdate(self, query_string):
+        '''
+        execute a dml query:(update,delete,drop,etc)
+        :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+        :return:
+        '''
         return self.context.executeUpdate(query_string)
 
     def internalDf(self, query_string):
+        '''
+        SQL to Dataframe translation.  (Lazy)
+        Runs the query inside Splice Machine and sends the results to the Spark Adapter app
+        :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+        :return: pyspark dataframe contains the result of query_string
+        '''
         return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
 
     def truncateTable(self, schema_table_name):
-        return self.context.truncate(schema_table_name)
+        """
+        truncate a table
+        :param schema_table_name: the full table name in the format "schema.table_name" which will be truncated
+        :return:
+        """
+        return self.context.truncateTable(schema_table_name)
 
     def analyzeSchema(self, schema_name):
+        """
+        analyze the schema
+        :param schema_name: schema name which stats info will be collected
+        :return:
+        """
         return self.context.analyzeSchema(schema_name)
 
     def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=0.10):
+        """
+        collect stats info on a table
+        :param schema_table_name: full table name in the format of "schema.table"
+        :param estimateStatistics:will use estimate statistics if True
+        :param samplePercent:  the percentage or rows to be sampled.
+        :return:
+        """
         return self.context.analyzeTable(schema_table_name, estimateStatistics, samplePercent)
 
     def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None, fieldSeparator=None,
                quoteCharacter=None):
+        '''
+        Export a dataFrame in CSV
+        :param dataframe:
+        :param location: Destination directory
+        :param compression: Whether to compress the output or not
+        :param replicationCount:  Replication used for HDFS write
+        :param fileEncoding: fileEncoding or null, defaults to UTF-8
+        :param fieldSeparator: fieldSeparator or null, defaults to ','
+        :param quoteCharacter: quoteCharacter or null, defaults to '"'
+        :return:
+        '''
         return self.context.export(dataframe._jdf, location, compression, replicationCount, fileEncoding,
                                    fieldSeparator, quoteCharacter)
 
     def exportBinary(self,dataframe, location,compression, format):
+        '''
+        Export a dataFrame in binary format
+        :param dataframe:
+        :param location: Destination directory
+        :param compression: Whether to compress the output or not
+        :param format: Binary format to be used, currently only 'parquet' is supported
+        :return:
+        '''
         return self.context.exportBinary(dataframe._jdf,location,compression,format)
 
 
