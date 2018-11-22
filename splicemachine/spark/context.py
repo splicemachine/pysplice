@@ -39,6 +39,8 @@ class PySpliceContext:
             java_import(self.jvm,
                         "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
             java_import(self.jvm, "scala.collection.JavaConverters._")
+            java_import(self.jvm, "com.splicemachine.derby.impl.*")
+            self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(self.spark_sql_context._jsc)
             self.context = self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(
                 self.jdbcurl)
 
@@ -128,6 +130,32 @@ class PySpliceContext:
         :param schema_table_name: (DF) Table name
         """
         return self.context.getSchema(schema_table_name)
+
+    def execute(self, query_string):
+        return self.context.execute(query_string)
+
+    def executeUpdate(self, query_string):
+        return self.context.executeUpdate(query_string)
+
+    def internalDf(self, query_string):
+        return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
+
+    def truncateTable(self, schema_table_name):
+        return self.context.truncate(schema_table_name)
+
+    def analyzeSchema(self, schema_name):
+        return self.context.analyzeSchema(schema_name)
+
+    def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=0.10):
+        return self.context.analyzeTable(schema_table_name, estimateStatistics, samplePercent)
+
+    def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None, fieldSeparator=None,
+               quoteCharacter=None):
+        return self.context.export(dataframe._jdf, location, compression, replicationCount, fileEncoding,
+                                   fieldSeparator, quoteCharacter)
+
+    def exportBinary(self,dataframe, location,compression, format):
+        return self.context.exportBinary(dataframe._jdf,location,compression,format)
 
 
 class SpliceMLContext(PySpliceContext):
