@@ -45,8 +45,7 @@ class MLManager(MlflowClient):
         elif isinstance(experiment_name, int):
             self.active_experiment = self.get_experiment(experiment_name)
 
-    def create_new_run(self, user_id="splice", source_type="Splice Machine", source_name="Zeppelin",
-                       version="1.0"):
+    def create_new_run(self, user_id="splice"):
         """
         Create a new run in the active experiment and set it to be active
         :param user_id: the user who creates the run in the MLFlow UI
@@ -55,9 +54,7 @@ class MLManager(MlflowClient):
             raise Exception(
                 "You must set an experiment before you can create a run. Use MLFlowManager.set_active_experiment")
 
-        self.active_run = self.create_run(self.active_experiment.experiment_id, user_id=user_id,
-                                          source_name=source_name, source_type=source_type,
-                                          source_version=version)
+        self.active_run = self.create_run(self.active_experiment.experiment_id, user_id=user_id)
 
     def set_active_run(self, run_id):
         """
