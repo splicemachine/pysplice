@@ -62,6 +62,15 @@ class MLManager(MlflowClient):
         :param run_id: the run UUID for the previous run 
         """
         self.active_run = self.get_run(run_id)
+        
+    def get_experiment_by_name(self, experiment_name):
+        super(MLManager, self).get_experiment_by_name(experiment_name)
+      
+    def get_experiment(self, experiment_name):
+        super(MLManager, self).get_experiment(experiment_name)
+        
+    def get_run(self, run_id):
+        super(MLManager, self).get_run(run_id)
 
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
