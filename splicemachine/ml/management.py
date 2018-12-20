@@ -10,7 +10,7 @@ class MLManager(MlflowClient):
     A class for managing your MLFlow Runs/Experiments
     """
 
-    def __init__(self, _tracking_uri='http://mlflow:5001'):
+    def __init__(self, _tracking_uri=MLManager.get_pod_uri("mlflow", "5001")):
         mlflow.set_tracking_uri(_tracking_uri)
         print("Tracking Model Metadata on MLFlow Server @ " + mlflow.get_tracking_uri())
 
@@ -22,6 +22,14 @@ class MLManager(MlflowClient):
         self.active_run = None
         self.active_experiment = None
 
+    @staticmethod
+    def get_pod_uri(pod, port, pod_count=0):
+        import os
+        try:
+            return '{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
+        except KeyError as e:
+            raise KeyError("Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+        
     @staticmethod
     def __removekey(d, key):
         """
@@ -55,6 +63,13 @@ class MLManager(MlflowClient):
                 "You must set an experiment before you can create a run. Use MLFlowManager.set_active_experiment")
 
         self.active_run = self.create_run(self.active_experiment.experiment_id, user_id=user_id)
+
+    def reset_run(self):
+        """
+        Reset the current run (deletes logged parameters, metrics, artifacts etc.)
+        """
+        self.delete_run(self.active_run.info.run_uuid)
+        self.create_new_run()
 
     def set_active_run(self, run_id):
         """
