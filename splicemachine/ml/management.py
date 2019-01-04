@@ -5,12 +5,19 @@ import mlflow.spark
 from mlflow.tracking import MlflowClient
 
 
+def get_pod_uri(pod, port, pod_count=0):
+	import os
+	try:
+		return '{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
+	except KeyError as e:
+		raise KeyError("Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+
 class MLManager(MlflowClient):
     """
     A class for managing your MLFlow Runs/Experiments
     """
 
-    def __init__(self, _tracking_uri=MLManager.get_pod_uri("mlflow", "5001")):
+    def __init__(self, _tracking_uri=get_pod_uri("mlflow", "5001")):
         mlflow.set_tracking_uri(_tracking_uri)
         print("Tracking Model Metadata on MLFlow Server @ " + mlflow.get_tracking_uri())
 
@@ -22,14 +29,6 @@ class MLManager(MlflowClient):
         self.active_run = None
         self.active_experiment = None
 
-    @staticmethod
-    def get_pod_uri(pod, port, pod_count=0):
-        import os
-        try:
-            return '{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
-        except KeyError as e:
-            raise KeyError("Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
-        
     @staticmethod
     def __removekey(d, key):
         """
