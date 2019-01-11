@@ -8,7 +8,7 @@ from mlflow.tracking import MlflowClient
 def get_pod_uri(pod, port, pod_count=0):
 	import os
 	try:
-		return '{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
+		return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
 	except KeyError as e:
 		raise KeyError("Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
 
