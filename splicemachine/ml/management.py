@@ -3,7 +3,7 @@ import mlflow.h2o
 import mlflow.sklearn
 import mlflow.spark
 from mlflow.tracking import MlflowClient
-
+from mlflow.exceptions import MlflowException
 
 def get_pod_uri(pod, port, pod_count=0):
 	import os
@@ -28,7 +28,12 @@ class MLManager(MlflowClient):
         MlflowClient.__init__(self, _tracking_uri)
         self.active_run = None
         self.active_experiment = None
-
+    
+    def __repr__(self):
+        return "MLManager: Active Experiment " + str(self.active_experiment) + " | Active Run " + str(self.active_run)
+    
+    def __str__(self):
+        return self.__repr__()
     @staticmethod
     def __removekey(d, key):
         """
@@ -38,6 +43,36 @@ class MLManager(MlflowClient):
         del r[key]
         return r
 
+    def create_experiment(self, experiment_name, reset=False):
+        """
+        Create a new experiment. If the experiment
+        already exists, it will be set to active experiment.
+        If the experiment doesn't exist, it will be created
+        and set to active. If the reset option is set to true
+        (please use with caution), the runs within the existing 
+        experiment will be deleted
+        :param experiment_name: (str) the name of the experiment to create
+        :param reset: (bool) whether or not to overwrite the existing run
+        """
+        experiment = self.get_experiment_by_name(experiment_name)
+        if experiment:
+            print("Experiment " + experiment_name + " already exists... setting to active experiment")
+            self.active_experiment = experiment
+            print("Active experiment has id " + str(experiment.id))
+            if reset:
+                print("Keyword argument \"reset\" was set to True. Overwriting experiment and its associated runs...")
+                experiment_id = self.active_experiment.experiment_id
+                associated_runs = self.list_run_infos(experiment_id)
+                for run in associated_runs:
+                    print("Deleting run with UUID " + run.run_uuid)
+                    manager.delete_run(run.run_uuid)
+                print("Successfully overwrote experiment")
+        else:
+            experiment_id = super(MLManager, self).create_experiment(experiment_name)
+            print("Created experiment w/ id=" + str(experiment_id))
+            self.set_active_experiment(experiment_id)
+
+        
     def set_active_experiment(self, experiment_name):
         """
         Set the active experiment of which all new runs will be created under
@@ -49,7 +84,7 @@ class MLManager(MlflowClient):
         if isinstance(experiment_name, str):
             self.active_experiment = self.get_experiment_by_name(experiment_name)
 
-        elif isinstance(experiment_name, int):
+        elif isinstance(experiment_name, int) or isinstance(experiment_name, long):
             self.active_experiment = self.get_experiment(experiment_name)
 
     def create_new_run(self, user_id="splice"):
