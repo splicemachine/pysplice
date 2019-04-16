@@ -226,7 +226,7 @@ class SpliceMLContext(PySpliceContext):
         :param _unit_testing: whether or not we are unit testing
         """
         try:
-	    url = os.environ['JDBC_URL']
+            url = os.environ['JDBC_URL']
             PySpliceContext.__init__(self, url, sparkSession, _unit_testing)
         except:
             print('The SpliceMLContext is only for use on the cloud service. Please import and use the PySpliceContext instead.\nUsage:\n\tfrom splicemachine.spark.context import PySpliceContext\n\tsplice = PySpliceContext(jdbc_url, sparkSession)')
