@@ -53,13 +53,12 @@ class Test(PySpliceTest):
         self.splice_context.dropTable("splice.pysplice_test")
         assert cnt == 0
 
-    def test_df2(self):
+    def test_df(self):
         self.splice_context.executeUpdate("drop table if exists splice.pysplice_test_df")
         test_df_df = self.spark_session.createDataFrame([[1],[2]], "COL1: int")
         self.splice_context.executeUpdate("create table pysplice_test_df ( COL1 int primary key)")
         self.splice_context.insert(test_df_df,"splice.pysplice_test_df")
         cnt = self.splice_context.df("select count(*) as cnt from splice.pysplice_test_df").collect()[0]['CNT']
-        print(cnt)
         assert cnt == 2
 
 
