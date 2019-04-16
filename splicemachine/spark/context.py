@@ -217,27 +217,20 @@ class SpliceMLContext(PySpliceContext):
     on the Cloud Service (Zeppelin Notebook), this class
     does many things for ease of use.
     """
-    @staticmethod
-    def get_jdbc_url():
-        """
-        Get the JDBC Url for the current cluster (internal w/ no timeout)
-        :return: (string) jdbc url
-        """
-        import os
-        framework = os.environ['FRAMEWORK_NAME']
-        return 'jdbc:splice://{framework}-proxy.marathon.mesos:1527/splicedb'.format(
-            framework=framework)
-
     def __init__(self, sparkSession, useH2O=False, _unit_testing=False):
         """
-        "Automagically" find the JDBC URL and establish a connection
+        Automatically find the JDBC URL and establish a connection
         to the current Splice Machine database
         :param sparkSession: the sparksession object
         :param useH2O: whether or not to
         :param _unit_testing: whether or not we are unit testing
         """
-        PySpliceContext.__init__(self, self.get_jdbc_url(), sparkSession, _unit_testing)
-
+        try:
+	    url = os.environ['JDBC_URL']
+            PySpliceContext.__init__(self, url, sparkSession, _unit_testing)
+        except:
+            print('The SpliceMLContext is only for use on the cloud service. Please import and use the PySpliceContext instead.\nUsage:\n\tfrom splicemachine.spark.context import PySpliceContext\n\tsplice = PySpliceContext(jdbc_url, sparkSession)')
+            return -1
         if useH2O:
             from pysparkling import H2OConf, H2OContext
             h2oConf = H2OConf(sparkSession)
