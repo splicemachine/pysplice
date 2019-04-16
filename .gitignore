@@ -1,1 +1,4 @@
 /.idea
+/splicemachine/spark/test/__pycache__/context_it.cpython-36.pyc
+/splicemachine/spark/__pycache__/__init__.cpython-36.pyc
+/splicemachine/__pycache__/__init__.cpython-36.pyc
