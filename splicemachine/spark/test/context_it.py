@@ -14,6 +14,10 @@ class PySpliceTest(unittest.TestCase):
     @classmethod
     def create_spark_session(cls):
         spark_session = SparkSession.builder.getOrCreate()
+        #spark_session.sparkContext.setLogLevel("ERROR")
+        logger = spark_session.sparkContext._jvm.org.apache.log4j
+        logger.LogManager.getLogger("org").setLevel(logger.Level.OFF)
+        logger.LogManager.getLogger("akka").setLevel(logger.Level.OFF)
         return spark_session
 
     @classmethod
@@ -43,14 +47,16 @@ class Test(PySpliceTest):
         self.splice_context.analyzeTable("sys.systables")
         assert True
 
-    def test_delete(self):
-        self.splice_context.executeUpdate("drop table if exists splice.pysplice_test")
-        test_delete_df = self.spark_session.createDataFrame([[1],[2]], "COL1: int")
-        self.splice_context.executeUpdate("create table pysplice_test ( COL1 int primary key)")
-        self.splice_context.insert(test_delete_df,"splice.pysplice_test")
-        self.splice_context.delete(test_delete_df,"splice.pysplice_test")
-        cnt = self.splice_context.df("select count(*) as cnt from splice.pysplice_test").collect()[0]['CNT']
-        self.splice_context.dropTable("splice.pysplice_test")
+    def test_executeUpdate(self):
+        self.splice_context.executeUpdate("drop table if exists splice.systables")
+        self.splice_context.executeUpdate("create table systables as select * from sys.systables")
+        assert self.splice_context.tableExists("SPLICE.SYSTABLES")
+
+    def test_dropTable(self):
+        self.splice_context.executeUpdate("drop table if exists splice.pysplice_test_droptable")
+        self.splice_context.executeUpdate("create table pysplice_test_droptable ( COL1 int primary key)")
+        self.splice_context.dropTable("splice.pysplice_test_droptable")
+        cnt = self.splice_context.df("select count(*) as cnt from sys.sysschemas a join sys.systables b on a.SCHEMAID = b.SCHEMAID where a.SCHEMANAME = 'SPLICE' and b.TABLENAME = 'PYSPLICE_TEST_DROPTABLE'").collect()[0]['CNT']
         assert cnt == 0
 
     def test_df(self):
@@ -61,23 +67,19 @@ class Test(PySpliceTest):
         cnt = self.splice_context.df("select count(*) as cnt from splice.pysplice_test_df").collect()[0]['CNT']
         assert cnt == 2
 
-
-    def test_dropTable(self):
-        self.splice_context.executeUpdate("drop table if exists splice.pysplice_test_droptable")
-        self.splice_context.executeUpdate("create table pysplice_test_droptable ( COL1 int primary key)")
-        self.splice_context.dropTable("splice.pysplice_test_droptable")
-        cnt = self.splice_context.df("select count(*) as cnt from sys.sysschemas a join sys.systables b on a.SCHEMAID = b.SCHEMAID where a.SCHEMANAME = 'SPLICE' and b.TABLENAME = 'PYSPLICE_TEST_DROPTABLE'").collect()[0]['CNT']
+    def test_delete(self):
+        self.splice_context.executeUpdate("drop table if exists splice.pysplice_test")
+        test_delete_df = self.spark_session.createDataFrame([[1],[2]], "COL1: int")
+        self.splice_context.executeUpdate("create table pysplice_test ( COL1 int primary key)")
+        self.splice_context.insert(test_delete_df,"splice.pysplice_test")
+        self.splice_context.delete(test_delete_df,"splice.pysplice_test")
+        cnt = self.splice_context.df("select count(*) as cnt from splice.pysplice_test").collect()[0]['CNT']
+        self.splice_context.dropTable("splice.pysplice_test")
         assert cnt == 0
-
 
     def test_execute(self):
         self.splice_context.execute("select count(*) from sys.systables")
         assert True
-
-    def test_executeUpdate(self):
-        self.splice_context.executeUpdate("drop table if exists splice.systables")
-        self.splice_context.executeUpdate("create table systables as select * from sys.systables")
-        assert self.splice_context.tableExists("SPLICE.SYSTABLES")
 
     def test_export(self):
         test_export_df = self.spark_session.createDataFrame([[1],[2]], "COL1:int")
@@ -88,7 +90,6 @@ class Test(PySpliceTest):
         test_export_load_df = self.spark_session.read.option("timestampFormat", "yyyy/MM/dd HH:mm:ss ZZ").csv(file,inferSchema=True)
         assert test_export_df.count() == test_export_load_df.count()
 
-
     def test_exportBinary(self):
         test_exportBinary_df = self.spark_session.createDataFrame([[1],[2]], "COL1:int")
         temp_dir = tempfile.gettempdir()
@@ -98,10 +99,9 @@ class Test(PySpliceTest):
         assert test_exportBinary_df.count() == load_df.count()
 
     def test_getSchema(self):
-        self.splice_context.executeUpdate("drop table if exists splice.pysplice_test")
-        self.splice_context.executeUpdate("create table pysplice_test ( col1 int primary key)")
-        self.splice_context.getSchema("splice.pysplice_test")
-        assert True
+        systables_schema_from_df = self.splice_context.df("select * from sys.systables").schema
+        systables_schema = self.splice_context.getSchema("sys.systables")
+        assert systables_schema_from_df == systables_schema
 
     def test_insert(self):
         self.splice_context.executeUpdate("drop table if exists splice.pysplice_test_insert")
