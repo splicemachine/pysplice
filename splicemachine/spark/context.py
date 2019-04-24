@@ -129,7 +129,9 @@ class PySpliceContext:
 
         :param schema_table_name: (DF) Table name
         """
-        return self.context.getSchema(schema_table_name)
+        df = self.df("select * from " + schema_table_name) #should call python method self.df instead of java method df
+        schm = df.schema
+        return schm
 
     def execute(self, query_string):
         '''
