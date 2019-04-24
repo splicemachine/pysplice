@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import print_function
-
+import os
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
 
@@ -228,7 +228,8 @@ class SpliceMLContext(PySpliceContext):
         try:
             url = os.environ['JDBC_URL']
             PySpliceContext.__init__(self, url, sparkSession, _unit_testing)
-        except:
+        except Exception as e:
+            print(e)
             print('The SpliceMLContext is only for use on the cloud service. Please import and use the PySpliceContext instead.\nUsage:\n\tfrom splicemachine.spark.context import PySpliceContext\n\tsplice = PySpliceContext(jdbc_url, sparkSession)')
             return -1
         if useH2O:
