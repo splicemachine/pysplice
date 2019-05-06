@@ -218,6 +218,69 @@ class PySpliceContext:
         :return:
         '''
         return self.context.exportBinary(dataframe._jdf,location,compression,format)
+    def createTable(self, dataframe, schema_table_name, new_schema=True, types = None):
+        '''
+        Creates a schema.table from a dataframe
+        :param schema: A string schema name.
+        :param table: A string table name. If this table exists in the database already, it will be DROPPED and a new one will be created
+        :param dataframe: The dataframe that the table will be created for
+        :param new_schema: A boolean to create a new schema. If True, the function will create a new schema before creating the table. If the schema already exists, set to False [DEFAULT True]
+        :param types: A dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
+            If None or if any types are missing, types will be assumed automatically from the dataframe schema as follows:
+                    BooleanType: BOOLEAN
+                    ByteType: TINYINT
+                    DateType: DATE
+                    DoubleType: DOUBLE
+                    IntegerType: INTEGER
+                    LongType: BIGINT
+                    NullType: VARCHAR(50)
+                    ShortType: SMALLINT
+                    StringType: VARCHAR(150)
+                    TimestampType: TIMESTAMP
+                    UnknownType: BLOB
+        NOTE: If the table supplied already exists, it WILL be dropped.
+        '''
+        #convert keys and values to uppercase in the types dictionary
+        types = dict((key.upper(), val.upper()) for key,val in types.items())
+        conversions = {
+            'BinaryType': 'VARCHAR(100)'
+            'BooleanType': 'BOOLEAN',
+            'ByteType': 'TINYINT',
+            'DateType': 'DATE',
+            'DoubleType': 'DOUBLE',
+            'IntegerType': 'INTEGER',
+            'LongType': 'BIGINT',
+            'NullType': 'VARCHAR(50)',
+            'ShortType': 'SMALLINT',
+            'StringType': 'VARCHAR(150)'',
+            'TimestampType': 'TIMESTAMP',
+            'UnknownType': 'BLOB'
+        }
+        db_schema = []
+        #convert dataframe to have all uppercase column names
+        dataframe = self.toUpper(dataframe)
+        #i contains the name and pyspark datatype of the column
+        for i in dataframe.schema:
+            if i.name in types.keys():
+                print('Column {} is of type {}'.format(i.name,i.dataType))
+                dt = types[i.name]
+            else:
+                dt = conversions[str(i.dataType).upper()]
+            db_schema.append((i.name,dt))
+
+        schema, table = schema_table_name.upper().split('.')
+        if new_schema:
+            print('Creating schema {}'.format(schema))
+            self.context.execute('CREATE SCHEMA {}'.format(schema))
+
+        print('Creating table {schema}.{table}'.format(schema=schema,table=table))
+        self.context.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
+
+        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
+        for name,type in db_schema:
+            sql += '{} {},\n'.format(name,type)
+        sql = sql[:-2] + ')'
+        self.context.execute(sql)
 
 
 class SpliceMLContext(PySpliceContext):
