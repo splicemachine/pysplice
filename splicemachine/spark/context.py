@@ -51,12 +51,26 @@ class PySpliceContext:
             self.context = FakeJContext(self.jdbcurl)
     def toUpper(self, dataframe):
         """
-        Returns a dataframe with all uppercase column names
-        :param dataframe: A dataframe with column names to convert to uppercase
+        Returns a dataframe with all of the columns in uppercase
+        :param dataframe: The dataframe to convert to uppercase
         """
         for col in dataframe.columns:
-            dataframe = dataframe.withColumnRenamed(col, col.upper())
+            dataframe = dataframe.withColumnRenamed(col, col.upper()
+            )
+    def replaceDataframeSchema(self, dataframe, schema_table_name):
+        """
+        Returns a dataframe with all column names replaced with the proper string case from the DB table
+        :param dataframe: A dataframe with column names to convert
+        :param schema_table_name: The schema.table with the correct column cases to pull from the database
+        """
+        cols = self.context.df('select top 1 * from {}'.format(schema_table_name)).columns
+        #sort the columns case insensitive so we are replacing the right ones in the dataframe
+        old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
+        new_cols = sorted(cols, key=lambda s: s.lower())
+        for old_col,new_col in zip(old_cols,new_cols):
+            dataframe = dataframe.withColumnRenamed(old_col, new_col)
         return dataframe
+
     def getConnection(self):
         """
         Return a connection to the database
@@ -90,30 +104,26 @@ class PySpliceContext:
             return self.context.df(sql)
         return DataFrame(self.context.df(sql), self.spark_sql_context)
 
-    def insert(self, dataframe, schema_table_name, upper=True):
+    def insert(self, dataframe, schema_table_name):
         """
         Insert a dataframe into a table (schema.table).
 
         :param dataframe: (DF) The dataframe you would like to insert
         :param schema_table_name: (string) The table in which you would like to insert the RDD
-        :param upper: Whether or not to force uppercase for your dataframe column names. If your SQL table mixed case or lowercase column names,
-                        your MUST set upper to False. [DEFAULT True]
         """
-        if upper:
-            dataframe = self.toUpper(dataframe)
+        #make sure column names are in the correct case
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
-    def upsert(self, dataframe, schema_table_name, upper=True):
+    def upsert(self, dataframe, schema_table_name):
         """
         Upsert the data from a dataframe into a table (schema.table).
 
         :param dataframe: (DF) The dataframe you would like to upsert
         :param schema_table_name: (string) The table in which you would like to upsert the RDD
-        :param upper: Whether or not to force uppercase for your dataframe column names. If your SQL table mixed case or lowercase column names,
-                        your MUST set upper to False. [DEFAULT True]
         """
-        if upper:
-            dataframe = self.toUpper(dataframe)
+        #make sure column names are in the correct case
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.upsert(dataframe._jdf, schema_table_name)
 
     def delete(self, dataframe, schema_table_name):
@@ -126,7 +136,7 @@ class PySpliceContext:
         """
         return self.context.delete(dataframe._jdf, schema_table_name)
 
-    def update(self, dataframe, schema_table_name, upper=True):
+    def update(self, dataframe, schema_table_name):
         """
         Update data from a dataframe for a specified schema_table_name (schema.table).
         The keys are required for the update and any other columns provided will be updated
@@ -134,11 +144,9 @@ class PySpliceContext:
 
         :param dataframe: (DF) The dataframe you would like to update
         :param schema_table_name: (string) Splice Machine Table
-        :param upper: Whether or not to force uppercase for your dataframe column names. If your SQL table mixed case or lowercase column names,
-                        your MUST set upper to False. [DEFAULT True]
         """
-        if upper:
-            dataframe = self.toUpper(dataframe)
+        #make sure column names are in the correct case
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.update(dataframe._jdf, schema_table_name)
 
     def getSchema(self, schema_table_name):
