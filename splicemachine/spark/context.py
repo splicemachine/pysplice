@@ -49,7 +49,14 @@ class PySpliceContext:
             self.spark_sql_context = sparkSession._wrapped
             self.jvm = ''
             self.context = FakeJContext(self.jdbcurl)
-
+    def toUpper(self, dataframe):
+        """
+        Returns a dataframe with all uppercase column names
+        :param dataframe: A dataframe with column names to convert to uppercase
+        """
+        for col in dataframe.columns:
+            dataframe = dataframe.withColumnRenamed(col, col.upper())
+        return dataframe
     def getConnection(self):
         """
         Return a connection to the database
@@ -90,6 +97,7 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to insert
         :param schema_table_name: (string) The table in which you would like to insert the RDD
         """
+        dataframe = self.toUpper(dataframe)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
     def upsert(self, dataframe, schema_table_name):
@@ -99,6 +107,7 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to upsert
         :param schema_table_name: (string) The table in which you would like to upsert the RDD
         """
+        dataframe = self.toUpper(dataframe)
         return self.context.upsert(dataframe._jdf, schema_table_name)
 
     def delete(self, dataframe, schema_table_name):
@@ -121,6 +130,7 @@ class PySpliceContext:
         :param schema_table_name: (string) Splice Machine Table
         :return:
         """
+        dataframe = self.toUpper(dataframe)
         return self.context.update(dataframe._jdf, schema_table_name)
 
     def getSchema(self, schema_table_name):
@@ -198,7 +208,7 @@ class PySpliceContext:
         return self.context.export(dataframe._jdf, location, compression, replicationCount, fileEncoding,
                                    fieldSeparator, quoteCharacter)
 
-    def exportBinary(self,dataframe, location,compression, format):
+    def exportBinary(self, dataframe, location,compression, format):
         '''
         Export a dataFrame in binary format
         :param dataframe:
