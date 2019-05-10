@@ -234,11 +234,13 @@ class PySpliceContext:
         :return:
         '''
         return self.context.exportBinary(dataframe._jdf,location,compression,format)
+
     def createTable(self, dataframe, schema_table_name, new_schema=True, types = None):
         '''
         Creates a schema.table from a dataframe
-        :param schema: A string schema name.
-        :param table: A string table name. If this table exists in the database already, it will be DROPPED and a new one will be created
+        :param schema_table_name: String full table name in the format "schema.table_name"
+                                  If only a table name is provided (ie no '.' in the string) schema SPLICE will be assumed
+                                  If this table exists in the database already, it will be DROPPED and a new one will be created
         :param dataframe: The dataframe that the table will be created for
         :param new_schema: A boolean to create a new schema. If True, the function will create a new schema before creating the table. If the schema already exists, set to False [DEFAULT True]
         :param types: A dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
@@ -284,7 +286,13 @@ class PySpliceContext:
                 dt = conversions[str(i.dataType).upper()]
             db_schema.append((i.name,dt))
 
-        schema, table = schema_table_name.upper().split('.')
+        #try to get schema and table, else set schema to splice
+        if '.' in x:
+            schema, table = schema_table_name.upper().split('.')
+        else:
+            schema = 'SPLICE'
+            table = schema_table_name.upper()
+        #check for new schema
         if new_schema:
             print('Creating schema {}'.format(schema))
             self.context.execute('CREATE SCHEMA {}'.format(schema))
