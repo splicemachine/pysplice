@@ -1,6 +1,2 @@
 /.idea
 /.vscode
-__pycache__
-*.pyc
-ml/__pycache__
-spark/__pycache__
