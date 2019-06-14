@@ -1,16 +1,96 @@
+from collections import defaultdict
+from time import time
+import os
+
 import mlflow
 import mlflow.h2o
 import mlflow.sklearn
 import mlflow.spark
 from mlflow.tracking import MlflowClient
 
+TESTING = True
+
 
 def get_pod_uri(pod, port, pod_count=0):
-	import os
-	try:
-		return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format(pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
-	except KeyError as e:
-		raise KeyError("Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+    """
+    Get address of MLFlow Container (this is
+    for DC/OS (Mesosphere) setup, not Kubernetes
+    """
+
+    if TESTING:
+        return "http://mlflow:5001"
+    try:
+        return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format \
+            (pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
+    except KeyError as e:
+        raise KeyError(
+            "Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+
+
+def _readable_pipeline_stage(pipeline_stage):
+    """
+    Get a readable version of the Pipeline stage
+    (without the memory address)
+    :param pipeline_stage: the name of the stage to parse
+    """
+    if '_' in str(pipeline_stage):
+        return str(pipeline_stage).split('_')[0]
+    return str(pipeline_stage)
+
+
+def _get_stages(pipeline):
+    """
+    Extract the stages from a fit or unfit pipeline
+
+    :param pipeline: a fit or unfit Spark pipeline
+    :return: stages list
+    """
+    if hasattr(pipeline, 'stages') and isinstance(pipeline.stages, list):
+        return pipeline.stages  # fit pipeline
+    return pipeline.getStages()  # unfit pipeline
+
+
+def _parse_string_parameters(string_parameters):
+    """
+    Parse string rendering of extractParamMap
+    :param string_parameters:
+    :return:
+    """
+    parameters = {}
+    parsed_mapping = str(string_parameters).replace("{", "").replace(
+        "}", "").replace("\n", "").replace("\t", "").split(',')
+
+    for mapping in parsed_mapping:
+        param = mapping[mapping.index('-') + 1:].split(':')[0]
+        value = mapping[mapping.index('-') + 1:].split(':')[1]
+
+        parameters[param.strip()] = value.strip()
+    return parameters
+
+
+def _get_cols(transformer, get_input=True):
+    """
+    Get columns from a transformer
+    :param transformer: the transformer (fit or unfit)
+    :param get_input: whether or not to return the input columns
+    :return: a list of either input or output columns
+    """
+    col_type = 'Input' if get_input else 'Output'
+    if hasattr(transformer, 'get' + col_type + 'Col'):  # single transformer 1:1 (regular)
+        col_function = transformer.getInputCol if get_input else transformer.getOutputCol
+        return [
+            col_function()] if get_input else col_function()  # so we don't need to change code for a single transformer
+    elif hasattr(transformer, col_type + "Col"):  # single transformer 1:1 (vec)
+        return getattr(transformer, col_type + "Col")
+    elif get_input and hasattr(transformer,
+                               'get' + col_type + 'Cols'):  # multi ple transformer n:1 (regular)
+        return transformer.getInputCols()  # we can never have > 1 output column (goes to vector)
+    elif get_input and hasattr(transformer, col_type + 'Cols'):  # multiple transformer n:1 (vec)
+        return getattr(transformer, col_type + "Cols")
+    else:
+        print("Warning: Transformer " + str(
+            transformer) + " could not be parsed. If this is a model, this is expected.")
+
 
 class MLManager(MlflowClient):
     """
@@ -26,29 +106,55 @@ class MLManager(MlflowClient):
                     "Try instantiating this class again!")
 
         MlflowClient.__init__(self, _tracking_uri)
+
         self.active_run = None
         self.active_experiment = None
 
+        self.timer_start_time = None  # for timer
+        self.timer_name = None
+
     @property
-    def run():
+    def run(self):
         """
         Returns the UUID of the current run
         """
         return self.active_run.info.run_uuid
 
     @property
-    def experiment():
+    def experiment(self):
         """
         Returns the UUID of the current experiment
         """
         return self.active_experiment.experiment_id
 
     def __repr__(self):
-        return "MLManager: Active Experiment: " + str(self.active_experiment) + \
-            " | Active Run: " + str(self.active_run)
+        """
+        Return String Representation of Current MLManager
+        :return:
+        """
+        return "MLManager\n" + ('-' * 20) + "\nCurrent Experiment: " + \
+               str(self.active_experiment) + "\n"
 
     def __str__(self):
         return self.__repr__()
+
+    def check_active(func):
+        """
+        Decorator to make sure that run/experiment
+        is active
+        """
+
+        def wrapped(self, *args, **kwargs):
+            if not self.active_experiment:
+                raise Exception("Please either use set_active_experiment or create_experiment "
+                                "to set an active experiment before running this function")
+            elif not self.active_run:
+                raise Exception("Please either use set_active_run or create_run to set an active "
+                                "run before running this function")
+            else:
+                return func(self, *args, **kwargs)
+
+        return wrapped
 
     def create_experiment(self, experiment_name, reset=False):
         """
@@ -63,22 +169,23 @@ class MLManager(MlflowClient):
         """
         experiment = self.get_experiment_by_name(experiment_name)
         if experiment:
-            print("Experiment " + experiment_name + " already exists... setting to active experiment")
+            print(
+                "Experiment " + experiment_name + " already exists... setting to active experiment")
             self.active_experiment = experiment
             print("Active experiment has id " + str(experiment.experiment_id))
             if reset:
-                print("Keyword argument \"reset\" was set to True. Overwriting experiment and its associated runs...")
+                print(
+                    "Keyword argument \"reset\" was set to True. Overwriting experiment and its associated runs...")
                 experiment_id = self.active_experiment.experiment_id
                 associated_runs = self.list_run_infos(experiment_id)
                 for run in associated_runs:
                     print("Deleting run with UUID " + run.run_uuid)
-                    manager.delete_run(run.run_uuid)
+                    self.delete_run(run.run_uuid)
                 print("Successfully overwrote experiment")
         else:
             experiment_id = super(MLManager, self).create_experiment(experiment_name)
             print("Created experiment w/ id=" + str(experiment_id))
             self.set_active_experiment(experiment_id)
-
 
     def set_active_experiment(self, experiment_name):
         """
@@ -107,7 +214,6 @@ class MLManager(MlflowClient):
 
         self.create_run(run_metadata)
 
-
     def create_run(self, run_metadata={}):
         """
         Create a new run in the active experiment and set it to be active
@@ -120,13 +226,15 @@ class MLManager(MlflowClient):
         """
         if not self.active_experiment:
             raise Exception(
-                "You must set an experiment before you can create a run. Use MLFlowManager.set_active_experiment")
+                "You must set an experiment before you can create a run."
+                " Use MLFlowManager.set_active_experiment")
 
         self.active_run = super(MLManager, self).create_run(self.active_experiment.experiment_id)
 
         for key in run_metadata:
             self.set_tag(key, run_metadata[key])
 
+    @check_active
     def reset_run(self):
         """
         Reset the current run (deletes logged parameters, metrics, artifacts etc.)
@@ -134,6 +242,7 @@ class MLManager(MlflowClient):
         self.delete_run(self.active_run.info.run_uuid)
         self.create_new_run()
 
+    @check_active
     def set_active_run(self, run_id):
         """
         Set the active run to a previous run (allows you to log metadata for completed run)
@@ -144,12 +253,14 @@ class MLManager(MlflowClient):
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
 
+    @check_active
     def log_param(self, *args, **kwargs):
         """
         Log a parameter for the active run
         """
         self.__log_param(*args, **kwargs)
 
+    @check_active
     def log_params(self, params):
         """
         Log a list of parameters in order
@@ -161,12 +272,14 @@ class MLManager(MlflowClient):
     def __set_tag(self, *args, **kwargs):
         super(MLManager, self).set_tag(self.active_run.info.run_uuid, *args, **kwargs)
 
+    @check_active
     def set_tag(self, *args, **kwargs):
         """
         Set a tag for the active run
         """
         self.__set_tag(*args, **kwargs)
 
+    @check_active
     def set_tags(self, tags):
         """
         Log a list of tags in order
@@ -178,12 +291,14 @@ class MLManager(MlflowClient):
     def __log_metric(self, *args, **kwargs):
         super(MLManager, self).log_metric(self.active_run.info.run_uuid, *args, **kwargs)
 
+    @check_active
     def log_metric(self, *args, **kwargs):
         """
         Log a metric for the active run
         """
         self.__log_metric(*args, **kwargs)
 
+    @check_active
     def log_metrics(self, metrics):
         """
         Log a list of metrics in order
@@ -204,12 +319,14 @@ class MLManager(MlflowClient):
     def __log_artifacts(self, *args, **kwargs):
         super(MLManager, self).log_artifacts(self.active_run.info.run_uuid, *args, **kwargs)
 
+    @check_active
     def log_artifacts(self, *args, **kwargs):
         """
         Log artifacts for the active run
         """
         self.__log_artifacts(*args, **kwargs)
 
+    @check_active
     def log_model(self, model, module):
         """
         Log a model for the active run
@@ -221,9 +338,10 @@ class MLManager(MlflowClient):
         except:
             pass
 
-        with mlflow.start_run(run_uuid=self.active_run.info.run_uuid):
+        with mlflow.start_run(run_id=self.active_run.info.run_uuid):
             module.log_model(model, "spark_model")
 
+    @check_active
     def log_spark_model(self, model):
         """
         Log a spark model
@@ -231,6 +349,7 @@ class MLManager(MlflowClient):
         """
         self.log_model(model, mlflow.spark)
 
+    @check_active
     def log_spark_models(self, models):
         """
         Log a list of spark models in order
@@ -245,63 +364,146 @@ class MLManager(MlflowClient):
         """
         super(MLManager, self).log_batch(self.active_run.info.run_uuid, *args, **kwargs)
 
+    @check_active
     def log_batch(self, metrics, parameters, tags):
         """
         Log a batch set of metrics, parameters and tags
         :param metrics: a list of tuples mapping metrics to metric values
         :param parameters: a list of tuples mapping parameters to parameter values
-        :param tags: a list of tupples mapping tags to tag values
+        :param tags: a list of tuples mapping tags to tag values
         """
         self.__log_batch(metrics, parameters, tags)
 
-    @staticmethod
-    def _readable_pipeline_stage(pipeline_stage):
-        """
-        Get a readable version of the Pipeline stage
-        (without the memory address)
-        :param stage_name: the name of the stage to parse
-        """
-        if '_' in str(pipeline_stage):
-            return str(pipeline_stage).split('_')[0]
-        return str(pipeline_stage)
-
-    def log_pipeline_stages(self, fitted_pipeline):
+    @check_active
+    def log_pipeline_stages(self, pipeline):
         """
         Log the human-friendly names of each stage in
-        a *fitted* Spark pipeline.
+        a  Spark pipeline.
 
         *Warning*: With a big pipeline, this could result in
         a lot of parameters in MLFlow. It is probably best
         to log them yourself, so you can ensure useful tracking
 
-        :param fitted_pipeline: the fitted pipeline object
+        :param pipeline: the fitted/unfit pipeline object
         """
-        for stage_number, pipeline_stage in enumerate(fitted_pipeline.stages):
-            readable_stage_name = self._readable_pipeline_stage(pipeline_stage)
+
+        for stage_number, pipeline_stage in enumerate(_get_stages(pipeline)):
+            readable_stage_name = _readable_pipeline_stage(pipeline_stage)
             self.log_param('Stage' + str(stage_number), readable_stage_name)
 
-    def log_feature_pipeline_stages(self, fitted_pipeline):
+    @staticmethod
+    def _find_first_input_by_output(dictionary, value):
         """
-        Log the preprocessing stages applied to each feature in
-        the pipeline. Sometimes, this can reduce the amount of output
-        but it might be harder to read (as some parameters are long)
+        Find the first input column for a given column
+
+        :param dictionary: dictionary to search
+        :param value: column
+        :return: None if not found, otherwise first column
         """
-        feature_stages = {}
+        for key in dictionary:
+            if dictionary[key][1] == value:  # output column is always the last one
+                return key
+        return None
 
-        for stage in fitted_pipeline.stages:
-            name = self._readable_pipeline_stage(stage)
-            if hasattr(stage, 'getInputCol'): # single-column transformer e.g. StringIndexer
-                feature_stages.setdefault(stage.getInputCol(), [])
-                feature_stages[stage.getInputCol()].append(name)
-            elif hasattr(stage, 'getInputCols'): # multi-column transformer e.g. VectorAssembler
-                for inputColumn in stage.getInputCols():
-                    feature_stages.setdefault(inputColumn, [])
-                    feature_stages[inputColumn].append(name)
-            else:
-                print("Warning: Cannot parse inputColumns from stage: " + name)
-        for column in feature_stages:
-            self.log_param(column, ', '.join(feature_stages[column]))
+    @check_active
+    def log_feature_transformations(self, unfit_pipeline):
+        """
+        Log the preprocessing transformation sequence
+        for every feature in the UNFITTED Spark pipeline
 
+        :param unfit_pipeline: UNFITTED spark pipeline!!
+        """
+        transformations = defaultdict(lambda: [[], None])  # transformations, outputColumn
+
+        for stage in _get_stages(unfit_pipeline):
+            input_cols, output_col = _get_cols(stage, get_input=True), _get_cols(stage,
+                                                                                 get_input=False)
+            if input_cols and output_col:  # make sure it could parse transformer
+                for column in input_cols:
+                    first_column_found = self._find_first_input_by_output(transformations, column)
+                    if first_column_found:  # column is not original
+                        transformations[first_column_found][1] = output_col
+                        transformations[first_column_found][0].append(
+                            _readable_pipeline_stage(stage))
+                    else:
+                        transformations[column][1] = output_col
+                        transformations[column][0].append(_readable_pipeline_stage(stage))
+
+        for column in transformations:
+            param_value = ' -> '.join([column] + transformations[column][0] +
+                                      [transformations[column][1]])
+            self.log_param('Column- ' + column, param_value)
+
+    @check_active
+    def start_timer(self, timer_name):
+        """
+        Start a given timer with the specified
+        timer name, which will be logged when the
+        run is stopped
+
+        :param timer_name: the name to call the timer (will appear in MLFlow UI)
+        """
+        self.timer_name = timer_name
+        self.timer_start_time = time()
+
+        print("Started timer " + timer_name + " at " + str(self.timer_start_time))
+
+    @check_active
+    def log_and_stop_timer(self):
+        """
+        Stop any active timers, and log the
+        time that the timer was active as a parameter
+        :return: total time in ms
+        """
+        if not self.timer_name or not self.timer_start_time:
+            raise Exception("You must create a timer with start_timer(timer_name) before stopping")
+        total_time = (time() - self.timer_start_time) * 1000
+        print("Timer " + self.timer_name + " ran for " + str(total_time) + " ms")
+        self.log_param(self.timer_name, str(total_time) + " ms")
+
+        self.timer_name = None
+        self.timer_start_time = None
+        return total_time
+
+    @check_active
+    def log_evaluator_metrics(self, splice_evaluator):
+        """
+        Takes an Splice evaluator and logs
+        all of the associated metrics with it
+
+        :param splice_evaluator: a Splice evaluator (from
+            splicemachine.ml.utilities package in pysplice)
+
+        :return: retrieved metrics dict
+        """
+        results = splice_evaluator.get_results('dict')
+        for metric in results:
+            self.log_metric(metric, results[metric])
+
+    @check_active
+    def log_model_params(self, pipeline_or_model, stage_index=-1):
+        """
+        Log the parameters of a fitted model or a
+        model part of a fitted pipeline
+        :param pipeline_or_model: fitted pipeline/fitted model
+        :param stage_index
+        """
+
+        if 'pipeline' in str(pipeline_or_model).lower():
+            model = pipeline_or_model.stages[stage_index]
+        else:
+            model = pipeline_or_model
+
+        self.log_param('model', _readable_pipeline_stage(model))
+        verbose_parameters = _parse_string_parameters(model._java_obj.extractParamMap())
+        for param in verbose_parameters:
+            try:
+                value = float(verbose_parameters[param])
+                self.log_metric('Hyperparameter- ' + param.split('-')[0], value)
+            except:
+                self.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
+
+    @check_active
     def terminate(self, create=False, metadata={}):
         """
         Terminate the current run
@@ -311,9 +513,10 @@ class MLManager(MlflowClient):
         if create:
             self.create_new_run(metadata)
 
-    def delete(self):
+    @check_active
+    def delete_active_run(self):
         """
         Delete the current run
         """
         self.delete_run(self.active_run.info.run_uuid)
-
+        self.active_run = None

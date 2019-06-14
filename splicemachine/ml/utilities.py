@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import random
 import time
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import graphviz
 import numpy as np
@@ -105,6 +105,7 @@ class SpliceBinaryClassificationEvaluator(object):
     def get_results(self, output_type='dataframe'):
         """
         Return a dictionary containing evaluated results
+
         :param output_type: either a dataframe or a dict (which to return)
         :return results: computed_metrics (dict) or computed_df (df)
         """
@@ -123,28 +124,27 @@ class SpliceBinaryClassificationEvaluator(object):
                 float(FN)
             ).show()
 
-        computed_metrics = {
-            'TPR': float(TP) / (TP + FN),
-            'SPC': float(TP) / (TP + FN),
-            'PPV': float(TP) / (TP + FP),
-            'NPV': float(TN) / (TN + FN),
-            'FPR': float(FP) / (FP + TN),
-            'FDR': float(FP) / (FP + TP),
-            'FNR': float(FN) / (FN + TP),
-            'ACC': float(TP + TN) / (TP + FN + FP + TN),
-            'F1': float(2 * TP) / (2 * TP + FP + FN),
-            'MCC': float(TP * TN - FP * FN) / np.sqrt(
+        computed_metrics = OrderedDict({
+            'Sensitivity': float(TP) / (TP + FN),
+            'Specificity': float(TN) / (FP + TN),
+            'Precision': float(TP) / (TP + FP),
+            'Negative Predictive Value': float(TN) / (TN + FN),
+            'False Positive Rate': float(FP) / (FP + TN),
+            'False Discovery Rate': float(FP) / (FP + TP),
+            'False Negative Rate': float(FN) / (FN + TP),
+            'Accuracy': float(TP + TN) / (TP + FN + FP + TN),
+            'F1 Score': float(2 * TP) / (2 * TP + FP + FN),
+            'Matthews Correlation Coefficient': float(TP * TN - FP * FN) / np.sqrt(
                 (TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)),
-        }
+        })
 
         if output_type == 'dict':
             return computed_metrics
         else:
 
-            ordered_cols = ['TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC']
-            metrics_row = Row(*ordered_cols)
+            metrics_row = Row(*computed_metrics.keys())
             computed_row = metrics_row(*[float(computed_metrics[i])
-                                         for i in ordered_cols])
+                                         for i in computed_metrics.keys()])
             computed_df = self.spark._wrapped.createDataFrame([computed_row])
             return computed_df
 
