@@ -348,3 +348,10 @@ class PySpliceContext:
         print(sql)
         self.execute(sql)
 
+
+class SpliceMLContext(object):
+    def __init__(self):
+        raise Exception("This class has been deprecated in favor of the PySpliceContext class. "
+                        "the JDBC URL argument in the constructor is now *optional*. Thus, if "
+                        "running on the cloud service, you could do this "
+                        "`splice=PySpliceContext(spark)` to achieve the same result")

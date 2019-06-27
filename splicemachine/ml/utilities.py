@@ -36,21 +36,6 @@ def get_confusion_matrix(spark, TP, TN, FP, FN):
     return confusion_matrix
 
 
-def experiment_maker(experiment_id):
-    ERROR = """
-    This function has been deprecated in favor of the splicemachine.ml.management.MLManager class
-    """
-    raise Exception(ERROR)
-
-
-class ModelEvaluator():
-    def __init__(self, *args, **kwargs):
-        ERROR = """
-        This class has been renamed to SpliceBinaryClassificationEvaluator
-        """
-        raise Exception(ERROR)
-
-
 class SpliceBinaryClassificationEvaluator(object):
     """
     A Function that provides an easy way to evaluate models once, or over random iterations
