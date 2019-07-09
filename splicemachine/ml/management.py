@@ -114,7 +114,7 @@ class MLManager(MlflowClient):
         mlflow.set_tracking_uri(server_endpoint)
         print("Tracking Model Metadata on MLFlow Server @ " + mlflow.get_tracking_uri())
 
-        if not mlflow.get_tracking_uri() == server_endpoint
+        if not mlflow.get_tracking_uri() == server_endpoint:
             Warning("MLManager doesn't seem to be communicating with the right server endpoint."
                     "Try instantiating this class again!")
 
