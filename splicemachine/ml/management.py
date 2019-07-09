@@ -1,9 +1,7 @@
 from collections import defaultdict
 from time import time, sleep
 import os
-from hashlib import md5
 import requests
-import random
 
 import mlflow
 import mlflow.h2o
@@ -12,17 +10,15 @@ import mlflow.spark
 from mlflow.tracking import MlflowClient
 
 
-TESTING = True
-
-def get_pod_uri(pod, port, pod_count=0):
+def get_pod_uri(pod, port, pod_count=0, testing=False):
     """
     Get address of MLFlow Container (this is
     for DC/OS (Mesosphere) setup, not Kubernetes
     """
-    
-    if TESTING:
-        return "http://{pod}:{port}".format(pod=pod, port=port) # mlflow docker container endpoint
-    
+
+    if testing:
+        return "http://{pod}:{port}".format(pod=pod, port=port)  # mlflow docker container endpoint
+
     try:
         return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format \
             (pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
@@ -93,7 +89,8 @@ def _get_cols(transformer, get_input=True):
     elif get_input and hasattr(transformer, col_type + 'Cols'):  # multiple transformer n:1 (vec)
         return getattr(transformer, col_type + "Cols")
     else:
-        print("Warning: Transformer " + str(transformer) + " could not be parsed. If this is a model, this is expected.")
+        print(
+            "Warning: Transformer " + str(transformer) + " could not be parsed. If this is a model, this is expected.")
 
 
 class MLManager(MlflowClient):
@@ -101,24 +98,33 @@ class MLManager(MlflowClient):
     A class for managing your MLFlow Runs/Experiments
     """
 
-    def __init__(self, _tracking_uri=get_pod_uri("mlflow", "5001")):
-        mlflow.set_tracking_uri(_tracking_uri)
+    def __init__(self, tracking_uri=None, _testing=False):
+        """
+        Tracking URI: the URL for
+        :param tracking_uri: MLFlow Tracking Server Endpoint.
+            If http based, this must start with http://, or it
+            will be assumed as a file store. Defaults to
+            MLFlow DC/OS Pod
+        """
+        if not tracking_uri:
+            server_endpoint = get_pod_uri("mlflow", "5001", testing=_testing)
+        else:
+            server_endpoint = tracking_uri
+
+        mlflow.set_tracking_uri(server_endpoint)
         print("Tracking Model Metadata on MLFlow Server @ " + mlflow.get_tracking_uri())
 
-        if not mlflow.get_tracking_uri() == _tracking_uri:
+        if not mlflow.get_tracking_uri() == server_endpoint
             Warning("MLManager doesn't seem to be communicating with the right server endpoint."
                     "Try instantiating this class again!")
 
-        MlflowClient.__init__(self, _tracking_uri)
+        MlflowClient.__init__(self, server_endpoint)  # initialize super class
 
         self.active_run = None
         self.active_experiment = None
 
         self.timer_start_time = None  # for timer
         self.timer_name = None
-        
-        self._vars = {} # for parametrized runs
-        
 
     @property
     def current_run_id(self):
@@ -144,12 +150,13 @@ class MLManager(MlflowClient):
 
     def __str__(self):
         return self.__repr__()
-    
+
     def check_active(func):
         """
         Decorator to make sure that run/experiment
         is active
         """
+
         def wrapped(self, *args, **kwargs):
             if not self.active_experiment:
                 raise Exception("Please either use set_active_experiment or create_experiment "
@@ -159,9 +166,30 @@ class MLManager(MlflowClient):
                                 "run before running this function")
             else:
                 return func(self, *args, **kwargs)
+
         return wrapped
-    
-    def create_experiment(self, experiment_name, reset=False):
+
+    def lp(self, *args, **kwargs):
+        """
+        Shortcut function for logging
+        parameters
+        """
+        return self.log_param(*args, **kwargs)
+
+    def lm(self, *args, **kwargs):
+        """
+        Shortcut function for logging
+        metrics
+        """
+        return self.log_metric(*args, **kwargs)
+
+    def st(self, *args, **kwargs):
+        """
+        Shortcut function for setting tags
+        """
+        return self.set_tag(*args, **kwargs)
+
+    def create_experiment(self, experiment_name, reset=False, set_active=True):
         """
         Create a new experiment. If the experiment
         already exists, it will be set to active experiment.
@@ -171,6 +199,7 @@ class MLManager(MlflowClient):
         experiment will be deleted
         :param experiment_name: (str) the name of the experiment to create
         :param reset: (bool) whether or not to overwrite the existing run
+        :param set_active: (bool) whether or not to set
         """
         experiment = self.get_experiment_by_name(experiment_name)
         if experiment and experiment.lifecycle_stage == 'active':
@@ -191,9 +220,10 @@ class MLManager(MlflowClient):
             if experiment and experiment.lifecycle_stage == 'deleted':
                 raise Exception("Experiment {} is deleted. Please choose a new name".format(experiment_name))
             experiment_id = super(MLManager, self).create_experiment(experiment_name)
-            print("Created experiment w/ id=" + str(experiment_id))
-            sleep(2) # sleep for two seconds to allow rest API to be hit
+            print("Created experiment with id=" + str(experiment_id))
+            sleep(2)  # sleep for two seconds to allow rest API to be hit
             self.active_experiment = self.get_experiment_by_name(experiment_name)
+            print("Set experiment id=" + str(experiment_id) + " to the active experiment")
 
     def set_active_experiment(self, experiment_name):
         """
@@ -209,20 +239,7 @@ class MLManager(MlflowClient):
         elif isinstance(experiment_name, int) or isinstance(experiment_name, long):
             self.active_experiment = self.get_experiment(experiment_name)
 
-    def create_new_run(self, run_metadata={}):
-        """
-        Create a new run in the active experiment and set it to be active
-        :param metadata: a dictionary containing metadata about the current run.
-            For example:
-            {
-                "user_id": "john",
-                "team": "product development"
-            }
-        """
-
-        self.create_run(run_metadata)
-
-    def create_run(self, run_metadata={}):
+    def start_run(self, run_metadata={}):
         """
         Create a new run in the active experiment and set it to be active
         :param metadata: a dictionary containing metadata about the current run.
@@ -241,8 +258,8 @@ class MLManager(MlflowClient):
 
         for key in run_metadata:
             self.set_tag(key, run_metadata[key])
-    
-    def get_run(run_id):
+
+    def get_run(self, run_id):
         """
         Retrieve a run (and its data) by its run id
         :param run_id: the run id to retrieve
@@ -251,7 +268,7 @@ class MLManager(MlflowClient):
             return super(MLManager, self).get_run(run_id)
         except:
             raise Exception("The run id {run_id} does not exist. Please check the id".format(run_id=run_id))
-            
+
     @check_active
     def reset_run(self):
         """
@@ -260,7 +277,6 @@ class MLManager(MlflowClient):
         self.delete_run(self.active_run.info.run_uuid)
         self.create_new_run()
 
-    @check_active
     def set_active_run(self, run_id):
         """
         Set the active run to a previous run (allows you to log metadata for completed run)
@@ -270,14 +286,14 @@ class MLManager(MlflowClient):
 
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
-    
+
     @check_active
     def log_param(self, *args, **kwargs):
         """
         Log a parameter for the active run
         """
         self.__log_param(*args, **kwargs)
-    
+
     @check_active
     def log_params(self, params):
         """
@@ -289,14 +305,14 @@ class MLManager(MlflowClient):
 
     def __set_tag(self, *args, **kwargs):
         super(MLManager, self).set_tag(self.active_run.info.run_uuid, *args, **kwargs)
-    
+
     @check_active
     def set_tag(self, *args, **kwargs):
         """
         Set a tag for the active run
         """
         self.__set_tag(*args, **kwargs)
-    
+
     @check_active
     def set_tags(self, tags):
         """
@@ -308,14 +324,14 @@ class MLManager(MlflowClient):
 
     def __log_metric(self, *args, **kwargs):
         super(MLManager, self).log_metric(self.active_run.info.run_uuid, *args, **kwargs)
-    
+
     @check_active
     def log_metric(self, *args, **kwargs):
         """
         Log a metric for the active run
         """
         self.__log_metric(*args, **kwargs)
-    
+
     @check_active
     def log_metrics(self, metrics):
         """
@@ -327,8 +343,7 @@ class MLManager(MlflowClient):
 
     def __log_artifact(self, *args, **kwargs):
         super(MLManager, self).log_artifact(self.active_run.info.run_uuid, *args, **kwargs)
-    
-    
+
     def log_artifact(self, *args, **kwargs):
         """
         Log an artifact for the active run
@@ -337,14 +352,14 @@ class MLManager(MlflowClient):
 
     def __log_artifacts(self, *args, **kwargs):
         super(MLManager, self).log_artifacts(self.active_run.info.run_uuid, *args, **kwargs)
-    
+
     @check_active
     def log_artifacts(self, *args, **kwargs):
         """
         Log artifacts for the active run
         """
         self.__log_artifacts(*args, **kwargs)
-    
+
     @check_active
     def log_model(self, model, module):
         """
@@ -359,7 +374,7 @@ class MLManager(MlflowClient):
 
         with mlflow.start_run(run_id=self.active_run.info.run_uuid):
             module.log_model(model, "spark_model")
-    
+
     @check_active
     def log_spark_model(self, model):
         """
@@ -367,8 +382,8 @@ class MLManager(MlflowClient):
         :param model: the fitted pipeline to log
         """
         raise Exception("Error! This has been renamed to log_spark_pipeline. "
-              "This function, log_spark_model will be removed in the near future")
-        
+                        "This function, log_spark_model will be removed in the near future")
+
     @check_active
     def log_spark_pipeline(self, pipeline):
         """
@@ -376,7 +391,7 @@ class MLManager(MlflowClient):
         :param pipeline: the fitted pipeline to log
         """
         self.log_model(pipeline, mlflow.spark)
-        
+
     @check_active
     def log_spark_pipelines(self, pipelines):
         """
@@ -384,14 +399,14 @@ class MLManager(MlflowClient):
         :param models: a list of spark models (fitted) to log
         """
         for pipeline in pipelines:
-            self.log_spark_pipeline(model)
+            self.log_spark_pipeline(pipeline)
 
     def __log_batch(self, *args, **kwargs):
         """
         Log batch metrics, parameters, tags
         """
         super(MLManager, self).log_batch(self.active_run.info.run_uuid, *args, **kwargs)
-   
+
     @check_active
     def log_batch(self, metrics, parameters, tags):
         """
@@ -401,7 +416,7 @@ class MLManager(MlflowClient):
         :param tags: a list of tuples mapping tags to tag values
         """
         self.__log_batch(metrics, parameters, tags)
-    
+
     @check_active
     def log_pipeline_stages(self, pipeline):
         """
@@ -461,7 +476,7 @@ class MLManager(MlflowClient):
             param_value = ' -> '.join([column] + transformations[column][0] +
                                       [transformations[column][1]])
             self.log_param('Column- ' + column, param_value)
-    
+
     @check_active
     def start_timer(self, timer_name):
         """
@@ -475,7 +490,7 @@ class MLManager(MlflowClient):
         self.timer_start_time = time()
 
         print("Started timer " + timer_name + " at " + str(self.timer_start_time))
-    
+
     @check_active
     def log_and_stop_timer(self):
         """
@@ -492,8 +507,7 @@ class MLManager(MlflowClient):
         self.timer_name = None
         self.timer_start_time = None
         return total_time
-    
-    
+
     @check_active
     def log_evaluator_metrics(self, splice_evaluator):
         """
@@ -508,7 +522,7 @@ class MLManager(MlflowClient):
         results = splice_evaluator.get_results('dict')
         for metric in results:
             self.log_metric(metric, results[metric])
-    
+
     @check_active
     def log_model_params(self, pipeline_or_model, stage_index=-1):
         """
@@ -525,16 +539,15 @@ class MLManager(MlflowClient):
 
         self.log_param('model', _readable_pipeline_stage(model))
         verbose_parameters = _parse_string_parameters(model._java_obj.extractParamMap())
-        parameters = {}
         for param in verbose_parameters:
             try:
                 value = float(verbose_parameters[param])
                 self.log_metric('Hyperparameter- ' + param.split('-')[0], value)
             except:
                 self.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
-    
+
     @check_active
-    def terminate(self, create=False, metadata={}):
+    def end_run(self, create=False, metadata={}):
         """
         Terminate the current run
         """
@@ -542,7 +555,7 @@ class MLManager(MlflowClient):
 
         if create:
             self.create_new_run(metadata)
-    
+
     @check_active
     def delete_active_run(self):
         """
@@ -550,8 +563,8 @@ class MLManager(MlflowClient):
         """
         self.delete_run(self.active_run.info.run_uuid)
         self.active_run = None
-        
-    def load_model(run_id, module=mlflow.spark):
+
+    def load_model(self, run_id, module=mlflow.spark):
         """
         Download a model from S3 
         and load it into Spark
@@ -562,33 +575,8 @@ class MLManager(MlflowClient):
         run = self.get_run(run_id)
         artifact_location = run.info.artifact_uri
         return module.load_model(artifact_location + "/spark")
-    
-    @check_active
-    def set_vars(self, vars_dictionary):
-        """
-        Set variables for each variable
-        in dictionary. This is for parametrized
-        runs. If you use this option, all of
-        the current variables will be replaced
-        with the ones specified in the dictionary
-        
-        :param vars_dictionary: dictionary of variables
-            mapped to their values. e.g.
-            {
-                "a": "b",
-                "c": "d"
-            }
-        
-        """
-        self._vars = vars_dictionary
-    
-    def get_vars(self):
-        """
-        Get all of the current variables
-        
-        """
-    
-    def deploy_run_sagemaker(self, run_id, app_name, 
+
+    def deploy_run_sagemaker(self, run_id, app_name,
                              region='us-east-2', instance_type='ml.m4.xlarge',
                              instance_count=1, deployment_mode='create'):
         """
@@ -610,11 +598,11 @@ class MLManager(MlflowClient):
         """
         # get run from mlflow
         print("Processing...")
-        sleep(3) # give the mlflow server time to register the artifact, if necessary
-        
+        sleep(3)  # give the mlflow server time to register the artifact, if necessary
+
         run = self.get_run(run_id)
         experiment_id = run._info.experiment_id
-            
+
         supported_aws_regions = ['us-east-2', 'us-west-1', 'us-west-2', 'eu-central-1']
         supported_instance_types = ['ml.m4.xlarge']
         supported_deployment_modes = ['create', 'replace', 'add']
@@ -625,14 +613,14 @@ class MLManager(MlflowClient):
             raise Exception("Instance type must be in list: " + str(instance_type))
         if not deployment_mode in supported_deployment_modes:
             raise Exception("Deployment mode must be in list: " + str(supported_deployment_modes))
-            
+
         request_payload = {
             'handler': 'deploy', 'experiment_id': experiment_id, 'run_id': run_id,
             'postfix': 'spark_model', 'region': region,
             'instance_type': instance_type, 'instance_count': instance_count,
             'deployment_mode': deployment_mode, 'app_name': app_name,
         }
-        
+
         request = requests.post(get_pod_uri('mlflow', '5002') + "/deploy", json=request_payload)
         if request.ok:
             print("Your Job has been submitted. View its status on port 5003 (Job Dashboard)")
@@ -642,11 +630,11 @@ class MLManager(MlflowClient):
             print("Error! An error occured while submitting your job")
             print(request.text)
             return request.text
-    
+
     @check_active
-    def deploy_active_run_sagemaker(self, app_name, 
-                             region='us-east-2', instance_type='ml.m4.xlarge',
-                             instance_count=1, deployment_mode='create'):
+    def deploy_active_run_sagemaker(self, app_name,
+                                    region='us-east-2', instance_type='ml.m4.xlarge',
+                                    instance_count=1, deployment_mode='create'):
         """
         Queue Job to deploy the active run to sagemaker
         
@@ -664,7 +652,5 @@ class MLManager(MlflowClient):
             add=add the specified model to a prexisting application (not recommended)
         """
         return self.deploy_run_sagemaker(self.active_run.info.run_uuid, app_name,
-                                        region=region, instance_type=instance_type,
-                                        instance_count=instance_count, deployment_mode=deployment_mode)
-        
-        
+                                         region=region, instance_type=instance_type,
+                                         instance_count=instance_count, deployment_mode=deployment_mode)
