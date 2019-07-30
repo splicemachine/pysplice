@@ -2,6 +2,7 @@ from collections import defaultdict
 from time import time, sleep
 import os
 import requests
+import numbers
 
 import mlflow
 import mlflow.h2o
@@ -277,11 +278,12 @@ class MLManager(MlflowClient):
         self.delete_run(self.active_run.info.run_uuid)
         self.create_new_run()
 
-    def set_active_run(self, run_id):
+    def set_active_run(self, run):
         """
         Set the active run to a previous run (allows you to log metadata for completed run)
-        :param run_id: the run UUID for the previous run
+        :param run: the run object/id for the previous run
         """
+        if isinstance(run, int) or isinstance(run, long):
         self.active_run = self.get_run(run_id)
 
     def __log_param(self, *args, **kwargs):
