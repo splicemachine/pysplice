@@ -1,12 +1,12 @@
+import os
 from collections import defaultdict
 from time import time, sleep
-import os
-import requests
 
 import mlflow
 import mlflow.h2o
 import mlflow.sklearn
 import mlflow.spark
+import requests
 from mlflow.tracking import MlflowClient
 
 
@@ -26,6 +26,23 @@ def get_pod_uri(pod, port, pod_count=0, testing=False):
     except KeyError as e:
         raise KeyError(
             "Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+
+
+def _get_user():
+    """
+    Get the current logged in user to
+    Zeppelin
+
+    :return: (str) name of the logged in user
+    """
+    try:
+        uname = os.environ.get('USERNAME')  # Debugging ONLY!
+        if uname:
+            return uname
+        return z.getInterpreterContext().getAuthenticationInfo().getUser()
+    except NameError:
+        raise Exception("Running MLManager outside of Splice Machine Cloud Zeppelin "
+                        "is currently unsupported")
 
 
 def _readable_pipeline_stage(pipeline_stage):
@@ -80,7 +97,8 @@ def _get_cols(transformer, get_input=True):
     if hasattr(transformer, 'get' + col_type + 'Col'):  # single transformer 1:1 (regular)
         col_function = transformer.getInputCol if get_input else transformer.getOutputCol
         return [
-            col_function()] if get_input else col_function()  # so we don't need to change code for a single transformer
+            col_function()] if get_input else col_function()  # so we don't need to change code for
+        # a single transformer
     elif hasattr(transformer, col_type + "Col"):  # single transformer 1:1 (vec)
         return getattr(transformer, col_type + "Col")
     elif get_input and hasattr(transformer,
@@ -90,7 +108,8 @@ def _get_cols(transformer, get_input=True):
         return getattr(transformer, col_type + "Cols")
     else:
         print(
-            "Warning: Transformer " + str(transformer) + " could not be parsed. If this is a model, this is expected.")
+            "Warning: Transformer " + str(
+                transformer) + " could not be parsed. If this is a model, this is expected.")
 
 
 class MLManager(MlflowClient):
@@ -189,7 +208,7 @@ class MLManager(MlflowClient):
         """
         return self.set_tag(*args, **kwargs)
 
-    def create_experiment(self, experiment_name, reset=False, set_active=True):
+    def create_experiment(self, experiment_name, reset=False):
         """
         Create a new experiment. If the experiment
         already exists, it will be set to active experiment.
@@ -199,7 +218,6 @@ class MLManager(MlflowClient):
         experiment will be deleted
         :param experiment_name: (str) the name of the experiment to create
         :param reset: (bool) whether or not to overwrite the existing run
-        :param set_active: (bool) whether or not to set
         """
         experiment = self.get_experiment_by_name(experiment_name)
         if experiment and experiment.lifecycle_stage == 'active':
@@ -209,7 +227,8 @@ class MLManager(MlflowClient):
             print("Active experiment has id " + str(experiment.experiment_id))
             if reset:
                 print(
-                    "Keyword argument \"reset\" was set to True. Overwriting experiment and its associated runs...")
+                    "Keyword argument \"reset\" was set to True. "
+                    "Overwriting experiment and its associated runs...")
                 experiment_id = self.active_experiment.experiment_id
                 associated_runs = self.list_run_infos(experiment_id)
                 for run in associated_runs:
@@ -218,7 +237,8 @@ class MLManager(MlflowClient):
                 print("Successfully overwrote experiment")
         else:
             if experiment and experiment.lifecycle_stage == 'deleted':
-                raise Exception("Experiment {} is deleted. Please choose a new name".format(experiment_name))
+                raise Exception(
+                    "Experiment {} is deleted. Please choose a new name".format(experiment_name))
             experiment_id = super(MLManager, self).create_experiment(experiment_name)
             print("Created experiment with id=" + str(experiment_id))
             sleep(2)  # sleep for two seconds to allow rest API to be hit
@@ -239,25 +259,42 @@ class MLManager(MlflowClient):
         elif isinstance(experiment_name, int) or isinstance(experiment_name, long):
             self.active_experiment = self.get_experiment(experiment_name)
 
-    def start_run(self, run_metadata={}):
+    def set_active_run(self, run_id):
+        """
+        Set the active run to a previous run (allows you to log metadata for completed run)
+        :param run_id: the run UUID for the previous run
+        """
+        self.active_run = self.get_run(run_id)
+
+    def start_run(self, tags={}, run_name=None, experiment_id=None):
         """
         Create a new run in the active experiment and set it to be active
-        :param metadata: a dictionary containing metadata about the current run.
+        :param tags: a dictionary containing metadata about the current run.
             For example:
-            {
-                "user_id": "john",
-                "team": "product development"
-            }
+                {
+                    'team': 'pd',
+                    'purpose': 'r&d'
+                }
+        :param run_name: an optional name for the run to show up in the MLFlow UI
+        :param experiment_id: if this is specified, the experiment id of this
+            will override the active run.
+
         """
-        if not self.active_experiment:
-            raise Exception(
-                "You must set an experiment before you can create a run."
-                " Use MLFlowManager.set_active_experiment")
+        if experiment_id:
+            new_run_exp_id = experiment_id
+            self.set_active_experiment(experiment_id)
+        elif self.active_experiment:
+            new_run_exp_id = self.active_experiment.experiment_id
+        else:
+            new_run_exp_id = 0
+            self.set_active_experiment(experiment_id)
 
-        self.active_run = super(MLManager, self).create_run(self.active_experiment.experiment_id)
+        tags['user'] = _get_user()
 
-        for key in run_metadata:
-            self.set_tag(key, run_metadata[key])
+        if run_name:
+            tags['run_name'] = run_name
+
+        self.active_run = super(MLManager, self).create_run(new_run_exp_id, tags=tags)
 
     def get_run(self, run_id):
         """
@@ -267,7 +304,8 @@ class MLManager(MlflowClient):
         try:
             return super(MLManager, self).get_run(run_id)
         except:
-            raise Exception("The run id {run_id} does not exist. Please check the id".format(run_id=run_id))
+            raise Exception(
+                "The run id {run_id} does not exist. Please check the id".format(run_id=run_id))
 
     @check_active
     def reset_run(self):
@@ -276,13 +314,6 @@ class MLManager(MlflowClient):
         """
         self.delete_run(self.active_run.info.run_uuid)
         self.create_new_run()
-
-    def set_active_run(self, run_id):
-        """
-        Set the active run to a previous run (allows you to log metadata for completed run)
-        :param run_id: the run UUID for the previous run
-        """
-        self.active_run = self.get_run(run_id)
 
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
@@ -361,11 +392,12 @@ class MLManager(MlflowClient):
         self.__log_artifacts(*args, **kwargs)
 
     @check_active
-    def log_model(self, model, module):
+    def log_model(self, model, module, model_dir='model'):
         """
         Log a model for the active run
         :param model: the fitted model/pipeline (in spark) to log
         :param module: the module that this is part of (mlflow.spark, mlflow.sklearn etc)
+        :param model_dir: the subdirectory in which the PMML code will be stored.
         """
         try:
             mlflow.end_run()
@@ -373,7 +405,8 @@ class MLManager(MlflowClient):
             pass
 
         with mlflow.start_run(run_id=self.active_run.info.run_uuid):
-            module.log_model(model, "spark_model")
+            self.set_tag('model_dir', model_dir)  # Read by bobby, so don't change names
+            module.log_model(model, "model_dir")
 
     @check_active
     def log_spark_model(self, model):
@@ -385,21 +418,23 @@ class MLManager(MlflowClient):
                         "This function, log_spark_model will be removed in the near future")
 
     @check_active
-    def log_spark_pipeline(self, pipeline):
+    def log_spark_pipeline(self, pipeline, model_dir='model'):
         """
         Log a spark pipeline 
         :param pipeline: the fitted pipeline to log
+        :param model_dir: the subdirectory in which the PMML code will be stored.
         """
-        self.log_model(pipeline, mlflow.spark)
+        self.log_model(pipeline, mlflow.spark, model_dir=model_dir)
 
     @check_active
-    def log_spark_pipelines(self, pipelines):
+    def log_spark_pipelines(self, pipelines, model_dir='model'):
         """
         Log a list of spark models in order
-        :param models: a list of spark models (fitted) to log
+        :param pipelines: a list of fitted spark pipelines to log
+        :param model_dir: the subdirectory in which the PMML code will be stored.
         """
         for pipeline in pipelines:
-            self.log_spark_pipeline(pipeline)
+            self.log_spark_pipeline(pipeline, model_dir=model_dir)
 
     def __log_batch(self, *args, **kwargs):
         """
@@ -653,4 +688,5 @@ class MLManager(MlflowClient):
         """
         return self.deploy_run_sagemaker(self.active_run.info.run_uuid, app_name,
                                          region=region, instance_type=instance_type,
-                                         instance_count=instance_count, deployment_mode=deployment_mode)
+                                         instance_count=instance_count,
+                                         deployment_mode=deployment_mode)
