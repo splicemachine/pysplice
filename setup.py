@@ -19,11 +19,8 @@ from setuptools import setup, find_packages
 dependencies = [
     "py4j==0.10.7",
     "pytest==3.6.1",
-    "six==1.11.0",
     "mlflow==1.1.0",
     "graphviz==0.8.4",
-    "numpy==1.15.0",
-    "pandas==0.22.0"
 ]
 setup(
     name="splicemachine",
