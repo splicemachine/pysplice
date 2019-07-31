@@ -406,7 +406,7 @@ class MLManager(MlflowClient):
 
         with mlflow.start_run(run_id=self.active_run.info.run_uuid):
             self.set_tag('model_dir', model_dir)  # Read by bobby, so don't change names
-            module.log_model(model, "model_dir")
+            module.log_model(model, model_dir)
 
     @check_active
     def log_spark_model(self, model):
