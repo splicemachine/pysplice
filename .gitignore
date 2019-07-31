@@ -1,2 +1,7 @@
 /.idea
 /.vscode
+.DS_Store
+splicemachine/.DS_Store
+*.pyc
+*.pyo
+**/__pycache__

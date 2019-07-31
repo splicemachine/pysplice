@@ -1,4 +1,4 @@
-import os
+from os import environ as env_vars
 from collections import defaultdict
 from time import time, sleep
 
@@ -21,7 +21,7 @@ def get_pod_uri(pod, port, pod_count=0, testing=False):
 
     try:
         return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format \
-            (pod=pod, pod_count=pod_count, framework=os.environ['FRAMEWORK_NAME'], port=port)
+            (pod=pod, pod_count=pod_count, framework=env_vars['FRAMEWORK_NAME'], port=port)
         # mlflow pod in mesos endpoint (in production)
     except KeyError as e:
         raise KeyError(
@@ -36,7 +36,7 @@ def _get_user():
     :return: (str) name of the logged in user
     """
     try:
-        uname = os.environ.get('USERNAME')  # Debugging ONLY!
+        uname = env_vars['USERNAME']  # Debugging ONLY!
         if uname:
             return uname
         return z.getInterpreterContext().getAuthenticationInfo().getUser()
