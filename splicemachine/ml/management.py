@@ -266,7 +266,7 @@ class MLManager(MlflowClient):
         """
         self.active_run = self.get_run(run_id)
 
-    def start_run(self, tags={}, run_name=None, experiment_id=None):
+    def start_run(self, tags=None, run_name=None, experiment_id=None):
         """
         Create a new run in the active experiment and set it to be active
         :param tags: a dictionary containing metadata about the current run.
@@ -288,6 +288,9 @@ class MLManager(MlflowClient):
         else:
             new_run_exp_id = 0
             self.set_active_experiment(experiment_id)
+
+        if not tags:
+            tags = {}
 
         tags['user'] = _get_user()
 
