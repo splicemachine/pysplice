@@ -1,5 +1,5 @@
-from os import environ as env_vars
 from collections import defaultdict
+from os import environ as env_vars
 from time import time, sleep
 
 import mlflow
@@ -287,15 +287,12 @@ class MLManager(MlflowClient):
             new_run_exp_id = self.active_experiment.experiment_id
         else:
             new_run_exp_id = 0
-            self.set_active_experiment(experiment_id)
+            self.set_active_experiment(new_run_exp_id)
 
         if not tags:
             tags = {}
 
-        tags['user'] = _get_user()
-
-        if run_name:
-            tags['run_name'] = run_name
+        tags['mlflow.user'] = _get_user()
 
         self.active_run = super(MLManager, self).create_run(new_run_exp_id, tags=tags)
 
