@@ -321,7 +321,7 @@ class MLManager(MlflowClient):
         Reset the current run (deletes logged parameters, metrics, artifacts etc.)
         """
         self.delete_run(self.active_run.info.run_uuid)
-        self.
+        self.start_run()
 
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
