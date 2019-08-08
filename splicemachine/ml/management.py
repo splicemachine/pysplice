@@ -1,13 +1,15 @@
 from collections import defaultdict
 from os import environ as env_vars
+from sys import getsizeof
 from time import time, sleep
 
 import mlflow
-import mlflow.h2o
-import mlflow.sklearn
 import mlflow.spark
 import requests
 from mlflow.tracking import MlflowClient
+from py4j.java_gateway import java_import
+from pyspark.ml import PipelineModel
+from pyspark.ml.base import Model as SparkModel
 
 
 def get_pod_uri(pod, port, pod_count=0, testing=False):
@@ -117,9 +119,14 @@ class MLManager(MlflowClient):
     A class for managing your MLFlow Runs/Experiments
     """
 
-    def __init__(self, tracking_uri=None, _testing=False):
+    ARTIFACT_INSERT_SQL = 'INSERT INTO ARTIFACTS (run_uuid, path, "binary") VALUES (?, ?, ?)'
+    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ARTIFACTS WHERE name=\'{name}\' ' \
+                             'AND run_uuid=\'{runid}\''
+
+    def __init__(self, splice_context, tracking_uri=None, _testing=False):
         """
         Tracking URI: the URL for
+        :param splice_context: (PySpliceContext) the Python Native Spark Datasource
         :param tracking_uri: MLFlow Tracking Server Endpoint.
             If http based, this must start with http://, or it
             will be assumed as a file store. Defaults to
@@ -138,7 +145,8 @@ class MLManager(MlflowClient):
                     "Try instantiating this class again!")
 
         MlflowClient.__init__(self, server_endpoint)  # initialize super class
-
+        self.splice_context = splice_context
+        java_import(splice_context.jvm, "java.io.{BinaryOutputStream, ObjectOutputStream}")
         self.active_run = None
         self.active_experiment = None
 
@@ -266,7 +274,7 @@ class MLManager(MlflowClient):
         """
         self.active_run = self.get_run(run_id)
 
-    def start_run(self, tags=None, run_name=None, experiment_id=None):
+    def start_run(self, tags=None, experiment_id=None):
         """
         Create a new run in the active experiment and set it to be active
         :param tags: a dictionary containing metadata about the current run.
@@ -313,7 +321,7 @@ class MLManager(MlflowClient):
         Reset the current run (deletes logged parameters, metrics, artifacts etc.)
         """
         self.delete_run(self.active_run.info.run_uuid)
-        self.create_new_run()
+        self.
 
     def __log_param(self, *args, **kwargs):
         super(MLManager, self).log_param(self.active_run.info.run_uuid, *args, **kwargs)
@@ -372,69 +380,89 @@ class MLManager(MlflowClient):
         for metric in metrics:
             self.log_metric(*metric)
 
-    def __log_artifact(self, *args, **kwargs):
-        super(MLManager, self).log_artifact(self.active_run.info.run_uuid, *args, **kwargs)
-
-    def log_artifact(self, *args, **kwargs):
+    @check_active
+    def log_artifact(self, file_name, name):
         """
         Log an artifact for the active run
+        :param file_name: (str) the name of the file name to log
+        :param name: (str) the name of the run relative name to store the model under
         """
-        self.__log_artifact(*args, **kwargs)
+        with open(file_name, 'rb') as artifact:
+            byte_stream = bytearray(bytes(artifact.read()))
 
-    def __log_artifacts(self, *args, **kwargs):
-        super(MLManager, self).log_artifacts(self.active_run.info.run_uuid, *args, **kwargs)
+        self._insert_artifact(name, byte_stream)
 
     @check_active
-    def log_artifacts(self, *args, **kwargs):
+    def log_artifacts(self, file_names, names):
         """
         Log artifacts for the active run
+        :param file_names: (list) list of file names to retrieve
+        :param names: (list) corresponding list of names
+            for each artifact in file_names
         """
-        self.__log_artifacts(*args, **kwargs)
+        for file_name, name in zip(file_names, names):
+            self.log_artifact(file_name, name)
 
     @check_active
-    def log_model(self, model, module, model_dir='model'):
+    def log_spark_model(self, model, name='model'):
         """
-        Log a model for the active run
-        :param model: the fitted model/pipeline (in spark) to log
-        :param module: the module that this is part of (mlflow.spark, mlflow.sklearn etc)
-        :param model_dir: the subdirectory in which the PMML code will be stored.
+        Log a fitted spark pipeline or model
+        :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline to store
+            with the current run
+        :param name: (str) the run relative name to store the model under
         """
-        try:
-            mlflow.end_run()
-        except:
-            pass
+        jvm = self.splice_context.jvm
 
-        with mlflow.start_run(run_id=self.active_run.info.run_uuid):
-            self.set_tag('model_dir', model_dir)  # Read by bobby, so don't change names
-            module.log_model(model, model_dir)
+        if self._is_spark_model(model):
+            model = PipelineModel(stages=[model])
 
-    @check_active
-    def log_spark_model(self, model):
-        """
-        Log a spark pipeline
-        :param model: the fitted pipeline to log
-        """
-        raise Exception("Error! This has been renamed to log_spark_pipeline. "
-                        "This function, log_spark_model will be removed in the near future")
+        baos = jvm.java.io.ByteArrayOutputStream()
+        oos = jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model._to_java())
+        oos.flush()
+        oos.close()
 
-    @check_active
-    def log_spark_pipeline(self, pipeline, model_dir='model'):
-        """
-        Log a spark pipeline 
-        :param pipeline: the fitted pipeline to log
-        :param model_dir: the subdirectory in which the PMML code will be stored.
-        """
-        self.log_model(pipeline, mlflow.spark, model_dir=model_dir)
+        self._insert_artifact(name, baos.toByteArray())
 
-    @check_active
-    def log_spark_pipelines(self, pipelines, model_dir='model'):
+    @staticmethod
+    def _is_spark_model(spark_object):
         """
-        Log a list of spark models in order
-        :param pipelines: a list of fitted spark pipelines to log
-        :param model_dir: the subdirectory in which the PMML code will be stored.
+        Returns whether or not the given
+        object is a spark pipeline. If it
+        is a model, it will return True, if it is a
+        pipeline model is will return False.
+        Otherwise, it will throw an exception
+
+        :param spark_object: (Model) Spark object to check
+        :return: (bool) whether or not the object is a model
+        :exception: (Exception) throws an error if it is not either
         """
-        for pipeline in pipelines:
-            self.log_spark_pipeline(pipeline, model_dir=model_dir)
+        if isinstance(spark_object, PipelineModel):
+            return False
+
+        if isinstance(spark_object, SparkModel):
+            return True
+
+        raise Exception("The model supplied does not appear to be a Spark Model!")
+
+    def _insert_artifact(self, name, byte_array):
+        """
+        :param name: (str) the path to store the binary
+            under (with respect to the current run)
+        :param byte_array: (byte[]) Java byte array
+        """
+        db_connection = self.splice_context.getConnection()
+        print("Saving binary artifact of size: {} KB to Splice Machine DB".format(
+            getsizeof(byte_array) / 1000.0)
+        )
+        prepared_statement = db_connection.prepareStatement(self.ARTIFACT_INSERT_SQL)
+        prepared_statement.setString(1, self.current_run_id)  # set run UUID
+        prepared_statement.setString(2, name)
+        binary_input_stream = self.splice_context.jvm.ByteArrayInputStream(byte_array)
+        prepared_statement.setBinaryStream(3, binary_input_stream)  # set BLOB
+
+        prepared_statement.execute()
+        prepared_statement.close()
 
     def __log_batch(self, *args, **kwargs):
         """
@@ -589,7 +617,7 @@ class MLManager(MlflowClient):
         self.active_run = None
 
         if create:
-            self.create_new_run(metadata)
+            self.start_run(metadata)
 
     @check_active
     def delete_active_run(self):
@@ -599,20 +627,66 @@ class MLManager(MlflowClient):
         self.delete_run(self.active_run.info.run_uuid)
         self.active_run = None
 
-    def load_model(self, run_id, module=mlflow.spark):
+    def retrieve_artifact_stream(self, run_id, name):
+        """
+        Retrieve the binary stream for a given
+        artifact with the specified name and run id
+        :param run_id: (str) the run id for the run
+            that the artifact belongs to
+        :param name: (str) the name of the artifact
+        :return: (bytearray(byte)) byte array from BLOB
+        """
+        try:
+            return self.splice_context.df(
+                self.ARTIFACT_RETRIEVAL_SQL.format(name=name, runid=run_id)
+            ).collect()[0][0]
+        except IndexError as e:
+            raise Exception("Unable to find the artifact with the given run id "
+                            "{} and name {}".format(run_id, name))
+
+    def download_artifact(self, name, local_path, run_id=None):
+        """
+        Download the artifact at the given
+        run id (active default) + name
+        to the local path
+
+        :param name: (str) artifact name to load
+            (with respect to the run)
+        :param local_path: (str) local path to download the
+            model to
+        :param run_id: (str) the run id to download the artifact
+            from. Defaults to active run
+        """
+        blob_data = self.retrieve_artifact_stream(run_id, name)
+        with open(local_path, 'wb') as artifact_file:
+            artifact_file.write(blob_data)
+
+    def load_spark_model(self, run_id=None, name='model'):
         """
         Download a model from S3 
         and load it into Spark
         :param run_id: the id of the run to get a model from
             (the run must have an associated model with it named spark_model)
         """
-        print("Retrieving Model...")
-        run = self.get_run(run_id)
-        artifact_location = run.info.artifact_uri
-        return module.load_model(artifact_location + "/spark")
+        if not run_id:
+            run_id = self.current_run_id
+        else:
+            run_id = self.get_run(run_id).info.run_uuid
+
+        spark_pipeline_blob = self.retrieve_artifact_stream(run_id, name)
+        bis = self.splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
+        ois = self.splice_context.jvm.java.io.ObjectInputStream(bis)
+        pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
+        # PipelineModel to Python PipelineModel
+        ois.close()
+
+        if len(pipeline.stages) == 1 and self._is_spark_model(pipeline.stages[0]):
+            pipeline = pipeline.stages[0]
+
+        return pipeline
 
     def deploy_run_sagemaker(self, run_id, app_name,
-                             region='us-east-2', instance_type='ml.m4.xlarge',
+                             region='us-east-2', instance_type='ml.m5.xlarge',
                              instance_count=1, deployment_mode='create'):
         """
         Queue Job to deploy a run to sagemaker with the
@@ -639,7 +713,7 @@ class MLManager(MlflowClient):
         experiment_id = run._info.experiment_id
 
         supported_aws_regions = ['us-east-2', 'us-west-1', 'us-west-2', 'eu-central-1']
-        supported_instance_types = ['ml.m4.xlarge']
+        supported_instance_types = ['ml.m5.xlarge']
         supported_deployment_modes = ['create', 'replace', 'add']
         # data validation
         if not region in supported_aws_regions:
