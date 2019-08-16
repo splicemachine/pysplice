@@ -1,3 +1,4 @@
+from builtins import super
 from collections import defaultdict
 from os import environ as env_vars
 from sys import getsizeof
@@ -144,9 +145,14 @@ class MLManager(MlflowClient):
             Warning("MLManager doesn't seem to be communicating with the right server endpoint."
                     "Try instantiating this class again!")
 
-        MlflowClient.__init__(self, server_endpoint)  # initialize super class
-        self.splice_context = splice_context
-        java_import(splice_context.jvm, "java.io.{BinaryOutputStream, ObjectOutputStream}")
+        super().__init__(server_endpoint)  # initialize super class
+
+        if _testing:
+            self.splice_context = None
+        else:
+            self.splice_context = splice_context
+            java_import(splice_context.jvm, "java.io.{BinaryOutputStream, ObjectOutputStream}")
+
         self.active_run = None
         self.active_experiment = None
 
@@ -411,18 +417,25 @@ class MLManager(MlflowClient):
             with the current run
         :param name: (str) the run relative name to store the model under
         """
+        if self.active_run.data.tags.get('splice.model_name'):  # this function has already run
+            raise Exception("Only one model is permitted per run.")
+
+        self.set_tag('splice.model_name', name)  # read in backend for deployment
+
         jvm = self.splice_context.jvm
 
         if self._is_spark_model(model):
-            model = PipelineModel(stages=[model])
+            model = PipelineModel(
+                stages=[model]
+            )  # create a pipeline with only the model if a model is passed in
 
-        baos = jvm.java.io.ByteArrayOutputStream()
+        baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
         oos = jvm.java.io.ObjectOutputStream(baos)
         oos.writeObject(model._to_java())
         oos.flush()
         oos.close()
 
-        self._insert_artifact(name, baos.toByteArray())
+        self._insert_artifact(name, baos.toByteArray())  # write the byte stream to the db as a BLOB
 
     @staticmethod
     def _is_spark_model(spark_object):
@@ -452,12 +465,14 @@ class MLManager(MlflowClient):
         :param byte_array: (byte[]) Java byte array
         """
         db_connection = self.splice_context.getConnection()
+        file_size = getsizeof(byte_array)
         print("Saving binary artifact of size: {} KB to Splice Machine DB".format(
-            getsizeof(byte_array) / 1000.0)
-        )
+            file_size / 1000.0
+        ))
         prepared_statement = db_connection.prepareStatement(self.ARTIFACT_INSERT_SQL)
         prepared_statement.setString(1, self.current_run_id)  # set run UUID
         prepared_statement.setString(2, name)
+        prepared_statement.setInt(3, file_size)
         binary_input_stream = self.splice_context.jvm.ByteArrayInputStream(byte_array)
         prepared_statement.setBinaryStream(3, binary_input_stream)  # set BLOB
 
@@ -685,14 +700,34 @@ class MLManager(MlflowClient):
 
         return pipeline
 
-    def deploy_run_sagemaker(self, run_id, app_name,
-                             region='us-east-2', instance_type='ml.m5.xlarge',
-                             instance_count=1, deployment_mode='create'):
+    def _initiate_job(self, payload, endpoint):
+        """
+        Send a job to the initiation endpoint
+
+        :param payload: (dict) JSON payload for POST request
+        :param endpoint: (str) REST endpoint to target
+        :return: (str) Response text from request
+        """
+        request = requests.post(get_pod_uri('mlflow', 5003) + endpoint, json=payload)
+
+        if request.ok:
+            print("Your Job has been submitted. View its status on port 5003 (Job Dashboard)")
+            print(request.json)
+            return request.json
+        else:
+            print("Error! An error occurred while submitting your job")
+            print(request.text)
+            return request.text
+
+    def deploy_aws(self, app_name,
+                   region='us-east-2', instance_type='ml.m5.xlarge',
+                   run_id=None, instance_count=1, deployment_mode='create'):
         """
         Queue Job to deploy a run to sagemaker with the
         given run id (found in MLFlow UI or through search API)
         
-        :param run_id: the id of the run to deploy
+        :param run_id: the id of the run to deploy. Will default to the current
+            run id.
         :param app_name: the name of the app in sagemaker once deployed
         :param region: the sagemaker region to deploy to (us-east-2,
             us-west-1, us-west-2, eu-central-1 supported)
@@ -709,58 +744,103 @@ class MLManager(MlflowClient):
         print("Processing...")
         sleep(3)  # give the mlflow server time to register the artifact, if necessary
 
-        run = self.get_run(run_id)
-        experiment_id = run._info.experiment_id
-
+        run_uuid = run_id if run_id else self.current_run_id
         supported_aws_regions = ['us-east-2', 'us-west-1', 'us-west-2', 'eu-central-1']
         supported_instance_types = ['ml.m5.xlarge']
-        supported_deployment_modes = ['create', 'replace', 'add']
+        supported_deployment_modes = ['replace', 'add']
+
         # data validation
-        if not region in supported_aws_regions:
+        if region not in supported_aws_regions:
             raise Exception("Region must be in list: " + str(supported_aws_regions))
-        if not instance_type in supported_instance_types:
+        if instance_type not in supported_instance_types:
             raise Exception("Instance type must be in list: " + str(instance_type))
-        if not deployment_mode in supported_deployment_modes:
+        if deployment_mode not in supported_deployment_modes:
             raise Exception("Deployment mode must be in list: " + str(supported_deployment_modes))
 
         request_payload = {
-            'handler': 'deploy', 'experiment_id': experiment_id, 'run_id': run_id,
-            'postfix': 'spark_model', 'region': region,
+            'handler_name': 'DEPLOY_AWS', 'run_id': run.info.run_uid,
+            'region': region, 'user': _get_user(),
             'instance_type': instance_type, 'instance_count': instance_count,
-            'deployment_mode': deployment_mode, 'app_name': app_name,
+            'deployment_mode': deployment_mode, 'app_name': app_name
         }
 
-        request = requests.post(get_pod_uri('mlflow', '5002') + "/deploy", json=request_payload)
-        if request.ok:
-            print("Your Job has been submitted. View its status on port 5003 (Job Dashboard)")
-            print(request.json)
-            return request.json
-        else:
-            print("Error! An error occured while submitting your job")
-            print(request.text)
-            return request.text
+        return self._initiate_job(request_payload, '/api/rest/initiate')
 
-    @check_active
-    def deploy_active_run_sagemaker(self, app_name,
-                                    region='us-east-2', instance_type='ml.m4.xlarge',
-                                    instance_count=1, deployment_mode='create'):
+    def toggle_service(self, service_name, action):
         """
-        Queue Job to deploy the active run to sagemaker
-        
-        :param run_id: the id of the run to deploy
-        :param app_name: the name of the app in sagemaker once deployed
-        :param region: the sagemaker region to deploy to (us-east-2,
-            us-west-1, us-west-2, eu-central-1 supported)
-        :param instance_type: the EC2 Sagemaker instance type to deploy on
-            (ml.m4.xlarge supported)
-        :param instance_count: the number of instances to load balance predictions
-            on
-        :param deployment_mode: the method to deploy; create=application will fail
-            if an app with the name specified already exists; replace=application
-            in sagemaker will be replaced with this one if app already exists;
-            add=add the specified model to a prexisting application (not recommended)
+        Run a modifier on a service
+        :param service_name: (str) the service to modify
+        :param action: (str) the action to execute
+        :return: (str) response text from POST request
         """
-        return self.deploy_run_sagemaker(self.active_run.info.run_uuid, app_name,
-                                         region=region, instance_type=instance_type,
-                                         instance_count=instance_count,
-                                         deployment_mode=deployment_mode)
+        supported_services = ['DEPLOY_AWS', 'DEPLOY_AZURE']
+        supported_actions = ['ENABLE_SERVICE', 'DISABLE_SERVICE']
+        action = action.upper()  # capitalize, as db likes ca
+        if service_name not in supported_services:
+            raise Exception('Service must be in list: ' + str(supported_services))
+        if action not in supported_actions:
+            raise Exception('Service must be in list: ' + str(supported_actions))
+
+        request_payload = {
+            'handler_name': action,
+            'service': service_name
+        }
+
+        return self._initiate_job(request_payload, '/api/rest/initiate')
+
+    def enable_service(self, service_name):
+        """
+        Enable a given service
+        :param service_name: (str) service to enable
+        """
+        self.toggle_service(service_name, 'ENABLE_SERVICE')
+
+    def disable_service(self, service_name):
+        """
+        Disable a given service
+        :param service_name: (str) service to disable
+        """
+        self.toggle_service(service_name, 'DISABLE_SERVICE')
+
+    def deploy_azure(self, endpoint_name, resource_group, workspace, run_id=None, region='East US',
+                     cpu_cores=0.1, allocated_ram=0.5, model_name=None):
+        """
+        Deploy a given run to AzureML.
+
+        :param endpoint_name: (str) the name of the endpoint in AzureML when deployed to
+            Azure Container Services. Must be unique.
+        :param resource_group: (str) Azure Resource Group for model. Automatically created if
+            it doesn't exist.
+        :param workspace: (str) the AzureML workspace to deploy the model under.
+            Will be created if it doesn't exist
+        :param run_id: (str) if specified, will deploy a previous run (
+            must have an spark model logged). Otherwise, will default to the active run
+        :param region: (str) AzureML Region to deploy to: Can be East US, East US 2, Central US,
+            West US 2, North Europe, West Europe or Japan East
+        :param cpu_cores: (float) Number of CPU Cores to allocate to the instance.
+            Can be fractional. Default=0.1
+        :param allocated_ram: (float) amount of RAM, in GB, allocated to the container.
+            Default=0.5
+        :param model_name: (str) If specified, this will be the name of the model in AzureML.
+            Otherwise, the model name will be randomly generated.
+        """
+        supported_regions = ['East US', 'East US 2', 'Central US',
+                             'West US 2', 'North Europe', 'West Europe', 'Japan East']
+
+        if region not in supported_regions:
+            raise Exception("Region must be in list: " + str(supported_regions))
+        if cpu_cores <= 0:
+            raise Exception("Invalid CPU Count")
+        if allocated_ram <= 0:
+            raise Exception("Invalid Allocated RAM")
+
+        request_payload = {
+            'endpoint_name': endpoint_name,
+            'resource_group': resource_group,
+            'workspace': workspace,
+            'run_id': run_id if run_id else self.current_run_id,
+            'cpu_cores': cpu_cores,
+            'allocated_ram': allocated_ram,
+            'model_name': model_name
+        }
+        return self._initiate_job(request_payload, '/api/rest/initiate')

@@ -21,6 +21,7 @@ dependencies = [
     "pytest==3.6.1",
     "mlflow==1.1.0",
     "graphviz==0.8.4",
+    "future"
 ]
 setup(
     name="splicemachine",

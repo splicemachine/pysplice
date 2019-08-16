@@ -291,7 +291,7 @@ class DecisionTreeVisualizer(object):
                                         realroot=True)
         dot.render('/zeppelin/webapps/webapp/assets/images/'
                    + tree_name)
-        print('Successfully uploaded file to Zeppelin Assests on this cluster')
+        print('Successfully uploaded file to Zeppelin Assets on this cluster')
         print('Uploading.')
 
         time.sleep(3)
@@ -299,8 +299,9 @@ class DecisionTreeVisualizer(object):
         time.sleep(3)
 
         print(
-                'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
-                + tree_name + '.pdf&embedded=true#view=fith')
+            'You can find your visualization at "https://docs.google.com/gview?url=https://'
+            '<cluster_name>.splicemachine.io/assets/images/' \
+            + tree_name + '.pdf&embedded=true#view=fith')
 
     @staticmethod
     def replacer(string, bad, good):
