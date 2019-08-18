@@ -1,3 +1,4 @@
+from base64 import b64encode as encode_base64
 from builtins import super
 from collections import defaultdict
 from os import environ as env_vars
@@ -158,6 +159,8 @@ class MLManager(MlflowClient):
 
         self.timer_start_time = None  # for timer
         self.timer_name = None
+
+        self._basic_auth = None
 
     @property
     def current_run_id(self):
@@ -700,6 +703,18 @@ class MLManager(MlflowClient):
 
         return pipeline
 
+    def login_director(self, username, password):
+        """
+        Login to MLmanager Director so we can
+        submit jobs
+
+        :param username: (str) database username
+        :param password: (str) database password
+        """
+        self._basic_auth = {
+            'Authorization': 'Basic ' + encode_base64(username + ':' + password)
+        }
+
     def _initiate_job(self, payload, endpoint):
         """
         Send a job to the initiation endpoint
@@ -708,7 +723,17 @@ class MLManager(MlflowClient):
         :param endpoint: (str) REST endpoint to target
         :return: (str) Response text from request
         """
-        request = requests.post(get_pod_uri('mlflow', 5003) + endpoint, json=payload)
+        if not self._basic_auth:
+            raise Exception(
+                "You have not logged into MLManager director."
+                " Please run manager.login_director(username, password)"
+        )
+        request = requests.post(
+            get_pod_uri('mlflow', 5003) + endpoint,
+            headers=self._basic_auth,
+            json=payload,
+
+        )
 
         if request.ok:
             print("Your Job has been submitted. View its status on port 5003 (Job Dashboard)")
@@ -744,7 +769,6 @@ class MLManager(MlflowClient):
         print("Processing...")
         sleep(3)  # give the mlflow server time to register the artifact, if necessary
 
-        run_uuid = run_id if run_id else self.current_run_id
         supported_aws_regions = ['us-east-2', 'us-west-1', 'us-west-2', 'eu-central-1']
         supported_instance_types = ['ml.m5.xlarge']
         supported_deployment_modes = ['replace', 'add']
@@ -758,7 +782,7 @@ class MLManager(MlflowClient):
             raise Exception("Deployment mode must be in list: " + str(supported_deployment_modes))
 
         request_payload = {
-            'handler_name': 'DEPLOY_AWS', 'run_id': run.info.run_uid,
+            'handler_name': 'DEPLOY_AWS', 'run_id': run_id if run_id else self.current_run_id,
             'region': region, 'user': _get_user(),
             'instance_type': instance_type, 'instance_count': instance_count,
             'deployment_mode': deployment_mode, 'app_name': app_name
