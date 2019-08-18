@@ -619,7 +619,13 @@ class MLManager(MlflowClient):
             model = pipeline_or_model
 
         self.log_param('model', _readable_pipeline_stage(model))
-        verbose_parameters = _parse_string_parameters(model._java_obj.extractParamMap())
+        if hasattr(model, '_java_obj'):
+            verbose_parameters = _parse_string_parameters(model._java_obj.extractParamMap())
+        elif hasattr(model, 'getClassifier'):
+            verbose_parameters = _parse_string_parameters(
+                model.getClassifier()._java_obj.extractParamMap())
+        else:
+            raise Exception("Could not parse model type: " + str(model))
         for param in verbose_parameters:
             try:
                 value = float(verbose_parameters[param])
@@ -727,7 +733,7 @@ class MLManager(MlflowClient):
             raise Exception(
                 "You have not logged into MLManager director."
                 " Please run manager.login_director(username, password)"
-        )
+            )
         request = requests.post(
             get_pod_uri('mlflow', 5003) + endpoint,
             headers=self._basic_auth,
