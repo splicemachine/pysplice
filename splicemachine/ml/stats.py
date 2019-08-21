@@ -118,6 +118,18 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol):
         return self.outcols
 
 class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
+    """Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect
+
+    Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+
+    Arguments:
+        Transformer {[object]} -- Inherited Classes
+        HasInputCol {[object]} -- Inherited Classes
+        HasOutputCol {[object]} -- Inherited Classes
+
+    Returns:
+        [pyspark DataFrame]
+    """
     @keyword_only
     def __init__(self, inputCol=None, outputCol=None):
         super(IndReconstructer, self).__init__()
@@ -131,6 +143,14 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
         return self._set(**kwargs)
 
     def _transform(self, dataset):
+        """transform method-- iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.
+
+        Arguments:
+            dataset {[pyspark DataFrame]} -- dataset with OneHotDummy columns
+
+        Returns:
+            [pyspark DataFrame] -- dataset with column corresponding to a categorical indexed column
+        """
         inColBase = self.inputCol
         outCol = self.outputCol
 
@@ -211,8 +231,17 @@ def vector_assembler_pipeline(df, columns, doPCA = False, k =10):
         stages = [assembler, scaler]
     return stages
 
-# Let me try to use a postprocessing Pipeline similar to the preprocessing done above to reverse the transformation
-def postprocessing_stages(df, cols_to_exclude):
+def postprocessing_pipeline(df, cols_to_exclude):
+    """Assemble postprocessing pipeline to reconstruct original categorical indexed values from OneHotDummy Columns
+
+    Arguments:
+        df {[pyspark DataFrame]} -- DataFrame Including the original string Columns
+        cols_to_exclude {[list]} -- list of columns to exclude
+
+    Returns:
+        reconstructers -- list of IndReconstructer stages
+        String_Columns -- list of columns that are being reconstructed
+    """
     String_Columns = []
     Continuous_Columns = []
     for _col, _type in df.dtypes: # This is a tuple of (<col name>, data type)
@@ -232,8 +261,20 @@ def postprocessing_stages(df, cols_to_exclude):
 
 # Distribution fitting Functions
 def make_pdf(dist, params, size=10000):
-    """Generate distributions's Probability Distribution Function """
+    """ """
 
+    """Generate distributions's Probability Distribution Function
+
+    Arguments:
+        dist {[type]} -- [description]
+        params {[type]} -- [description]
+
+    Keyword Arguments:
+        size {int} -- [description] (default: {10000})
+
+    Returns:
+        [type] -- [description]
+    """
     # Separate parts of parameters
     arg = params[:-2]
     loc = params[-2]
@@ -427,7 +468,7 @@ def reconstructPCA(sql, df, pc, mean, std, originalColumns, fits, pcaColumn = 'p
     first_reconstructed = sql.createDataFrame(first_reconstructedDF)
 
     cols_to_exclude = ['DATE_OF_STUDY']
-    postPipeStages, String_Columns = postprocessing_stages(df, cols_to_exclude)
+    postPipeStages, String_Columns = postprocessing_pipeline(df, cols_to_exclude)
 
     postPipe = Pipeline(stages =postPipeStages)
     out = postPipe.fit(first_reconstructed).transform(first_reconstructed)
