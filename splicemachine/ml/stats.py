@@ -9,11 +9,10 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType, ArrayType, IntegerType, StringType
 from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
 from pyspark.ml import Pipeline, Transformer
-from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler, Bucketizer
-from pyspark.ml.feature import PCA
+from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler, Bucketizer, PCA
 from pyspark import keyword_only
 
-import pyspark_dist_explore as dist_explore #FIXME-- MUST INSTALL IN REQUIRMENTS
+import pyspark_dist_explore as dist_explore
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
