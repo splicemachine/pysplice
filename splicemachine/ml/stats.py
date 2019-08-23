@@ -1,29 +1,3 @@
-# Installing dependancies
-import os
-commands_pip = [ # so you can easily rerun :)
-"""curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py""",
-"""python get-pip.py --user""",
-"""export PATH=$PATH:/zeppelin/.local/bin/"""
-]
-
-for cmd_pip in commands_pip:
-    os.system(cmd_pip)
-
-# Installing Dependencies
-packages = """
-pyspark_dist_explore
-tqdm
-statsmodels
-"""
-
-print('stats_requirements.txt')
-print('-' * 50)
-print(packages)
-with open('requirements.txt', 'w') as pcks_file:
-    pcks_file.write(packages)
-
-os.system('~/.local/bin/pip install -r stats_requirements.txt --user')
-
 import warnings
 import numpy as np
 import pandas as pd
