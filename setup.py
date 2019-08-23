@@ -29,7 +29,10 @@ dependencies = [
     "graphviz==0.8.4",
     "numpy==1.15.0",
     "h2o_pysparkling_2.2",
-    "pandas==0.22.0"
+    "pandas==0.22.0",
+    "pyspark-dist-explore==0.1.7",
+    "tqdm==4.32.2",
+    "statsmodels==0.9.0"
 ]
 setup(
     name="splicemachine",
