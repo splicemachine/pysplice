@@ -148,18 +148,18 @@ def get_string_pipeline(df, cols_to_exclude):
 
     Returns:
         stages -- [{list}] list of pipeline stages to be used in preprocessing
-        Continuous_Columns -- [{list}] list of columns that contain numeric features
+        Numeric_Columns -- [{list}] list of columns that contain numeric features
     """
 
     String_Columns = []
-    Continuous_Columns = []
+    Numeric_Columns = []
     for _col, _type in df.dtypes: # This is a tuple of (<col name>, data type)
         if _col in cols_to_exclude:
             continue
         if _type == 'string':
             String_Columns.append(_col)
         elif _type == 'double' or _type == 'int' or _type == 'float':
-            Continuous_Columns.append(_col)
+            Numeric_Columns.append(_col)
         else:
             print("Unhandled Data type = {}".format((_col,_type)))
             continue
@@ -175,7 +175,7 @@ def get_string_pipeline(df, cols_to_exclude):
     # str_dumb_cols = [c for dummy in str_dumbers for c in dummy.getOutCols()]
     stages = str_indexers + str_hot + str_dumbers
 
-    return stages, Continuous_Columns
+    return stages, Numeric_Columns
 
 def vector_assembler_pipeline(df, columns, doPCA = False, k =10):
     """After preprocessing String Columns, this function can be used to assemble a feature vector to be used for learning
@@ -216,14 +216,14 @@ def postprocessing_pipeline(df, cols_to_exclude):
         String_Columns -- list of columns that are being reconstructed
     """
     String_Columns = []
-    Continuous_Columns = []
+    Numeric_Columns = []
     for _col, _type in df.dtypes: # This is a tuple of (<col name>, data type)
         if _col in cols_to_exclude:
             continue
         if _type == 'string':
             String_Columns.append(_col)
         elif _type == 'double' or _type == 'int' or _type == 'float':
-            Continuous_Columns.append(_col)
+            Numeric_Columns.append(_col)
         else:
             print("Unhandled Data type = {}".format((_col,_type)))
             continue

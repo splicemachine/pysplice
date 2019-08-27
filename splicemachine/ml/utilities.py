@@ -114,7 +114,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
         self.avg_fp = []
         self.confusion_matrix = confusion_matrix
 
-        supported = ["areaUnderROC", "areaUnderPR"]
+        supported = ["areaUnderROC", "areaUnderPR",'TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC']
         SpliceBaseEvaluator.__init__(self, spark, BinaryClassificationEvaluator, supported, prediction_column=prediction_column, label_column=label_column)
 
     def input(self, predictions_dataframe):
@@ -124,19 +124,19 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
         """
         for metric in self.supported_metrics:
             if metric in ['areaUnderROC' , 'areaUnderPR']:
-                evaluator = self.ev(labelCol=self.label, predictionCol=self.prediction_col, metricName=metric)
-            
+                evaluator = self.ev(labelCol=self.label, rawPredictionCol=self.prediction_col, metricName=metric)
+
                 self.avgs[metric].append(evaluator.evaluate(predictions_dataframe))
                 print("Current {metric}: {metric_val}".format(metric=metric,
                                                             metric_val=self.avgs
                                                             [metric][-1]))
 
-        pred_v_lab = predictions_dataframe.select(self.label_column,
-                                                  self.prediction_column)  # Select the actual and the predicted labels
+        pred_v_lab = predictions_dataframe.select(self.label,
+                                                  self.prediction_col)  # Select the actual and the predicted labels
 
         # Add confusion stats
         self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1)
-                                      & (pred_v_lab.prediction == 1)].count())  
+                                      & (pred_v_lab.prediction == 1)].count())
         self.avg_tn.append(pred_v_lab[(pred_v_lab.label == 0)
                                       & (pred_v_lab.prediction == 0)].count())
         self.avg_fp.append(pred_v_lab[(pred_v_lab.label == 1)
@@ -150,6 +150,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
         FN = np.mean(self.avg_fn)
 
         self.avgs['TPR'].append(float(TP) / (TP + FN))
+        self.avgs['SPC'].append(float(TP) / (TP + FN))
         self.avgs['TNR'].append(float(TN) / (TN + FP))
         self.avgs['PPV'].append(float(TP) / (TP + FP))
         self.avgs['NPV'].append(float(TN) / (TN + FN))

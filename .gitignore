@@ -2,4 +2,5 @@
 /.vscode
 .DS_Store
 *.pyc
-/splicemachine/ml/test/
+splicemachine/ml/test/
+splicemachine/ml/utilities.pyc
