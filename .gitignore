@@ -1,4 +1,6 @@
 /.idea
 /.vscode
-/splicemachine/ml/test/*
+./splicemachine/ml/test/*
 *.pyc
+.DS_Store
+.ipynb_checkpoints/*
