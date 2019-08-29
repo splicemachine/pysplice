@@ -171,6 +171,23 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
                 float(FN)
             ).show()
 
+    def plotROC(self, trainingSummary, ax):
+        """
+        Plots the receiver operating characteristic curve for the trained classifier
+
+        :param trainingSummary: TrainingSummary object accessed by .summary after fitting a binary classification object
+        :param ax: matplotlib axis object
+
+        :return: axis with ROC plot
+        """
+        roc = trainingSummary.roc.toPandas()
+        ax.plot(roc['FPR'],roc['TPR'], label = 'Training set areaUnderROC: \n' + str(trainingSummary.areaUnderROC))
+        ax.set_ylabel('False Positive Rate')
+        ax.set_xlabel('True Positive Rate')
+        ax.set_title('ROC Curve')
+        ax.legend()
+        return ax
+
 
 class SpliceRegressionEvaluator(SpliceBaseEvaluator):
     """
