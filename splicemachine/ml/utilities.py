@@ -398,3 +398,23 @@ class DecisionTreeVisualizer(object):
         res = [{'name': 'Root',
                 'children': DecisionTreeVisualizer.parse(data[1:])}]
         return res[0]
+
+def inspectTable(spliceMLCtx, df, sql, topN = 5):
+    """Inspect the values of the columns of the table (dataframe) returned from the sql query
+
+    :param spliceMLCtx: SpliceMLContext
+    :param sql: sql string to execute
+    :param topN: the number of most frequent elements of a column to return, defaults to 5
+    """
+    df = splice.df(sql)
+    df = df.repartition(50)
+
+    for _col, _type in df.dtypes:
+        print("------Inspecting column {} -------- ".format(_col))
+
+        val_counts = df.groupby(_col).count()
+        val_counts.show()
+        val_counts.orderBy(F.desc('count')).limit(topN).show()
+
+        if _type == 'double' or _type == 'int':
+            df.select(_col).describe().show()

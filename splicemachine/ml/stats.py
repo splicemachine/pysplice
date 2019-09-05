@@ -19,25 +19,24 @@ from tqdm import tqdm
 
 # Custom Transformers
 class OneHotDummies(Transformer, HasInputCol, HasOutputCol):
-    """Transformer to generate dummy columns for categorical variables as a part of a preprocessing pipeline
-
+    """
+    Transformer to generate dummy columns for categorical variables as a part of a preprocessing pipeline
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
 
-    Arguments:
-        Transformer {[object]} -- Inherited Classes
-        HasInputCol {[object]} -- Inherited Classes
-        HasOutputCol {[object]} -- Inherited Classes
-
-    Returns:
-        [pyspark DataFrame]
+    :param Transformer: Inherited Classes
+    :param HasInputCol: Inherited Classes
+    :param HasOutputCol: Inherited Classes
+    :return: pyspark DataFrame
     """
+
     @keyword_only
     def __init__(self, inputCol=None, outputCol=None):
-        """Assigns variables to parameters passed
+        """
+        Assigns variables to parameters passed
 
-        Keyword Arguments:
-            inputCol {[string]} -- Sparse vector returned by OneHotEncoders(default: {None})
-            outputCol {[string]} -- Column Name Base to be used in naming dummy columns (default: {None})
+        :param inputCol: Sparse vector returned by OneHotEncoders, defaults to None
+        :param outputCol: string base to append to output columns names, defaults to None
+
         """
         super(OneHotDummies, self).__init__()
         # kwargs = self._input_kwargs
@@ -51,15 +50,14 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol):
         return self._set(**kwargs)
 
     def _transform(self, dataset):
-        """transform method-- iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories
 
-        For a string categorical column, include this transformer in the following workflow: StringIndexer -> OneHotEncoder -> OneHotDummies -> PCA/ [{Learning Algorithm}]
+        """iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories
 
-        Arguments:
-            dataset {[pyspark DataFrame]} -- inputCol is the column  returned by by OneHotEncoders
+        For a string categorical column, include this transformer in the following workflow: StringIndexer -> OneHotEncoder -> OneHotDummies -> PCA/ Learning Algorithm
 
-        Returns:
-            [pyspark DataFrame] -- original DataFrame with M additional columns where M = # of categories for this variable
+        :param dataset: PySpark DataFrame where inputCol is the column  returned by by OneHotEncoders
+        :return: original DataFrame with M additional columns where M = # of categories for this variable
+
         """
         out_col_suffix = self.outputCol # this is what I want to append to the column name
         col_name = self.inputCol
@@ -95,13 +93,11 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
 
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
 
-    Arguments:
-        Transformer {[object]} -- Inherited Classes
-        HasInputCol {[object]} -- Inherited Classes
-        HasOutputCol {[object]} -- Inherited Classes
 
-    Returns:
-        [pyspark DataFrame]
+    :param Transformer: Inherited Class
+    :param HasInputCol: Inherited Class
+    :param HasOutputCol: Inherited Class
+    :return: Transformed PySpark Dataframe With Original String Indexed Variables
     """
     @keyword_only
     def __init__(self, inputCol=None, outputCol=None):
@@ -116,13 +112,11 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
         return self._set(**kwargs)
 
     def _transform(self, dataset):
-        """transform method-- iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.
+        """
+        iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.
 
-        Arguments:
-            dataset {[pyspark DataFrame]} -- dataset with OneHotDummy columns
-
-        Returns:
-            [pyspark DataFrame] -- dataset with column corresponding to a categorical indexed column
+        :param dataset: dataset with OneHotDummy columns
+        :return: DataFrame with column corresponding to a categorical indexed column
         """
         inColBase = self.inputCol
         outCol = self.outputCol
@@ -139,16 +133,17 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
         return dataset
 
 ## Pipeline Functions
-def get_string_pipeline(df, cols_to_exclude):
-    """ Generates a list of preprocessing stages
+def get_string_pipeline(df, cols_to_exclude, steps = ['StringIndexer', 'OneHotEncoder', 'OneHotDummies']):
 
-    Arguments:
-        df {[pyspark dataframe]} -- DataFrame including only the training data
-        cols_to_exclude {[list]} -- Column names we don't want to to include in the preprocessing (i.e. SUBJECT/ target column)
+    """Generates a list of preprocessing stages
 
-    Returns:
-        stages -- [{list}] list of pipeline stages to be used in preprocessing
-        Numeric_Columns -- [{list}] list of columns that contain numeric features
+    :param df: DataFrame including only the training data
+    :param cols_to_exclude: Column names we don't want to to include in the preprocessing (i.e. SUBJECT/ target column)
+    :param stages: preprocessing steps to take
+
+    :return:  (stages, Numeric_Columns)
+        stages: list of pipeline stages to be used in preprocessing
+        Numeric_Columns: list of columns that contain numeric features
     """
 
     String_Columns = []
@@ -164,34 +159,45 @@ def get_string_pipeline(df, cols_to_exclude):
             print("Unhandled Data type = {}".format((_col,_type)))
             continue
 
-    # String Inexing
-    str_indexers = [StringIndexer(inputCol=c, outputCol=c+'_ind', handleInvalid='skip') for c in String_Columns]
-    indexed_string_vars = [c+'_ind' for c in String_Columns]
-    # One hot encoding
-    str_hot = [OneHotEncoder(inputCol = c+'_ind', outputCol = c+'_vec', dropLast=False)for c in String_Columns]
-    encoded_str_vars = [c+'_vec' for c in String_Columns]
-    # Converting the sparse vector to dummy columns
-    str_dumbers = [OneHotDummies(inputCol = c+'_vec', outputCol = '_dummy') for c in String_Columns]
-    # str_dumb_cols = [c for dummy in str_dumbers for c in dummy.getOutCols()]
-    stages = str_indexers + str_hot + str_dumbers
+    stages = []
+    if 'StringIndexer' in steps:
+        # String Inexing
+        str_indexers = [StringIndexer(inputCol=c, outputCol=c+'_ind', handleInvalid='skip') for c in String_Columns]
+        indexed_string_vars = [c+'_ind' for c in String_Columns]
+        stages = stages + str_indexers
+
+    if 'OneHotEncoder' in steps:
+        # One hot encoding
+        str_hot = [OneHotEncoder(inputCol = c+'_ind', outputCol = c+'_vec', dropLast=False)for c in String_Columns]
+        encoded_str_vars = [c+'_vec' for c in String_Columns]
+        stages = stages + str_hot
+
+    if 'OneHotDummies' in steps:
+        # Converting the sparse vector to dummy columns
+        str_dumbers = [OneHotDummies(inputCol = c+'_vec', outputCol = '_dummy') for c in String_Columns]
+        str_dumb_cols = [c for dummy in str_dumbers for c in dummy.getOutCols()]
+        stages = stages + str_dumbers
+
+    if len(stages) == 0:
+        ERROR = """
+        Parameter <steps> must include 'StringIndexer', 'OneHotEncoder', 'OneHotDummies'
+        """
+        print(ERROR)
+        raise Exception(ERROR)
 
     return stages, Numeric_Columns
 
 def vector_assembler_pipeline(df, columns, doPCA = False, k =10):
+
     """After preprocessing String Columns, this function can be used to assemble a feature vector to be used for learning
 
     creates the following stages: VectorAssembler -> Standard Scalar [{ -> PCA}]
 
-    Arguments:
-        df {[pyspark DataFrame]} -- DataFrame containing preprocessed Columns
-        columns {[list]} -- list of Column names of the preprocessed columns
-
-    Keyword Arguments:
-        doPCA {bool} -- Do you want to do PCA as part of the vector assembler (default: {False})
-        k {int} -- Number of Principal Components to use (default: {10})
-
-    Returns:
-        [list] -- List of vector assembling stages
+    :param df: DataFrame containing preprocessed Columns
+    :param columns: list of Column names of the preprocessed columns
+    :param doPCA:  Do you want to do PCA as part of the vector assembler? defaults to False
+    :param k:  Number of Principal Components to use, defaults to 10
+    :return: List of vector assembling stages
     """
 
     assembler = VectorAssembler(inputCols = columns, outputCol = 'featuresVec')
@@ -207,13 +213,11 @@ def vector_assembler_pipeline(df, columns, doPCA = False, k =10):
 def postprocessing_pipeline(df, cols_to_exclude):
     """Assemble postprocessing pipeline to reconstruct original categorical indexed values from OneHotDummy Columns
 
-    Arguments:
-        df {[pyspark DataFrame]} -- DataFrame Including the original string Columns
-        cols_to_exclude {[list]} -- list of columns to exclude
-
-    Returns:
-        reconstructers -- list of IndReconstructer stages
-        String_Columns -- list of columns that are being reconstructed
+    :param df: DataFrame Including the original string Columns
+    :param cols_to_exclude: list of columns to exclude
+    :return: (reconstructers, String_Columns)
+        reconstructers: list of IndReconstructer stages
+        String_Columns: list of columns that are being reconstructed
     """
     String_Columns = []
     Numeric_Columns = []
@@ -234,19 +238,12 @@ def postprocessing_pipeline(df, cols_to_exclude):
 
 # Distribution fitting Functions
 def make_pdf(dist, params, size=10000):
-    """ """
-
     """Generate distributions's Probability Distribution Function
 
-    Arguments:
-        dist {[type]} -- [description]
-        params {[type]} -- [description]
-
-    Keyword Arguments:
-        size {int} -- [description] (default: {10000})
-
-    Returns:
-        [type] -- [description]
+    :param dist: scipy.stats distribution object: https://docs.scipy.org/doc/scipy/reference/stats.html
+    :param params: distribution parameters
+    :param size: how many data points to generate , defaults to 10000
+    :return: series of probability density function for this distribution
     """
     # Separate parts of parameters
     arg = params[:-2]
@@ -265,7 +262,17 @@ def make_pdf(dist, params, size=10000):
     return pdf
 
 def best_fit_distribution(data, col_name, bins, ax):
-    '''Model data by finding best fit distribution to data'''
+    """Model data by finding best fit distribution to data
+
+    :param data: DataFrame with one column containing the feature whose distribution is to be investigated
+    :param col_name: column name for feature
+    :param bins: number of bins to use in generating the histogram of this data
+    :param ax: axis to plot histogram on
+    :return: (best_distribution.name, best_params, best_sse)
+        best_distribution.name: string of the best distribution name
+        best_params: parameters for this distribution
+        best_sse: sum of squared errors for this distribution against the empirical pdf
+    """
     # Get histogram of original data
 
     output = dist_explore.pandas_histogram(data, bins=bins)
@@ -348,18 +355,14 @@ def best_fit_distribution(data, col_name, bins, ax):
 ## PCA Functions
 
 def estimateCovariance(df, features_col = 'features'):
+
     """Compute the covariance matrix for a given dataframe.
+        Note: The multi-dimensional covariance array should be calculated using outer products.  Don't forget to normalize the data by first subtracting the mean.
 
-    Note:
-        The multi-dimensional covariance array should be calculated using outer products.  Don't
-        forget to normalize the data by first subtracting the mean.
+    :param df: PySpark dataframe
+    :param features_col: name of the column with the features, defaults to 'features'
+    :return: np.ndarray: A multi-dimensional array where the number of rows and columns both equal the length of the arrays in the input dataframe.
 
-    Args:
-        df:  A Spark dataframe
-        features_col: name of the column with the features
-    Returns:
-        np.ndarray: A multi-dimensional array where the number of rows and columns both equal the
-            length of the arrays in the input dataframe.
     """
     m = df.select(df[features_col]).rdd.map(lambda x: x[0]).mean()
 
@@ -368,23 +371,21 @@ def estimateCovariance(df, features_col = 'features'):
     return dfZeroMean.map(lambda x: np.outer(x,x)).sum()/df.count()
 
 def mypca(df, k=10):
+
     """Computes the top `k` principal components, corresponding scores, and all eigenvalues.
 
     Note:
         All eigenvalues should be returned in sorted order (largest to smallest). `eigh` returns
         each eigenvectors as a column.  This function should also return eigenvectors as columns.
 
-    Args:
-        df: A Spark dataframe with a 'features' column, which (column) consists of DenseVectors.
-        k (int): The number of principal components to return.
-
-    Returns:
-        tuple of (np.ndarray, RDD of np.ndarray, np.ndarray): A tuple of (eigenvectors, `RDD` of
-        scores, eigenvalues).  Eigenvectors is a multi-dimensional array where the number of
-        rows equals the length of the arrays in the input `RDD` and the number of columns equals
-        `k`.  The `RDD` of scores has the same number of rows as `data` and consists of arrays
-        of length `k`.  Eigenvalues is an array of length d (the number of features).
-     """
+    :param df:  A Spark dataframe with a 'features' column, which (column) consists of DenseVectors.
+    :param k: The number of principal components to return., defaults to 10
+    :return:(eigenvectors, `RDD` of scores, eigenvalues).
+        Eigenvectors: multi-dimensional array where the number of
+        rows equals the length of the arrays in the input `RDD` and the number of columns equals`k`.
+        `RDD` of scores: has the same number of rows as `data` and consists of arrays of length `k`.
+        Eigenvalues is an array of length d (the number of features).
+    """
     cov = estimateCovariance(df)
     col = cov.shape[1]
     eigVals, eigVecs = eigh(cov)
@@ -398,6 +399,12 @@ def mypca(df, k=10):
     return components.T, score, eigVals
 
 def varianceExplained(df, k=10):
+    """returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure
+
+    :param df: PySpark DataFrame
+    :param k: number of principal components , defaults to 10
+    :return: (proportion, principal_components, scores, eigenvalues)
+    """
     components, scores, eigenvalues = mypca(df, k)
     return sum(eigenvalues[0:k])/sum(eigenvalues), components, scores, eigenvalues
 
@@ -405,22 +412,17 @@ def varianceExplained(df, k=10):
 
 def reconstructPCA(sql, df, pc, mean, std, originalColumns, fits, pcaColumn = 'pcaFeatures'):
 
-    """ Reconstruct data from lower dimensional space after performing PCA
+    """Reconstruct data from lower dimensional space after performing PCA
 
-    Arguments:
-        sql {[pyspark.sql.context.SQLContext]}
-        df {[spark dataframe]} -- inputted DataFrame
-        pc {[numpy.ndarray]} -- principal components projected onto
-        mean {[numpy.ndarray]} -- mean of original columns
-        std {[numpy.ndarray]} -- std of original columns
-        originalColumns {[list of strings]} -- original space column names
-        fits {[dict]} -- fits of features returned from fitting routine
-
-    Keyword Arguments:
-        pcaColumn {str} -- column in df that contains PCA features (default: {'pcaFeatures'})
-
-    Returns:
-        [spark dataframe] -- dataframe containing reconstructed data
+    :param sql: SQLContext
+    :param df: PySpark DataFrame: inputted PySpark DataFrame
+    :param pc: numpy.ndarray: principal components projected onto
+    :param mean: numpy.ndarray: mean of original columns
+    :param std: numpy.ndarray: standard deviation of original columns
+    :param originalColumns: list: original column names
+    :param fits: fits of features returned from best_fit_distribution
+    :param pcaColumn: column in df that contains PCA features, defaults to 'pcaFeatures'
+    :return: dataframe containing reconstructed data
     """
 
     cols = df.columns
@@ -485,15 +487,14 @@ class MarkovChain(object):
         return self.max_num_steps
 
     def next_state(self, current_state):
-        """
-        Returns the state of the random variable at the next time
+        """Returns the state of the random variable at the next time
         instance.
 
-        Parameters
-        ----------
-        current_state: str
-            The current state of the system.
+        :param current_state: The current state of the system.
+        :raises: Exception if random choice fails
+        :return: next state
         """
+
         try:
 
             # if not current_state in self.states:
