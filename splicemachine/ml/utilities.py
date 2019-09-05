@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import graphviz
 import numpy as np
-from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator
+from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, BinaryClassificationEvaluator
 from pyspark.sql import Row
 
 
@@ -51,104 +51,6 @@ class ModelEvaluator():
         raise Exception(ERROR)
 
 
-class SpliceBinaryClassificationEvaluator(object):
-    """
-    A Function that provides an easy way to evaluate models once, or over random iterations
-    """
-
-    def __init__(self, spark, label_column='label', prediction_column='prediction',
-                 confusion_matrix=True):
-        """
-        :param label_column: the column in the dataframe containing the correct output
-        :param prediction_column: the column in the dataframe containing the prediction
-        :param confusion_matrix: whether or not to show a confusion matrix after each input
-        """
-        self.spark = spark
-        self.avg_tp = []
-        self.avg_tn = []
-        self.avg_fn = []
-        self.avg_fp = []
-        self.label_column = label_column
-        self.prediction_column = prediction_column
-        self.confusion_matrix = confusion_matrix
-
-    def input(self, predictions_dataframe):
-        """
-        Evaluate actual vs Predicted in a dataframe
-        :param predictions_dataframe: the dataframe containing the label and the predicition
-        """
-
-        pred_v_lab = predictions_dataframe.select(self.label_column,
-                                                  self.prediction_column)  # Select the actual and the predicted labels
-
-        self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1)
-                                      & (
-                                              pred_v_lab.prediction == 1)].count())  # Add confusion stats
-        self.avg_tn.append(pred_v_lab[(pred_v_lab.label == 0)
-                                      & (pred_v_lab.prediction == 0)].count())
-        self.avg_fp.append(pred_v_lab[(pred_v_lab.label == 1)
-                                      & (pred_v_lab.prediction == 0)].count())
-        self.avg_fn.append(pred_v_lab[(pred_v_lab.label == 0)
-                                      & (pred_v_lab.prediction == 1)].count())
-
-        if self.confusion_matrix:
-            get_confusion_matrix(
-                self.spark,
-                self.avg_tp[-1],
-                self.avg_tn[-1],
-                self.avg_fp[-1],
-                self.avg_fn[-1],
-            ).show()
-
-            # show the confusion matrix to the user
-
-    def get_results(self, output_type='dataframe'):
-        """
-        Return a dictionary containing evaluated results
-        :param output_type: either a dataframe or a dict (which to return)
-        :return results: computed_metrics (dict) or computed_df (df)
-        """
-
-        TP = np.mean(self.avg_tp)
-        TN = np.mean(self.avg_tn)
-        FP = np.mean(self.avg_fp)
-        FN = np.mean(self.avg_fn)
-
-        if self.confusion_matrix:
-            get_confusion_matrix(
-                self.spark,
-                float(TP),
-                float(TN),
-                float(FP),
-                float(FN)
-            ).show()
-
-        computed_metrics = {
-            'TPR': float(TP) / (TP + FN),
-            'SPC': float(TP) / (TP + FN),
-            'PPV': float(TP) / (TP + FP),
-            'NPV': float(TN) / (TN + FN),
-            'FPR': float(FP) / (FP + TN),
-            'FDR': float(FP) / (FP + TP),
-            'FNR': float(FN) / (FN + TP),
-            'ACC': float(TP + TN) / (TP + FN + FP + TN),
-            'F1': float(2 * TP) / (2 * TP + FP + FN),
-            'MCC': float(TP * TN - FP * FN) / np.sqrt(
-                (TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)),
-        }
-
-        if output_type == 'dict':
-            return computed_metrics
-        else:
-
-            ordered_cols = ['TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC']
-            metrics_row = Row(*ordered_cols)
-            computed_row = metrics_row(*[float(computed_metrics[i])
-                                         for i in ordered_cols])
-            computed_df = self.spark._wrapped.createDataFrame([computed_row])
-            return computed_df
-
-
 class SpliceBaseEvaluator(object):
     """
     Base ModelEvaluator
@@ -183,7 +85,8 @@ class SpliceBaseEvaluator(object):
                 labelCol=self.label, predictionCol=self.prediction_col, metricName=metric)
             self.avgs[metric].append(evaluator.evaluate(predictions_dataframe))
             print("Current {metric}: {metric_val}".format(metric=metric,
-                                                          metric_val=self.avgs[metric][-1]))
+                                                          metric_val=self.avgs
+                                                          [metric][-1]))
 
     def get_results(self, dict=False):
         """
@@ -203,6 +106,89 @@ class SpliceBaseEvaluator(object):
         return self.spark._wrapped.createDataFrame([computed_row])
 
 
+class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
+    def __init__(self, spark, prediction_column="prediction", label_column="label", confusion_matrix = True):
+        self.avg_tp = []
+        self.avg_tn = []
+        self.avg_fn = []
+        self.avg_fp = []
+        self.confusion_matrix = confusion_matrix
+
+        supported = ["areaUnderROC", "areaUnderPR",'TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC']
+        SpliceBaseEvaluator.__init__(self, spark, BinaryClassificationEvaluator, supported, prediction_column=prediction_column, label_column=label_column)
+
+    def input(self, predictions_dataframe):
+        """
+        Evaluate actual vs Predicted in a dataframe
+        :param predictions_dataframe: the dataframe containing the label and the predicition
+        """
+        for metric in self.supported_metrics:
+            if metric in ['areaUnderROC' , 'areaUnderPR']:
+                evaluator = self.ev(labelCol=self.label, rawPredictionCol=self.prediction_col, metricName=metric)
+
+                self.avgs[metric].append(evaluator.evaluate(predictions_dataframe))
+                print("Current {metric}: {metric_val}".format(metric=metric,
+                                                            metric_val=self.avgs
+                                                            [metric][-1]))
+
+        pred_v_lab = predictions_dataframe.select(self.label,
+                                                  self.prediction_col)  # Select the actual and the predicted labels
+
+        # Add confusion stats
+        self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1)
+                                      & (pred_v_lab.prediction == 1)].count())
+        self.avg_tn.append(pred_v_lab[(pred_v_lab.label == 0)
+                                      & (pred_v_lab.prediction == 0)].count())
+        self.avg_fp.append(pred_v_lab[(pred_v_lab.label == 1)
+                                      & (pred_v_lab.prediction == 0)].count())
+        self.avg_fn.append(pred_v_lab[(pred_v_lab.label == 0)
+                                      & (pred_v_lab.prediction == 1)].count())
+
+        TP = np.mean(self.avg_tp)
+        TN = np.mean(self.avg_tn)
+        FP = np.mean(self.avg_fp)
+        FN = np.mean(self.avg_fn)
+
+        self.avgs['TPR'].append(float(TP) / (TP + FN))
+        self.avgs['SPC'].append(float(TP) / (TP + FN))
+        self.avgs['TNR'].append(float(TN) / (TN + FP))
+        self.avgs['PPV'].append(float(TP) / (TP + FP))
+        self.avgs['NPV'].append(float(TN) / (TN + FN))
+        self.avgs['FNR'].append(float(FN) / (FN + TP))
+        self.avgs['FPR'].append(float(FP) / (FP + TN))
+        self.avgs['FDR'].append(float(FP) / (FP + TP))
+        self.avgs['FOR'].append(float(FN) / (FN + TN))
+        self.avgs['ACC'].append(float(TP + TN) / (TP + FN + FP + TN))
+        self.avgs['F1'].append(float(2 * TP) / (2 * TP + FP + FN))
+        self.avgs['MCC'].append(float(TP * TN - FP * FN) / np.sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)))
+
+        if self.confusion_matrix:
+            get_confusion_matrix(
+                self.spark,
+                float(TP),
+                float(TN),
+                float(FP),
+                float(FN)
+            ).show()
+
+    def plotROC(self, trainingSummary, ax):
+        """
+        Plots the receiver operating characteristic curve for the trained classifier
+
+        :param trainingSummary: TrainingSummary object accessed by .summary after fitting a binary classification object
+        :param ax: matplotlib axis object
+
+        :return: axis with ROC plot
+        """
+        roc = trainingSummary.roc.toPandas()
+        ax.plot(roc['FPR'],roc['TPR'], label = 'Training set areaUnderROC: \n' + str(trainingSummary.areaUnderROC))
+        ax.set_ylabel('False Positive Rate')
+        ax.set_xlabel('True Positive Rate')
+        ax.set_title('ROC Curve')
+        ax.legend()
+        return ax
+
+
 class SpliceRegressionEvaluator(SpliceBaseEvaluator):
     """
     Splice Regression Evaluator
@@ -210,8 +196,7 @@ class SpliceRegressionEvaluator(SpliceBaseEvaluator):
 
     def __init__(self, spark, prediction_column="prediction", label_column="label"):
         supported = ['rmse', 'mse', 'r2', 'mae']
-        SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported,
-                                     prediction_column=prediction_column, label_column=label_column)
+        SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported, prediction_column=prediction_column, label_column=label_column)
 
 
 class SpliceMultiClassificationEvaluator(SpliceBaseEvaluator):
@@ -413,3 +398,23 @@ class DecisionTreeVisualizer(object):
         res = [{'name': 'Root',
                 'children': DecisionTreeVisualizer.parse(data[1:])}]
         return res[0]
+
+def inspectTable(spliceMLCtx, df, sql, topN = 5):
+    """Inspect the values of the columns of the table (dataframe) returned from the sql query
+
+    :param spliceMLCtx: SpliceMLContext
+    :param sql: sql string to execute
+    :param topN: the number of most frequent elements of a column to return, defaults to 5
+    """
+    df = splice.df(sql)
+    df = df.repartition(50)
+
+    for _col, _type in df.dtypes:
+        print("------Inspecting column {} -------- ".format(_col))
+
+        val_counts = df.groupby(_col).count()
+        val_counts.show()
+        val_counts.orderBy(F.desc('count')).limit(topN).show()
+
+        if _type == 'double' or _type == 'int':
+            df.select(_col).describe().show()
