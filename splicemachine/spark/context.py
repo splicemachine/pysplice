@@ -301,7 +301,7 @@ class PySpliceContext:
         print('Creating table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
-    def createTable(self, dataframe, schema_table_name, new_schema=True, types = None):
+    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = None):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -309,7 +309,8 @@ class PySpliceContext:
                                   If this table exists in the database already, it will be DROPPED and a new one will be created
         :param dataframe: The dataframe that the table will be created for
         :param new_schema: A boolean to create a new schema. If True, the function will create a new schema before creating the table. If the schema already exists, set to False [DEFAULT True]
-        :param types: A dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
+        :param drop_table: An optinal boolean to drop the table if it exists. [DEFAULT False]
+        :param types: An optional dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
             If None or if any types are missing, types will be assumed automatically from the dataframe schema as follows:
                     BooleanType: BOOLEAN
                     ByteType: TINYINT
@@ -326,7 +327,11 @@ class PySpliceContext:
         '''
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
-
+        # Make sure table doesn't exists already
+        if(not drop_table and self.tableExists(schema_table_name):
+           return('ERROR: Table already exists. Please drop it or set drop_table option to True')
+           
+        self._dropTableIfExists(schema,table)
         sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
         for name,type in db_schema:
             sql += '{} {},\n'.format(name,type)
