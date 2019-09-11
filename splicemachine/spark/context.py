@@ -326,7 +326,8 @@ class PySpliceContext:
         '''
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
-
+        self._dropTableIfExists(schema,table)
+        
         sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
         for name,type in db_schema:
             sql += '{} {},\n'.format(name,type)
