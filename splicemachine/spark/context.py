@@ -261,7 +261,8 @@ class PySpliceContext:
         Generate the schema for create table
         """
         #convert keys and values to uppercase in the types dictionary
-        types = dict((key.upper(), val) for key,val in types.items())
+        if(types):
+            types = dict((key.upper(), val) for key,val in types.items())
         db_schema = []
         #convert dataframe to have all uppercase column names
         dataframe = self.toUpper(dataframe)
@@ -323,7 +324,6 @@ class PySpliceContext:
                     StringType: VARCHAR(150)
                     TimestampType: TIMESTAMP
                     UnknownType: BLOB
-        NOTE: If the table supplied already exists, it WILL be dropped.
         '''
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
