@@ -4,7 +4,6 @@ from collections import defaultdict
 from os import environ as env_vars
 from sys import getsizeof
 from time import time, sleep
-
 import mlflow
 import mlflow.spark
 import requests
@@ -16,36 +15,33 @@ from pyspark.ml.base import Model as SparkModel
 
 def get_pod_uri(pod, port, pod_count=0, testing=False):
     """
-    Get address of MLFlow Container (this is
-    for DC/OS (Mesosphere) setup, not Kubernetes
+    Get address of MLFlow Container for Kubernetes
     """
 
     if testing:
         return "http://{pod}:{port}".format(pod=pod, port=port)  # mlflow docker container endpoint
 
     try:
-        return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format \
-            (pod=pod, pod_count=pod_count, framework=env_vars['FRAMEWORK_NAME'], port=port)
-        # mlflow pod in mesos endpoint (in production)
+        return env_vars['MLFLOW_URL']
     except KeyError as e:
         raise KeyError(
-            "Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
+            "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
 
+===
+from mlflow.exceptions import MlflowException
 
 def _get_user():
     """
     Get the current logged in user to
-    Zeppelin
+    Jupyter
 
     :return: (str) name of the logged in user
     """
     try:
-        uname = env_vars['USERNAME']  # Debugging ONLY!
-        if uname:
-            return uname
-        return z.getInterpreterContext().getAuthenticationInfo().getUser()
-    except NameError:
-        raise Exception("Running MLManager outside of Splice Machine Cloud Zeppelin "
+        uname = env_vars['JUPYTERHUB_USER']
+        return uname
+    except KeyError:
+        raise Exception("Could not determine current running user. Running MLManager outside of Splice Machine Cloud Jupyter "
                         "is currently unsupported")
 
 
@@ -156,16 +152,22 @@ class MLManager(MlflowClient):
 
         self.active_run = None
         self.active_experiment = None
-
         self.timer_start_time = None  # for timer
         self.timer_name = None
-
         self._basic_auth = None
 
     @property
     def current_run_id(self):
         """
         Returns the UUID of the current run
+    
+    def __repr__(self):
+        return "MLManager: Active Experiment " + str(self.active_experiment) + " | Active Run " + str(self.active_run)
+    
+    def __str__(self):
+        return self.__repr__()
+    @staticmethod
+    def __removekey(d, key):
         """
         return self.active_run.info.run_uuid
 
@@ -262,6 +264,36 @@ class MLManager(MlflowClient):
             self.active_experiment = self.get_experiment_by_name(experiment_name)
             print("Set experiment id=" + str(experiment_id) + " to the active experiment")
 
+    def create_experiment(self, experiment_name, reset=False):
+        """
+        Create a new experiment. If the experiment
+        already exists, it will be set to active experiment.
+        If the experiment doesn't exist, it will be created
+        and set to active. If the reset option is set to true
+        (please use with caution), the runs within the existing 
+        experiment will be deleted
+        :param experiment_name: (str) the name of the experiment to create
+        :param reset: (bool) whether or not to overwrite the existing run
+        """
+        experiment = self.get_experiment_by_name(experiment_name)
+        if experiment:
+            print("Experiment " + experiment_name + " already exists... setting to active experiment")
+            self.active_experiment = experiment
+            print("Active experiment has id " + str(experiment.id))
+            if reset:
+                print("Keyword argument \"reset\" was set to True. Overwriting experiment and its associated runs...")
+                experiment_id = self.active_experiment.experiment_id
+                associated_runs = self.list_run_infos(experiment_id)
+                for run in associated_runs:
+                    print("Deleting run with UUID " + run.run_uuid)
+                    manager.delete_run(run.run_uuid)
+                print("Successfully overwrote experiment")
+        else:
+            experiment_id = super(MLManager, self).create_experiment(experiment_name)
+            print("Created experiment w/ id=" + str(experiment_id))
+            self.set_active_experiment(experiment_id)
+
+        
     def set_active_experiment(self, experiment_name):
         """
         Set the active experiment of which all new runs will be created under

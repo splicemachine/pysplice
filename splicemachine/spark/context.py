@@ -50,7 +50,7 @@ class PySpliceContext:
             self.jdbcurl = JDBC_URL
         else:
             try:
-                self.jdbcurl = os.environ['JDBC_URL']
+                self.jdbcurl = os.environ['BEAKERX_SQL_DEFAULT_JDBC']
             except KeyError as e:
                 raise KeyError(
                     "Could not locate JDBC URL. If you are not running on the cloud service,"
@@ -77,15 +77,14 @@ class PySpliceContext:
             self.spark_sql_context = sparkSession._wrapped
             self.jvm = ''
             self.context = MockedScalaContext(self.jdbcurl)
-
+            
     def toUpper(self, dataframe):
         """
         Returns a dataframe with all of the columns in uppercase
         :param dataframe: The dataframe to convert to uppercase
         """
         for col in dataframe.columns:
-            dataframe = dataframe.withColumnRenamed(col, col.upper()
-                                                    )
+            dataframe = dataframe.withColumnRenamed(col, col.upper())
         return dataframe
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
@@ -95,10 +94,10 @@ class PySpliceContext:
         :param schema_table_name: The schema.table with the correct column cases to pull from the database
         """
         cols = self.df('select top 1 * from {}'.format(schema_table_name)).columns
-        # sort the columns case insensitive so we are replacing the right ones in the dataframe
+        #sort the columns case insensitive so we are replacing the right ones in the dataframe
         old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
         new_cols = sorted(cols, key=lambda s: s.lower())
-        for old_col, new_col in zip(old_cols, new_cols):
+        for old_col,new_col in zip(old_cols,new_cols):
             dataframe = dataframe.withColumnRenamed(old_col, new_col)
         return dataframe
 
@@ -186,7 +185,9 @@ class PySpliceContext:
 
         :param schema_table_name: (DF) Table name
         """
-        return self.context.getSchema(schema_table_name)
+        df = self.df("select * from " + schema_table_name) #should call python method self.df instead of java method df
+        schm = df.schema
+        return schm
 
     def execute(self, query_string):
         '''
@@ -274,48 +275,48 @@ class PySpliceContext:
         """
         Generate the schema for create table
         """
-        # convert keys and values to uppercase in the types dictionary
-        types = dict((key.upper(), val) for key, val in types.items())
+        #convert keys and values to uppercase in the types dictionary
+        types = dict((key.upper(), val) for key,val in types.items())
         db_schema = []
-        # convert dataframe to have all uppercase column names
+        #convert dataframe to have all uppercase column names
         dataframe = self.toUpper(dataframe)
-        # i contains the name and pyspark datatype of the column
+        #i contains the name and pyspark datatype of the column
         for i in dataframe.schema:
             if i.name.upper() in types:
-                print('Column {} is of type {}'.format(i.name.upper(), i.dataType))
+                print('Column {} is of type {}'.format(i.name.upper(),i.dataType))
                 dt = types[i.name.upper()]
             else:
                 dt = PySpliceContext.CONVERSIONS[str(i.dataType)]
-            db_schema.append((i.name.upper(), dt))
-
+            db_schema.append((i.name.upper(),dt))
+        
         return db_schema
-
+    
     def _getCreateTableSchema(self, schema_table_name, new_schema=False):
         """
         Parse schema for new table; if it is needed,
         create it
         """
-        # try to get schema and table, else set schema to splice
+        #try to get schema and table, else set schema to splice
         if '.' in schema_table_name:
             schema, table = schema_table_name.upper().split('.')
         else:
             schema = 'SPLICE'
             table = schema_table_name.upper()
-        # check for new schema
+        #check for new schema
         if new_schema:
             print('Creating schema {}'.format(schema))
             self.execute('CREATE SCHEMA {}'.format(schema))
-
+        
         return schema, table
-
+    
     def _dropTableIfExists(self, schema, table):
         """
         Drop table if it exists
         """
-        print('Creating table {schema}.{table}'.format(schema=schema, table=table))
-        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema, table=table))
-
-    def createTable(self, dataframe, schema_table_name, new_schema=True, types=None):
+        print('Creating table {schema}.{table}'.format(schema=schema,table=table))
+        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
+    
+    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = None):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -323,7 +324,8 @@ class PySpliceContext:
                                   If this table exists in the database already, it will be DROPPED and a new one will be created
         :param dataframe: The dataframe that the table will be created for
         :param new_schema: A boolean to create a new schema. If True, the function will create a new schema before creating the table. If the schema already exists, set to False [DEFAULT True]
-        :param types: A dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
+        :param drop_table: An optinal boolean to drop the table if it exists. [DEFAULT False]
+        :param types: An optional dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
             If None or if any types are missing, types will be assumed automatically from the dataframe schema as follows:
                     BooleanType: BOOLEAN
                     ByteType: TINYINT
@@ -340,10 +342,14 @@ class PySpliceContext:
         '''
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
-
-        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema, table=table)
-        for name, type in db_schema:
-            sql += '{} {},\n'.format(name, type)
+        # Make sure table doesn't exists already
+        if(not drop_table and self.tableExists(schema_table_name):
+           return('ERROR: Table already exists. Please drop it or set drop_table option to True')
+           
+        self._dropTableIfExists(schema,table)
+        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
+        for name,type in db_schema:
+            sql += '{} {},\n'.format(name,type)
         sql = sql[:-2] + ')'
         print(sql)
         self.execute(sql)
