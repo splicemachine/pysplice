@@ -17,18 +17,11 @@ limitations under the License.
 from setuptools import setup, find_packages
 
 dependencies = [
-    "py4j==0.10.7",
-    "pytest==3.6.1",
+    "py4j==0.10.8.1",
+    "pytest==5.1.3",
     "mlflow==1.1.0",
-    "graphviz==0.8.4",
-    "future",
-    "numpy==1.15.0",
-    "h2o_pysparkling_2.3",
-    "pandas==0.22.0",
-    "pyspark-dist-explore==0.1.7",
-    "tqdm==4.32.2",
-    "statsmodels==0.9.0"
-
+    "graphviz==0.13.1",
+    "future"
 ]
 setup(
     name="splicemachine",
