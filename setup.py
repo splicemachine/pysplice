@@ -21,7 +21,7 @@ dependencies = [
     "pytest==3.6.1",
     "mlflow==1.1.0",
     "graphviz==0.8.4",
-    "future"
+    "future",
     "numpy==1.15.0",
     "h2o_pysparkling_2.3",
     "pandas==0.22.0",
