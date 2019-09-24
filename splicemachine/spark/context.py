@@ -343,7 +343,7 @@ class PySpliceContext:
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
         # Make sure table doesn't exists already
-        if(not drop_table and self.tableExists(schema_table_name):
+        if(not drop_table and self.tableExists(schema_table_name)):
            return('ERROR: Table already exists. Please drop it or set drop_table option to True')
            
         self._dropTableIfExists(schema,table)
