@@ -20,7 +20,7 @@ dependencies = [
     "py4j==0.10.8.1",
     "pytest==5.1.3",
     "mlflow==1.1.0",
-    "graphviz==0.13.1",
+    "graphviz==0.13",
     "future"
 ]
 setup(
