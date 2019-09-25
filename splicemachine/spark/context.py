@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import print_function
+
 import os
+
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
 
@@ -24,26 +26,37 @@ class PySpliceContext:
     This class implements a SpliceMachineContext object (similar to the SparkContext object)
     """
     CONVERSIONS = {
-            'BinaryType': 'BLOB',
-            'BooleanType': 'BOOLEAN',
-            'ByteType': 'TINYINT',
-            'DateType': 'DATE',
-            'DoubleType': 'DOUBLE',
-            'IntegerType': 'INTEGER',
-            'LongType': 'BIGINT',
-            'NullType': 'VARCHAR(50)',
-            'ShortType': 'SMALLINT',
-            'StringType': 'VARCHAR(150)',
-            'TimestampType': 'TIMESTAMP',
-            'UnknownType': 'BLOB'
+        'BinaryType': 'BLOB',
+        'BooleanType': 'BOOLEAN',
+        'ByteType': 'TINYINT',
+        'DateType': 'DATE',
+        'DoubleType': 'DOUBLE',
+        'IntegerType': 'INTEGER',
+        'LongType': 'BIGINT',
+        'NullType': 'VARCHAR(50)',
+        'ShortType': 'SMALLINT',
+        'StringType': 'VARCHAR(150)',
+        'TimestampType': 'TIMESTAMP',
+        'UnknownType': 'BLOB'
     }
 
-    def __init__(self, JDBC_URL, sparkSession, _unit_testing=False):
+    def __init__(self, sparkSession, JDBC_URL=None, _unit_testing=False):
         """
         :param JDBC_URL: (string) The JDBC URL Connection String for your Splice Machine Cluster
         :param sparkSession: (sparkContext) A SparkSession object for talking to Spark
         """
-        self.jdbcurl = JDBC_URL
+
+        if JDBC_URL:
+            self.jdbcurl = JDBC_URL
+        else:
+            try:
+                self.jdbcurl = os.environ['BEAKERX_SQL_DEFAULT_JDBC']
+            except KeyError as e:
+                raise KeyError(
+                    "Could not locate JDBC URL. If you are not running on the cloud service,"
+                    "please specify the JDBC_URL=<some url> keyword argument in the constructor"
+                )
+
         self._unit_testing = _unit_testing
 
         if not _unit_testing:  # Private Internal Argument to Override Using JVM
@@ -54,7 +67,8 @@ class PySpliceContext:
                         "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
             java_import(self.jvm, "scala.collection.JavaConverters._")
             java_import(self.jvm, "com.splicemachine.derby.impl.*")
-            self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(self.spark_sql_context._jsc)
+            self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
+                self.spark_sql_context._jsc)
             self.context = self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(
                 self.jdbcurl)
 
@@ -63,15 +77,14 @@ class PySpliceContext:
             self.spark_sql_context = sparkSession._wrapped
             self.jvm = ''
             self.context = MockedScalaContext(self.jdbcurl)
-        
+            
     def toUpper(self, dataframe):
         """
         Returns a dataframe with all of the columns in uppercase
         :param dataframe: The dataframe to convert to uppercase
         """
         for col in dataframe.columns:
-            dataframe = dataframe.withColumnRenamed(col, col.upper()
-            )
+            dataframe = dataframe.withColumnRenamed(col, col.upper())
         return dataframe
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
@@ -128,7 +141,7 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to insert
         :param schema_table_name: (string) The table in which you would like to insert the RDD
         """
-        #make sure column names are in the correct case
+        # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
@@ -139,7 +152,7 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to upsert
         :param schema_table_name: (string) The table in which you would like to upsert the RDD
         """
-        #make sure column names are in the correct case
+        # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.upsert(dataframe._jdf, schema_table_name)
 
@@ -162,7 +175,7 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to update
         :param schema_table_name: (string) Splice Machine Table
         """
-        #make sure column names are in the correct case
+        # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.update(dataframe._jdf, schema_table_name)
 
@@ -229,7 +242,8 @@ class PySpliceContext:
         """
         return self.context.analyzeTable(schema_table_name, estimateStatistics, samplePercent)
 
-    def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None, fieldSeparator=None,
+    def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None,
+               fieldSeparator=None,
                quoteCharacter=None):
         '''
         Export a dataFrame in CSV
@@ -242,10 +256,11 @@ class PySpliceContext:
         :param quoteCharacter: quoteCharacter or null, defaults to '"'
         :return:
         '''
-        return self.context.export(dataframe._jdf, location, compression, replicationCount, fileEncoding,
+        return self.context.export(dataframe._jdf, location, compression, replicationCount,
+                                   fileEncoding,
                                    fieldSeparator, quoteCharacter)
 
-    def exportBinary(self, dataframe, location,compression, e_format):
+    def exportBinary(self, dataframe, location, compression, e_format):
         '''
         Export a dataFrame in binary format
         :param dataframe:
@@ -254,7 +269,7 @@ class PySpliceContext:
         :param e_format: Binary format to be used, currently only 'parquet' is supported
         :return:
         '''
-        return self.context.exportBinary(dataframe._jdf,location,compression,e_format)
+        return self.context.exportBinary(dataframe._jdf, location, compression, e_format)
 
     def _generateDBSchema(self, dataframe, types={}):
         """
@@ -328,7 +343,7 @@ class PySpliceContext:
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
         # Make sure table doesn't exists already
-        if(not drop_table and self.tableExists(schema_table_name):
+        if(not drop_table and self.tableExists(schema_table_name)):
            return('ERROR: Table already exists. Please drop it or set drop_table option to True')
            
         self._dropTableIfExists(schema,table)
@@ -340,30 +355,9 @@ class PySpliceContext:
         self.execute(sql)
 
 
-class SpliceMLContext(PySpliceContext):
-    """
-    PySpliceContext for use with the cloud service.
-    Although the original pysplicecontext *will work*
-    on the Cloud Service (Zeppelin Notebook), this class
-    does many things for ease of use.
-    """
-    def __init__(self, sparkSession, useH2O=False, _unit_testing=False):
-        """
-        Automatically find the JDBC URL and establish a connection
-        to the current Splice Machine database
-        :param sparkSession: the sparksession object
-        :param useH2O: whether or not to
-        :param _unit_testing: whether or not we are unit testing
-        """
-        try:
-            url = os.environ['JDBC_URL']
-            PySpliceContext.__init__(self, url, sparkSession, _unit_testing)
-        except Exception as e:
-            print(e)
-            print('The SpliceMLContext is only for use on the cloud service. Please import and use the PySpliceContext instead.\nUsage:\n\tfrom splicemachine.spark.context import PySpliceContext\n\tsplice = PySpliceContext(jdbc_url, sparkSession)')
-            return -1
-        if useH2O:
-            from pysparkling import H2OConf, H2OContext
-            h2oConf = H2OConf(sparkSession)
-            h2oConf.set_fail_on_unsupported_spark_param_disabled()
-            self.hc = H2OContext.getOrCreate(sparkSession, h2oConf)
+class SpliceMLContext(object):
+    def __init__(self):
+        raise Exception("This class has been deprecated in favor of the PySpliceContext class. "
+                        "the JDBC URL argument in the constructor is now *optional*. Thus, if "
+                        "running on the cloud service, you could do this "
+                        "`splice=PySpliceContext(spark)` to achieve the same result")

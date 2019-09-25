@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import random
 import time
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import graphviz
 import numpy as np
@@ -49,7 +49,6 @@ class ModelEvaluator():
         This class has been renamed to SpliceBinaryClassificationEvaluator
         """
         raise Exception(ERROR)
-
 
 class SpliceBaseEvaluator(object):
     """
@@ -257,7 +256,7 @@ class DecisionTreeVisualizer(object):
             feature_column_names,
             label_names,
             tree_name,
-            visual=True,
+            visual=False,
     ):
         """
         Visualize a decision tree, either in a code like format, or graphviz
@@ -275,7 +274,7 @@ class DecisionTreeVisualizer(object):
                                                        feature_column_names)
 
         tree_to_json = DecisionTreeVisualizer.replacer(tree_to_json,
-                                                       ['Predict ' + str(i) + '.0' for i in
+                                                       [f'Predict: {str(i)}.0' for i in
                                                         range(0, len(label_names))],
                                                        label_names)
         if not visual:
@@ -291,7 +290,7 @@ class DecisionTreeVisualizer(object):
                                         realroot=True)
         dot.render('/zeppelin/webapps/webapp/assets/images/'
                    + tree_name)
-        print('Successfully uploaded file to Zeppelin Assests on this cluster')
+        print('Successfully uploaded file to Zeppelin Assets on this cluster')
         print('Uploading.')
 
         time.sleep(3)
@@ -299,8 +298,9 @@ class DecisionTreeVisualizer(object):
         time.sleep(3)
 
         print(
-                'You can find your visualization at "https://docs.google.com/gview?url=https://<cluster_name>.splicemachine.io/assets/images/' \
-                + tree_name + '.pdf&embedded=true#view=fith')
+            'You can find your visualization at "https://docs.google.com/gview?url=https://'
+            '<cluster_name>.splicemachine.io/assets/images/' \
+            + tree_name + '.pdf&embedded=true#view=fith')
 
     @staticmethod
     def replacer(string, bad, good):
