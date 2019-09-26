@@ -13,3 +13,11 @@
 /splicemachine/spark/test/resources/.DS_Store
 /splicemachine/spark/test/resources/spark2.2/.DS_Store
 /splicemachine/spark/test/resources/spark2.2/python/.DS_Store
+/.vscode
+.DS_Store
+splicemachine/.DS_Store
+*.pyc
+*.pyo
+**/__pycache__
+splicemachine/ml/test/
+splicemachine/ml/utilities.pyc
