@@ -4,9 +4,11 @@ from collections import defaultdict
 from os import environ as env_vars
 from sys import getsizeof
 from time import time, sleep
+
 import mlflow
 import mlflow.spark
 import requests
+from requests.auth import HTTPBasicAuth
 from mlflow.tracking import MlflowClient
 from py4j.java_gateway import java_import
 from pyspark.ml import PipelineModel
@@ -15,32 +17,36 @@ from pyspark.ml.base import Model as SparkModel
 
 def get_pod_uri(pod, port, pod_count=0, testing=False):
     """
-    Get address of MLFlow Container for Kubernetes
+    Get address of MLFlow Container (this is
+    for DC/OS (Mesosphere) setup, not Kubernetes
     """
 
     if testing:
         return "http://{pod}:{port}".format(pod=pod, port=port)  # mlflow docker container endpoint
 
     try:
-        return env_vars['MLFLOW_URL']
+        return 'http://{pod}-{pod_count}-node.{framework}.mesos:{port}'.format \
+            (pod=pod, pod_count=pod_count, framework=env_vars['FRAMEWORK_NAME'], port=port)
+        # mlflow pod in mesos endpoint (in production)
     except KeyError as e:
         raise KeyError(
-            "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
+            "Uh Oh! FRAMEWORK_NAME variable was not found... are you running in Zeppelin?")
 
-
-from mlflow.exceptions import MlflowException
 
 def _get_user():
     """
     Get the current logged in user to
-    Jupyter
+    Zeppelin
+
     :return: (str) name of the logged in user
     """
     try:
-        uname = env_vars.get('JUPYTERHUB_USER') or env_vars['USER']
-        return uname
-    except KeyError:
-        raise Exception("Could not determine current running user. Running MLManager outside of Splice Machine Cloud Jupyter "
+        uname = env_vars['USERNAME']  # Debugging ONLY!
+        if uname:
+            return uname
+        return z.getInterpreterContext().getAuthenticationInfo().getUser()
+    except NameError:
+        raise Exception("Running MLManager outside of Splice Machine Cloud Zeppelin "
                         "is currently unsupported")
 
 
@@ -58,6 +64,7 @@ def _readable_pipeline_stage(pipeline_stage):
 def _get_stages(pipeline):
     """
     Extract the stages from a fit or unfit pipeline
+
     :param pipeline: a fit or unfit Spark pipeline
     :return: stages list
     """
@@ -150,22 +157,16 @@ class MLManager(MlflowClient):
 
         self.active_run = None
         self.active_experiment = None
+
         self.timer_start_time = None  # for timer
         self.timer_name = None
+
         self._basic_auth = None
 
     @property
     def current_run_id(self):
         """
         Returns the UUID of the current run
-    
-    def __repr__(self):
-        return "MLManager: Active Experiment " + str(self.active_experiment) + " | Active Run " + str(self.active_run)
-    
-    def __str__(self):
-        return self.__repr__()
-    @staticmethod
-    def __removekey(d, key):
         """
         return self.active_run.info.run_uuid
 
@@ -198,7 +199,7 @@ class MLManager(MlflowClient):
                 raise Exception("Please either use set_active_experiment or create_experiment "
                                 "to set an active experiment before running this function")
             elif not self.active_run:
-                raise Exception("Please either use set_active_run or start_run to set an active "
+                raise Exception("Please either use set_active_run or create_run to set an active "
                                 "run before running this function")
             else:
                 return func(self, *args, **kwargs)
@@ -262,11 +263,11 @@ class MLManager(MlflowClient):
             self.active_experiment = self.get_experiment_by_name(experiment_name)
             print("Set experiment id=" + str(experiment_id) + " to the active experiment")
 
-        
     def set_active_experiment(self, experiment_name):
         """
         Set the active experiment of which all new runs will be created under
         Does not apply to already created runs
+
         :param experiment_name: either an integer (experiment id) or a string (experiment name)
         """
 
@@ -283,7 +284,7 @@ class MLManager(MlflowClient):
         """
         self.active_run = self.get_run(run_id)
 
-    def start_run(self, tags=None, run_name=None, experiment_id=None, nested=False):
+    def start_run(self, tags=None, experiment_id=None):
         """
         Create a new run in the active experiment and set it to be active
         :param tags: a dictionary containing metadata about the current run.
@@ -295,7 +296,7 @@ class MLManager(MlflowClient):
         :param run_name: an optional name for the run to show up in the MLFlow UI
         :param experiment_id: if this is specified, the experiment id of this
             will override the active run.
-        :param nester: Controls whether run is nested in parent run. True creates a nest run
+
         """
         if experiment_id:
             new_run_exp_id = experiment_id
@@ -304,10 +305,7 @@ class MLManager(MlflowClient):
             new_run_exp_id = self.active_experiment.experiment_id
         else:
             new_run_exp_id = 0
-            try:
-                self.set_active_experiment(new_run_exp_id)
-            except MlflowException:
-                raise MlflowException("There are no experiements available yet. Please create an experiment before starting a run")
+            self.set_active_experiment(new_run_exp_id)
 
         if not tags:
             tags = {}
@@ -315,10 +313,6 @@ class MLManager(MlflowClient):
         tags['mlflow.user'] = _get_user()
 
         self.active_run = super(MLManager, self).create_run(new_run_exp_id, tags=tags)
-        if run_name:
-            manager.set_tag('mlflow.runName',run_name)
-            print(f'Setting {run_name} to active run')
-        
 
     def get_run(self, run_id):
         """
@@ -371,11 +365,9 @@ class MLManager(MlflowClient):
     @check_active
     def set_tags(self, tags):
         """
-        Log a list of tags in order or a dictionary of tags
+        Log a list of tags in order
         :param params: a list of tuples containing tags mapped to tag values
         """
-        if isinstance(tags,dict):
-            tags = list(tags.items())
         for tag in tags:
             self.set_tag(*tag)
 
@@ -457,6 +449,7 @@ class MLManager(MlflowClient):
         is a model, it will return True, if it is a
         pipeline model is will return False.
         Otherwise, it will throw an exception
+
         :param spark_object: (Model) Spark object to check
         :return: (bool) whether or not the object is a model
         :exception: (Exception) throws an error if it is not either
@@ -511,9 +504,11 @@ class MLManager(MlflowClient):
         """
         Log the human-friendly names of each stage in
         a  Spark pipeline.
+
         *Warning*: With a big pipeline, this could result in
         a lot of parameters in MLFlow. It is probably best
         to log them yourself, so you can ensure useful tracking
+
         :param pipeline: the fitted/unfit pipeline object
         """
 
@@ -525,6 +520,7 @@ class MLManager(MlflowClient):
     def _find_first_input_by_output(dictionary, value):
         """
         Find the first input column for a given column
+
         :param dictionary: dictionary to search
         :param value: column
         :return: None if not found, otherwise first column
@@ -539,6 +535,7 @@ class MLManager(MlflowClient):
         """
         Log the preprocessing transformation sequence
         for every feature in the UNFITTED Spark pipeline
+
         :param unfit_pipeline: UNFITTED spark pipeline!!
         """
         transformations = defaultdict(lambda: [[], None])  # transformations, outputColumn
@@ -568,12 +565,22 @@ class MLManager(MlflowClient):
         Start a given timer with the specified
         timer name, which will be logged when the
         run is stopped
+
         :param timer_name: the name to call the timer (will appear in MLFlow UI)
         """
         self.timer_name = timer_name
         self.timer_start_time = time()
 
         print("Started timer " + timer_name + " at " + str(self.timer_start_time))
+
+    @check_active
+    def stop_timer(self):
+        """
+        Stop any active timers, and log the
+        time that the timer was active as a parameter
+        :return: total time in ms
+        """
+        self.log_and_stop_timer()
 
     @check_active
     def log_and_stop_timer(self):
@@ -597,8 +604,10 @@ class MLManager(MlflowClient):
         """
         Takes an Splice evaluator and logs
         all of the associated metrics with it
+
         :param splice_evaluator: a Splice evaluator (from
             splicemachine.ml.utilities package in pysplice)
+
         :return: retrieved metrics dict
         """
         results = splice_evaluator.get_results('dict')
@@ -674,6 +683,7 @@ class MLManager(MlflowClient):
         Download the artifact at the given
         run id (active default) + name
         to the local path
+
         :param name: (str) artifact name to load
             (with respect to the run)
         :param local_path: (str) local path to download the
@@ -687,7 +697,7 @@ class MLManager(MlflowClient):
 
     def load_spark_model(self, run_id=None, name='model'):
         """
-        Download a model from S3 
+        Download a model from S3
         and load it into Spark
         :param run_id: the id of the run to get a model from
             (the run must have an associated model with it named spark_model)
@@ -713,16 +723,16 @@ class MLManager(MlflowClient):
         """
         Login to MLmanager Director so we can
         submit jobs
+
         :param username: (str) database username
         :param password: (str) database password
         """
-        self._basic_auth = {
-            'Authorization': 'Basic ' + encode_base64(username + ':' + password)
-        }
+        self._basic_auth = HTTPBasicAuth(username, password)
 
     def _initiate_job(self, payload, endpoint):
         """
         Send a job to the initiation endpoint
+
         :param payload: (dict) JSON payload for POST request
         :param endpoint: (str) REST endpoint to target
         :return: (str) Response text from request
@@ -734,9 +744,8 @@ class MLManager(MlflowClient):
             )
         request = requests.post(
             get_pod_uri('mlflow', 5003) + endpoint,
-            headers=self._basic_auth,
+            auth=self._basic_auth,
             json=payload,
-
         )
 
         if request.ok:
@@ -754,7 +763,7 @@ class MLManager(MlflowClient):
         """
         Queue Job to deploy a run to sagemaker with the
         given run id (found in MLFlow UI or through search API)
-        
+
         :param run_id: the id of the run to deploy. Will default to the current
             run id.
         :param app_name: the name of the app in sagemaker once deployed
@@ -834,6 +843,7 @@ class MLManager(MlflowClient):
                      cpu_cores=0.1, allocated_ram=0.5, model_name=None):
         """
         Deploy a given run to AzureML.
+
         :param endpoint_name: (str) the name of the endpoint in AzureML when deployed to
             Azure Container Services. Must be unique.
         :param resource_group: (str) Azure Resource Group for model. Automatically created if
