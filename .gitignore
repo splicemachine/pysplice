@@ -14,8 +14,10 @@
 /splicemachine/spark/test/resources/spark2.2/.DS_Store
 /splicemachine/spark/test/resources/spark2.2/python/.DS_Store
 /.vscode
-.DS_Store
+**/*.DS_Store
 splicemachine/.DS_Store
+.ipynb_checkpoints/
+**/*.pyc
 *.pyc
 *.pyo
 **/__pycache__
