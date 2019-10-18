@@ -748,7 +748,7 @@ class MLManager(MlflowClient):
 
     def deploy_aws(self, app_name,
                    region='us-east-2', instance_type='ml.m5.xlarge',
-                   run_id=None, instance_count=1, deployment_mode='create'):
+                   run_id=None, instance_count=1, deployment_mode='replace'):
         """
         Queue Job to deploy a run to sagemaker with the
         given run id (found in MLFlow UI or through search API)
