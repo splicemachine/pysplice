@@ -1,16 +1,18 @@
-from base64 import b64encode as encode_base64
 from builtins import super
 from collections import defaultdict
 from os import environ as env_vars
 from sys import getsizeof
 from time import time, sleep
+
 import mlflow
 import mlflow.spark
 import requests
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from py4j.java_gateway import java_import
 from pyspark.ml import PipelineModel
 from pyspark.ml.base import Model as SparkModel
+from requests.auth import HTTPBasicAuth
 
 
 def get_pod_uri(pod, port, pod_count=0, testing=False):
@@ -28,8 +30,6 @@ def get_pod_uri(pod, port, pod_count=0, testing=False):
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
 
 
-from mlflow.exceptions import MlflowException
-
 def _get_user():
     """
     Get the current logged in user to
@@ -40,8 +40,9 @@ def _get_user():
         uname = env_vars.get('JUPYTERHUB_USER') or env_vars['USER']
         return uname
     except KeyError:
-        raise Exception("Could not determine current running user. Running MLManager outside of Splice Machine Cloud Jupyter "
-                        "is currently unsupported")
+        raise Exception(
+            "Could not determine current running user. Running MLManager outside of Splice Machine"
+            " Cloud Jupyter is currently unsupported")
 
 
 def _readable_pipeline_stage(pipeline_stage):
@@ -158,10 +159,10 @@ class MLManager(MlflowClient):
     def current_run_id(self):
         """
         Returns the UUID of the current run
-    
+
     def __repr__(self):
         return "MLManager: Active Experiment " + str(self.active_experiment) + " | Active Run " + str(self.active_run)
-    
+
     def __str__(self):
         return self.__repr__()
     @staticmethod
@@ -262,7 +263,6 @@ class MLManager(MlflowClient):
             self.active_experiment = self.get_experiment_by_name(experiment_name)
             print("Set experiment id=" + str(experiment_id) + " to the active experiment")
 
-        
     def set_active_experiment(self, experiment_name):
         """
         Set the active experiment of which all new runs will be created under
@@ -307,7 +307,8 @@ class MLManager(MlflowClient):
             try:
                 self.set_active_experiment(new_run_exp_id)
             except MlflowException:
-                raise MlflowException("There are no experiements available yet. Please create an experiment before starting a run")
+                raise MlflowException(
+                    "There are no experiements available yet. Please create an experiment before starting a run")
 
         if not tags:
             tags = {}
@@ -316,9 +317,8 @@ class MLManager(MlflowClient):
 
         self.active_run = super(MLManager, self).create_run(new_run_exp_id, tags=tags)
         if run_name:
-            manager.set_tag('mlflow.runName',run_name)
+            manager.set_tag('mlflow.runName', run_name)
             print(f'Setting {run_name} to active run')
-        
 
     def get_run(self, run_id):
         """
@@ -374,7 +374,7 @@ class MLManager(MlflowClient):
         Log a list of tags in order or a dictionary of tags
         :param params: a list of tuples containing tags mapped to tag values
         """
-        if isinstance(tags,dict):
+        if isinstance(tags, dict):
             tags = list(tags.items())
         for tag in tags:
             self.set_tag(*tag)
@@ -687,7 +687,7 @@ class MLManager(MlflowClient):
 
     def load_spark_model(self, run_id=None, name='model'):
         """
-        Download a model from S3 
+        Download a model from S3
         and load it into Spark
         :param run_id: the id of the run to get a model from
             (the run must have an associated model with it named spark_model)
@@ -716,9 +716,7 @@ class MLManager(MlflowClient):
         :param username: (str) database username
         :param password: (str) database password
         """
-        self._basic_auth = {
-            'Authorization': 'Basic ' + encode_base64(username + ':' + password)
-        }
+        self._basic_auth = HTTPBasicAuth(username, password)
 
     def _initiate_job(self, payload, endpoint):
         """
@@ -734,7 +732,7 @@ class MLManager(MlflowClient):
             )
         request = requests.post(
             get_pod_uri('mlflow', 5003) + endpoint,
-            headers=self._basic_auth,
+            auth=self._basic_auth,
             json=payload,
 
         )
@@ -750,11 +748,11 @@ class MLManager(MlflowClient):
 
     def deploy_aws(self, app_name,
                    region='us-east-2', instance_type='ml.m5.xlarge',
-                   run_id=None, instance_count=1, deployment_mode='create'):
+                   run_id=None, instance_count=1, deployment_mode='replace'):
         """
         Queue Job to deploy a run to sagemaker with the
         given run id (found in MLFlow UI or through search API)
-        
+
         :param run_id: the id of the run to deploy. Will default to the current
             run id.
         :param app_name: the name of the app in sagemaker once deployed
