@@ -15,12 +15,12 @@ from pyspark.ml.base import Model as SparkModel
 from requests.auth import HTTPBasicAuth
 
 
-def get_pod_uri(pod, port, pod_count=0, testing=False):
+def get_pod_uri(pod, port, pod_count=0, _testing=False):
     """
     Get address of MLFlow Container for Kubernetes
     """
 
-    if testing:
+    if _testing:
         return "http://{pod}:{port}".format(pod=pod, port=port)  # mlflow docker container endpoint
 
     try:
@@ -129,8 +129,9 @@ class MLManager(MlflowClient):
             will be assumed as a file store. Defaults to
             MLFlow DC/OS Pod
         """
+        self._testing = _testing
         if not tracking_uri:
-            server_endpoint = get_pod_uri("mlflow", "5001", testing=_testing)
+            server_endpoint = get_pod_uri("mlflow", "5001", _testing=_testing)
         else:
             server_endpoint = tracking_uri
 
@@ -731,7 +732,7 @@ class MLManager(MlflowClient):
                 " Please run manager.login_director(username, password)"
             )
         request = requests.post(
-            get_pod_uri('mlflow', 5003) + endpoint,
+            get_pod_uri('mlflow', 5003, _testing=self._testing) + endpoint,
             auth=self._basic_auth,
             json=payload,
 
