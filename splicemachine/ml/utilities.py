@@ -175,7 +175,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
         """
         Plots the receiver operating characteristic curve for the trained classifier
 
-        :param trainingSummary: TrainingSummary object accessed by .summary after fitting a binary classification object
+        :param trainingSummary: TrainingSummary object accessed by .summary after fitting a binary classification object ONLY VALID FOR LOGISTIC REGRESSION
         :param ax: matplotlib axis object
 
         :return: axis with ROC plot

@@ -132,6 +132,35 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol):
 
         return dataset
 
+# This is largely useless unless I time it and it turns out to be faster
+class myIndexToString(Transformer, HasInputCol, HasOutputCol):
+    @keyword_only
+    def __init__(self, predCol=None, labelCol=None, stringCol = None, reconstructed_base = '_string'):
+        super(myIndexToString, self).__init__()
+        # kwargs = self._input_kwargs
+        # self.setParams(**kwargs)
+        self.predCol = predCol
+        self.labelCol = labelCol
+        self.stringCol = stringCol
+        self.reconstructed_base = reconstructed_base
+    @keyword_only
+    def setParams(self, predCol=None, labelCol=None, stringCol = None):
+        kwargs = self._input_kwargs
+        return self._set(**kwargs)
+
+    def _transform(self, dataset):
+        predCol = self.predCol
+        labelCol = self.labelCol
+        stringCol = self.stringCol
+        reconstructed_base = self.reconstructed_base
+
+        joinedout = dataset.join(dataset.select([labelCol, stringCol])\
+                            .withColumnRenamed(label,predCol)\
+                            .withColumnRenamed(stringCol, predCol + reconstructed_base), predCol)\
+                            .dropDuplicates()
+
+        return joinedout
+
 ## Pipeline Functions
 def get_string_pipeline(df, cols_to_exclude, steps = ['StringIndexer', 'OneHotEncoder', 'OneHotDummies']):
 

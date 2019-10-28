@@ -4,3 +4,4 @@
 *.pyc
 splicemachine/ml/test/
 splicemachine/ml/utilities.pyc
+./splicemachine/ml/.vscode/
