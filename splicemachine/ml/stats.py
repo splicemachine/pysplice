@@ -160,6 +160,43 @@ class myIndexToString(Transformer, HasInputCol, HasOutputCol):
                             .dropDuplicates()
 
         return joinedout
+# Now I'll make oversampling a transformer to include it in the pipeline
+class overSampler(Transformer, HasInputCol, HasOutputCol):
+    """Transformer to oversample the dataset
+
+    Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+
+    :param Transformer: Inherited Class
+    :param HasInputCol: Inherited Class
+    :param HasOutputCol: Inherited Class
+    :return: Transformed PySpark Dataframe With Original String Indexed Variables
+    """
+    @keyword_only
+    def __init__(self, label=None, ratio = None, majorityLabel = None, minorityLabel = None, withReplacement = None):
+        super(overSampler, self).__init__()
+        # kwargs = self._input_kwargs
+        # self.setParams(**kwargs)
+        self.label = label
+        self.ratio = ratio
+        self.majorityLabel = majorityLabel
+        self.minorityLabel = minorityLabel
+        self.withReplacement = withReplacement
+
+    @keyword_only
+    def setParams(self, label=None, ratio = None, majorityLabel = None, minorityLabel = None):
+        kwargs = self._input_kwargs
+        return self._set(**kwargs)
+
+    def _transform(self, dataset):
+        """
+        Oversamples
+        :param dataset: dataframe to be oversampled
+        :return: DataFrame with column corresponding to a categorical indexed column
+        """
+        dataset = dataset.filter(F.col(self.label) == self.majorityLabel)\
+                         .union(dataset.filter(F.col(self.label) == self.minorityLabel).sample(self.withReplacement, self.ratio))
+
+        return dataset
 
 ## Pipeline Functions
 def get_string_pipeline(df, cols_to_exclude, steps = ['StringIndexer', 'OneHotEncoder', 'OneHotDummies']):
