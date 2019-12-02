@@ -276,8 +276,7 @@ class PySpliceContext:
         Generate the schema for create table
         """
         #convert keys and values to uppercase in the types dictionary
-        if(types):
-            types = dict((key.upper(), val) for key,val in types.items())
+        types = dict((key.upper(), val) for key,val in types.items())
         db_schema = []
         #convert dataframe to have all uppercase column names
         dataframe = self.toUpper(dataframe)
@@ -317,7 +316,7 @@ class PySpliceContext:
         print('Creating table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
-    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = None):
+    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = {}):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -348,8 +347,8 @@ class PySpliceContext:
            
         self._dropTableIfExists(schema,table)
         sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
-        for name,type in db_schema:
-            sql += '{} {},\n'.format(name,type)
+        for name,typ in db_schema:
+            sql += '{} {},\n'.format(name,typ)
         sql = sql[:-2] + ')'
         print(sql)
         self.execute(sql)
