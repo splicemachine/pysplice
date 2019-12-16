@@ -284,7 +284,7 @@ class MLManager(MlflowClient):
         """
         self.active_run = self.get_run(run_id)
 
-    def start_run(self, tags=None, run_name=None, experiment_id=None, nested=False):
+    def start_run(self, tags={}, run_name=None, experiment_id=None, nested=False):
         """
         Create a new run in the active experiment and set it to be active
         :param tags: a dictionary containing metadata about the current run.
@@ -310,9 +310,6 @@ class MLManager(MlflowClient):
             except MlflowException:
                 raise MlflowException(
                     "There are no experiements available yet. Please create an experiment before starting a run")
-
-        if not tags:
-            tags = {}
 
         tags['mlflow.user'] = _get_user()
 
