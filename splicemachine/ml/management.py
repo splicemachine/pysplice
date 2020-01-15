@@ -21,10 +21,14 @@ def get_pod_uri(pod, port, pod_count=0, _testing=False):
     """
 
     if _testing:
-        return "http://{pod}:{port}".format(pod=pod, port=port)  # mlflow docker container endpoint
+        return f"http://{pod}:{port}"  # mlflow docker container endpoint
 
     try:
-        return env_vars['MLFLOW_URL']
+        url = env_vars['MLFLOW_URL']
+        if ':' in url:
+            url = url.split(':')[0]
+        url += f':{port}' # 5001 or 5003 for tracking or deployment
+        return url
     except KeyError as e:
         raise KeyError(
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
@@ -116,7 +120,7 @@ class MLManager(MlflowClient):
     A class for managing your MLFlow Runs/Experiments
     """
 
-    ARTIFACT_INSERT_SQL = 'INSERT INTO ARTIFACTS (run_uuid, path, "binary") VALUES (?, ?, ?)'
+    ARTIFACT_INSERT_SQL = 'INSERT INTO ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ARTIFACTS WHERE name=\'{name}\' ' \
                              'AND run_uuid=\'{runid}\''
 
@@ -148,7 +152,7 @@ class MLManager(MlflowClient):
             self.splice_context = None
         else:
             self.splice_context = splice_context
-            java_import(splice_context.jvm, "java.io.{BinaryOutputStream, ObjectOutputStream}")
+            java_import(splice_context.jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
 
         self.active_run = None
         self.active_experiment = None
@@ -482,8 +486,8 @@ class MLManager(MlflowClient):
         prepared_statement.setString(1, self.current_run_id)  # set run UUID
         prepared_statement.setString(2, name)
         prepared_statement.setInt(3, file_size)
-        binary_input_stream = self.splice_context.jvm.ByteArrayInputStream(byte_array)
-        prepared_statement.setBinaryStream(3, binary_input_stream)  # set BLOB
+        binary_input_stream = self.splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+        prepared_statement.setBinaryStream(4, binary_input_stream)  # set BLOB
 
         prepared_statement.execute()
         prepared_statement.close()
@@ -858,6 +862,7 @@ class MLManager(MlflowClient):
             raise Exception("Invalid Allocated RAM")
 
         request_payload = {
+            'handler_name': 'DEPLOY_AWS',
             'endpoint_name': endpoint_name,
             'resource_group': resource_group,
             'workspace': workspace,
