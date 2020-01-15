@@ -862,7 +862,7 @@ class MLManager(MlflowClient):
             raise Exception("Invalid Allocated RAM")
 
         request_payload = {
-            'handler_name': 'DEPLOY_AWS',
+            'handler_name': 'DEPLOY_AZURE',
             'endpoint_name': endpoint_name,
             'resource_group': resource_group,
             'workspace': workspace,
