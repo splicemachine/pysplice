@@ -983,14 +983,15 @@ class MLManager(MlflowClient):
         if model_exists:
             print('A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
 
-        #Serialize Mleap model to BLOB
-        baos = self.splice_context.jvm.java.io.ByteArrayOutputStream() 
-        oos = self.splice_context.jvm.java.io.ObjectOutputStream(baos)
-        oos.writeObject(model)
-        oos.flush()
-        oos.close()
-        byte_array = baos.toByteArray()
-        self._insert_artifact(run_id, byte_array, mleap_model=True)
+        else:
+            #Serialize Mleap model to BLOB
+            baos = self.splice_context.jvm.java.io.ByteArrayOutputStream() 
+            oos = self.splice_context.jvm.java.io.ObjectOutputStream(baos)
+            oos.writeObject(model)
+            oos.flush()
+            oos.close()
+            byte_array = baos.toByteArray()
+            self._insert_artifact(run_id, byte_array, mleap_model=True)
     
     def __create_data_table(self, schema_table_name: str,schema_str: str) -> str:
         """
