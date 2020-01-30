@@ -300,7 +300,7 @@ class PySpliceContext:
         if '.' in schema_table_name:
             schema, table = schema_table_name.upper().split('.')
         else:
-            schema = 'SPLICE'
+            schema = self.getConnection().getCurrentSchemaName()
             table = schema_table_name.upper()
         #check for new schema
         if new_schema:
@@ -316,7 +316,7 @@ class PySpliceContext:
         print('Creating table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
-    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = {}):
+    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types = {}):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"

@@ -705,7 +705,7 @@ class MLManager(MlflowClient):
         for param in verbose_parameters:
             try:
                 value = float(verbose_parameters[param])
-                self.log_metric('Hyperparameter- ' + param.split('-')[0], value)
+                self.log_param('Hyperparameter- ' + param.split('-')[0], value)
             except:
                 self.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
 
