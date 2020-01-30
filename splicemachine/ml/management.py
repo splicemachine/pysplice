@@ -149,7 +149,8 @@ def _get_model_stage(pipeline):
     Gets the Model stage of a PipelineModel
     '''
     for i in _get_stages(pipeline):
-        if 'Model' in str(i.__class__):
+        # FIXME: We need a better way to determine if a stage is a model
+        if 'Model' in str(i.__class__) and i.__module__.split('.')[-1] in ['clustering', 'classification', 'regression']:
             return i
     raise AttributeError('Could not find model stage in Pipeline!')
 
