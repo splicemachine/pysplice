@@ -85,9 +85,9 @@ def _get_stages(pipeline):
     :param pipeline: a fit or unfit Spark pipeline
     :return: stages list
     """
-    if hasattr(pipeline, 'stages') and isinstance(pipeline.stages, list):
-        return pipeline.stages  # fit pipeline
-    return pipeline.getStages()  # unfit pipeline
+    if hasattr(pipeline, 'getStages'):
+        return pipeline.getStages()  # fit pipeline
+    return pipeline.stages  # unfit pipeline
 
 
 def _parse_string_parameters(string_parameters):
@@ -158,13 +158,10 @@ def _get_num_classes(pipeline_or_model) -> int:
     Tries to find the number of classes in a Pipeline or Model object
     :param pipeline_or_model: The Pipeline or Model object
     '''
-    model = None
     if 'pipeline' in str(pipeline_or_model.__class__).lower():
         model = _get_model_stage(pipeline_or_model)
     else:
         model = pipeline_or_model
-    if not model:
-        raise AttributeError('Could not find model stage in Pipeline.')
     num_classes = model.numClasses if model.hasParam('numClasses') else model.summary.k
     return num_classes   
 
@@ -329,8 +326,7 @@ class MLManager(MlflowClient):
                 print("Successfully overwrote experiment")
         else:
             if experiment and experiment.lifecycle_stage == 'deleted':
-                raise Exception(
-                    "Experiment {} is deleted. Please choose a new name".format(experiment_name))
+                raise Exception(f"Experiment {experiment_name} is deleted. Please choose a new name")
             experiment_id = super(MLManager, self).create_experiment(experiment_name)
             print("Created experiment with id=" + str(experiment_id))
             sleep(2)  # sleep for two seconds to allow rest API to be hit
@@ -347,7 +343,7 @@ class MLManager(MlflowClient):
         if isinstance(experiment_name, str):
             self.active_experiment = self.get_experiment_by_name(experiment_name)
 
-        elif isinstance(experiment_name, int) or isinstance(experiment_name, long):
+        elif isinstance(experiment_name, int):
             self.active_experiment = self.get_experiment(experiment_name)
 
     def set_active_run(self, run_id):
@@ -399,8 +395,7 @@ class MLManager(MlflowClient):
         try:
             return super(MLManager, self).get_run(run_id)
         except:
-            raise Exception(
-                "The run id {run_id} does not exist. Please check the id".format(run_id=run_id))
+            raise Exception(f"The run id {run_id} does not exist. Please check the id")
 
     @check_active
     def reset_run(self):
@@ -684,12 +679,11 @@ class MLManager(MlflowClient):
             self.log_metric(metric, results[metric])
 
     @check_active
-    def log_model_params(self, pipeline_or_model, stage_index=-1):
+    def log_model_params(self, pipeline_or_model):
         """
         Log the parameters of a fitted model or a
         model part of a fitted pipeline
         :param pipeline_or_model: fitted pipeline/fitted model
-        :param stage_index
         """
 
         model = _get_model_stage(pipeline_or_model)
@@ -741,8 +735,7 @@ class MLManager(MlflowClient):
                 self.ARTIFACT_RETRIEVAL_SQL.format(name=name, runid=run_id)
             ).collect()[0][0]
         except IndexError as e:
-            raise Exception("Unable to find the artifact with the given run id "
-                            "{} and name {}".format(run_id, name))
+            raise Exception(f"Unable to find the artifact with the given run id {run_id} and name {name}")
 
     def download_artifact(self, name, local_path, run_id=None):
         """
@@ -1141,7 +1134,7 @@ class MLManager(MlflowClient):
         else:
             if modelType in (ModelType.CLASSIFICATION, ModelType.CLUSTERING_WITH_PROB):
                 #Add a column for each class of the prediction to output the probability of the prediction
-                classes = [f'C{i}' for i in range(get_num_classes(fittedPipe))]
+                classes = [f'C{i}' for i in range(_get_num_classes(fittedPipe))]
             
         #Get the Mleap model and insert it into the MODELS table
         mleap_model = self._get_mleap_model(fittedPipe, df, run_id)
