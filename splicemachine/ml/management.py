@@ -185,12 +185,14 @@ class MLManager(MlflowClient):
     """
     A class for managing your MLFlow Runs/Experiments
     """
+    #FIXME: THIS WILL NEED TO BE MLMANAGER AFTER DBAAS-3254
+    MLMANAGER_SCHEMA = 'SPLICE'
 
-    ARTIFACT_INSERT_SQL = 'INSERT INTO ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
-    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ARTIFACTS WHERE name=\'{name}\' ' \
+    ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
+    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                              'AND run_uuid=\'{runid}\''
-    MLEAP_INSERT_SQL = 'INSERT INTO MODELS(ID, MODEL) VALUES (?, ?)'
-    MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM MODELS WHERE ID=\'{run_uuid}\''
+    MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(ID, MODEL) VALUES (?, ?)'
+    MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE ID=\'{run_uuid}\''
 
     def __init__(self, splice_context, tracking_uri=None, _testing=False):
         """
@@ -972,7 +974,7 @@ class MLManager(MlflowClient):
         
         #If a model with this run_id already exists in the table, gracefully fail
         #May be faster to use prepared statement
-        model_exists = self.splice_context.df(f'select count(*) from models where ID=\'{run_id}\'').collect()[0][0]
+        model_exists = self.splice_context.df(f'select count(*) from {self.MLMANAGER_SCHEMA}.models where ID=\'{run_id}\'').collect()[0][0]
         if model_exists:
             print('A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
 
@@ -1116,7 +1118,7 @@ class MLManager(MlflowClient):
         
         #THIS WILL BE CREATED AUTOMATICALLY ON MLFLOW POD CREATION
         if not self.splice_context.tableExists('models'):
-            self.splice_context.execute('create table models (id varchar(100) PRIMARY KEY, model BLOB)')
+            self.splice_context.execute(f'create table {self.MLMANAGER_SCHEMA}.models (id varchar(100) PRIMARY KEY, model BLOB)')
         
         #Get model type
         modelType = _get_model_type(fittedPipe)
