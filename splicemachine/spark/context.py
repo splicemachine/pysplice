@@ -38,7 +38,8 @@ class PySpliceContext:
         'ShortType': 'SMALLINT',
         'StringType': 'VARCHAR(500)',
         'TimestampType': 'TIMESTAMP',
-        'UnknownType': 'BLOB'
+        'UnknownType': 'BLOB',
+        'FloatType': 'FLOAT'
     }
 
     def __init__(self, sparkSession, JDBC_URL=None, _unit_testing=False):
