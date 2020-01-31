@@ -31,11 +31,12 @@ class PySpliceContext:
         'ByteType': 'TINYINT',
         'DateType': 'DATE',
         'DoubleType': 'DOUBLE',
+        'DecimalType': 'DOUBLE',
         'IntegerType': 'INTEGER',
         'LongType': 'BIGINT',
         'NullType': 'VARCHAR(50)',
         'ShortType': 'SMALLINT',
-        'StringType': 'VARCHAR(150)',
+        'StringType': 'VARCHAR(500)',
         'TimestampType': 'TIMESTAMP',
         'UnknownType': 'BLOB'
     }
@@ -331,6 +332,7 @@ class PySpliceContext:
                     ByteType: TINYINT
                     DateType: DATE
                     DoubleType: DOUBLE
+                    DecimalType: DOUBLE
                     IntegerType: INTEGER
                     LongType: BIGINT
                     NullType: VARCHAR(50)

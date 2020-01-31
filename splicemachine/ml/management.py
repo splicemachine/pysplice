@@ -5,6 +5,7 @@ from sys import getsizeof
 from time import time, sleep
 from enum import Enum
 from typing import List, Dict
+import re
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -995,6 +996,8 @@ class MLManager(MlflowClient):
         :param schema_table_name: (str) the schema.table to create the table under
         :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
         """
+        if self.splice_context.tableExists(schema_table_name):
+            raise NotImplementedError('A model has already been deployed to this table. We currently only support deploying 1 model per table')
         SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n'
         SQL_TABLE += schema_str + '\tMOMENT_ID VARCHAR(150) PRIMARY KEY)'
         self.splice_context.execute(SQL_TABLE)
@@ -1056,7 +1059,7 @@ class MLManager(MlflowClient):
         
         for i,col in enumerate(feature_columns):
             SQL_PRED_TRIGGER += '||' if i != 0 else ''
-            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType','DoubleType'} else f'NEWROW.{col}'
+            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType','DoubleType', 'DecimalType'} else f'NEWROW.{col}'
             SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
         
         #Cleanup + schema for PREDICT call
@@ -1146,7 +1149,7 @@ class MLManager(MlflowClient):
         #Get the VectorAssembler so we can get the features of the model
         feature_columns = _get_feature_vector_columns(fittedPipe)
         #Get the datatype of each column in the dataframe
-        schema_types = {str(i.name): str(i.dataType) for i in df.schema}
+        schema_types = {str(i.name): re.sub("[0-9,()]", "",str(i.dataType)) for i in df.schema}
         
         #Create the schema of the table (we use this a few times)
         schema_str = ''
