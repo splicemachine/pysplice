@@ -31,13 +31,15 @@ class PySpliceContext:
         'ByteType': 'TINYINT',
         'DateType': 'DATE',
         'DoubleType': 'DOUBLE',
+        'DecimalType': 'DOUBLE',
         'IntegerType': 'INTEGER',
         'LongType': 'BIGINT',
         'NullType': 'VARCHAR(50)',
         'ShortType': 'SMALLINT',
-        'StringType': 'VARCHAR(150)',
+        'StringType': 'VARCHAR(500)',
         'TimestampType': 'TIMESTAMP',
-        'UnknownType': 'BLOB'
+        'UnknownType': 'BLOB',
+        'FloatType': 'FLOAT'
     }
 
     def __init__(self, sparkSession, JDBC_URL=None, _unit_testing=False):
@@ -300,7 +302,7 @@ class PySpliceContext:
         if '.' in schema_table_name:
             schema, table = schema_table_name.upper().split('.')
         else:
-            schema = 'SPLICE'
+            schema = self.getConnection().getCurrentSchemaName()
             table = schema_table_name.upper()
         #check for new schema
         if new_schema:
@@ -316,7 +318,7 @@ class PySpliceContext:
         print('Creating table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
-    def createTable(self, dataframe, schema_table_name, new_schema=True, drop_table=False, types = {}):
+    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types = {}):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -331,6 +333,7 @@ class PySpliceContext:
                     ByteType: TINYINT
                     DateType: DATE
                     DoubleType: DOUBLE
+                    DecimalType: DOUBLE
                     IntegerType: INTEGER
                     LongType: BIGINT
                     NullType: VARCHAR(50)
