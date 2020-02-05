@@ -27,7 +27,7 @@ from mleap.pyspark import spark_support
 
 from ..spark.context import PySpliceContext
 
-SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
+#SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
 CONVERSIONS = PySpliceContext.CONVERSIONS
 
 # For MLeap model deployment
@@ -952,7 +952,7 @@ class MLManager(MlflowClient):
         :param df: A TRANSFORMED dataframe. ie a dataframe that the pipeline has called .transform() on
         :param run_id: (str) the MLFlow run associated with the model
         """
-        
+        SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
         if 'tmp' not in rbash('ls /').read():
             bash('mkdir /tmp')
         #Serialize the Spark model into Mleap format
