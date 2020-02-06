@@ -976,7 +976,7 @@ class MLManager(MlflowClient):
         
         #If a model with this run_id already exists in the table, gracefully fail
         #May be faster to use prepared statement
-        model_exists = self.splice_context.df(f'select count(*) from {self.MLMANAGER_SCHEMA}.models where ID=\'{run_id}\'').collect()[0][0]
+        model_exists = self.splice_context.df(f'select count(*) from {self.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
         if model_exists:
             print('A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
 
