@@ -193,8 +193,8 @@ class MLManager(MlflowClient):
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                              'AND run_uuid=\'{runid}\''
-    MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(ID, MODEL) VALUES (?, ?)'
-    MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE ID=\'{run_uuid}\''
+    MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
+    MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
 
     def __init__(self, splice_context, tracking_uri=None, _testing=False):
         """
