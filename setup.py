@@ -20,12 +20,13 @@ dependencies = [
     "py4j==0.10.8.1",
     "pytest==5.1.3",
     "mlflow==1.1.0",
+    "mleap==0.15.0"
     "graphviz==0.13",
     "future"
 ]
 setup(
     name="splicemachine",
-    version="1.0.0",
+    version="1.0.9",
     install_requires=dependencies,
     packages=find_packages(),
     license='Apache License, Version 2.0',
