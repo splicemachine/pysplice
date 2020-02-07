@@ -1084,7 +1084,7 @@ class MLManager(MlflowClient):
         elif modelType == ModelType.CLUSTERING_WITH_PROB: prediction_call = 'PREDICT_CLUSTER_PROBABILITIES'
         else: prediction_call = 'PREDICT_CLUSTER'
 
-        SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO {schema_table_name}_PREDS('
+        SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".","_")}_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO {schema_table_name}_PREDS('
         pk_vals = ''
         for i in primary_key:
             SQL_PRED_TRIGGER += f'\t{i[0]},'
@@ -1113,7 +1113,7 @@ class MLManager(MlflowClient):
         :param classes: (List[str]) the labels of the model (if they exist)
         :param verbose: (bool) whether to print the SQL query
         """
-        SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
+        SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".","_")}_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
         case_str = 'PREDICTION=\n\t\tCASE\n'
         for i,c in enumerate(classes):
             SQL_PARSE_TRIGGER += f'{c}=PARSEPROBS(NEWROW.prediction,{i}),'
