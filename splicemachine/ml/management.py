@@ -1176,10 +1176,6 @@ class MLManager(MlflowClient):
         # Make sure primary_key is valid format
         self.validate_primary_key(primary_key)
         
-        #THIS WILL BE CREATED AUTOMATICALLY ON MLFLOW POD CREATION
-        if not self.splice_context.tableExists(f'{self.MLMANAGER_SCHEMA}.models'):
-            self.splice_context.execute(f'create table {self.MLMANAGER_SCHEMA}.models (id varchar(100) PRIMARY KEY, model BLOB)')
-        
         # Get model type
         modelType = _get_model_type(fittedPipe)
         
