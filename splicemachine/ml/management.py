@@ -27,7 +27,7 @@ from mleap.pyspark import spark_support
 
 from ..spark.context import PySpliceContext
 
-#SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
+# SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
 CONVERSIONS = PySpliceContext.CONVERSIONS
 
 # For MLeap model deployment
@@ -187,7 +187,6 @@ class MLManager(MlflowClient):
     """
     A class for managing your MLFlow Runs/Experiments
     """
-    #FIXME: THIS WILL NEED TO BE MLMANAGER AFTER DBAAS-3254
     MLMANAGER_SCHEMA = 'MLMANAGER'
 
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
@@ -955,7 +954,7 @@ class MLManager(MlflowClient):
         SimpleSparkSerializer() # Adds the serializeToBundle function from Mleap
         if 'tmp' not in rbash('ls /').read():
             bash('mkdir /tmp')
-        #Serialize the Spark model into Mleap format
+        # Serialize the Spark model into Mleap format
         if f'{run_id}.zip' in rbash('ls /tmp').read():
             bash(f'rm /tmp/{run_id}.zip')
         fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
@@ -974,14 +973,14 @@ class MLManager(MlflowClient):
         :param model: (Transformer) the fitted Mleap Transformer (pipeline)
         """
         
-        #If a model with this run_id already exists in the table, gracefully fail
-        #May be faster to use prepared statement
+        # If a model with this run_id already exists in the table, gracefully fail
+        # May be faster to use prepared statement
         model_exists = self.splice_context.df(f'select count(*) from {self.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
         if model_exists:
             print('A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
 
         else:
-            #Serialize Mleap model to BLOB
+            # Serialize Mleap model to BLOB
             baos = self.splice_context.jvm.java.io.ByteArrayOutputStream() 
             oos = self.splice_context.jvm.java.io.ObjectOutputStream(baos)
             oos.writeObject(model)
@@ -990,15 +989,16 @@ class MLManager(MlflowClient):
             byte_array = baos.toByteArray()
             self._insert_artifact(run_id, byte_array, mleap_model=True)
 
-    def validate_primary_key(self, primary_key) -> None:
+    def validate_primary_key(self, primary_key: List[Tuple[str,str]]) -> None:
         """
         Function to validate the primary key passed by the user conforms to SQL
-        :param primary_key: List[Tuple[str,str]]
+        :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
         """
         regex = re.compile('[^a-zA-Z]')
         for i in primary_key:
-            chk = regex.sub('',i[1]).upper()
-            if chk not in CONVERSIONS.values():
+            feature_name = i[0]
+            sql_datatype = regex.sub('',i[1]).upper()
+            if sql_datatype not in CONVERSIONS.values():
                 raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
                              f'Value {primary_key[i][1]} should be a SQL type but isn\'t')
     
@@ -1014,9 +1014,12 @@ class MLManager(MlflowClient):
             raise NotImplementedError(f'A model has already been deployed to table {schema_table_name}. We currently only support deploying 1 model per table')
         SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n' + schema_str
 
+        # FIXME: Add the run_id as a column with constant default value to always be the run_id
         pk_cols = ''
         for i in primary_key:
-            SQL_TABLE += f'\t{i[0]} {i[1]},\n'
+            # If pk is already in the schema_string, don't add another column. PK may be an existing value
+            if i[0] not in schema_str:
+                SQL_TABLE += f'\t{i[0]} {i[1]},\n'
             pk_cols += f'{i[0]},'
         SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
 
@@ -1041,7 +1044,7 @@ class MLManager(MlflowClient):
         \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
         \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         '''
-
+        # FIXME: Add the run_id as a column with constant default value to always be the run_id
         pk_cols = ''
         for i in primary_key:
             SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
@@ -1071,7 +1074,7 @@ class MLManager(MlflowClient):
         and insert the result into the predictions table.
         :param schema_table_name: (str) the schema.table to create the table under
         :param run_id: (str) the run_id to deploy the model under
-        :param feature_columns: (List[str]) the features in the feature vector
+        :param feature_columns: (List[str]) the original features that are transformed into the final feature vector
         :param schema_types: (Dict[str, str]) a mapping of feature column to data type
         :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
         :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
@@ -1097,7 +1100,7 @@ class MLManager(MlflowClient):
             inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType','DoubleType', 'DecimalType'} else f'NEWROW.{col}'
             SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
         
-        #Cleanup + schema for PREDICT call
+        # Cleanup + schema for PREDICT call
         SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t','').replace('\n','').rstrip(',') + '\'))'
         if verbose:
             print()
@@ -1143,35 +1146,42 @@ class MLManager(MlflowClient):
         
         :param fittedPipe: (spark pipeline or model) The fitted pipeline to deploy
         :param df: (Spark DF) The dataframe used to train the model
+                    NOTE: this dataframe should NOT be transformed by the model. The columns in this df are the ones
+                    that will be used to create the table.
         :param db_schema_name: (str) the schema name to deploy to. If None, the currently set schema will be used.
         :param db_table_name: (str) the table name to deploy to. If none, the run_id will be used for the table name(s)
         :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key
         :param run_id: (str) The active run_id
-        :param classes: List[str] The classes (prediction values) for the model being deployed. NOTE: If not supplied, the table will have column named c0,c1,c2 etc for each class
-        :param verbose: bool Whether or not to print out the queries being created
+        :param classes: List[str] The classes (prediction values) for the model being deployed.
+                        NOTE: If not supplied, the table will have column named c0,c1,c2 etc for each class
+        :param verbose: bool Whether or not to print out the queries being created. Helpful for debugging
         
         This function creates the following:
-        * Table called DATA_{run_id} where run_id is the run_id of the mlflow run associated to that model. This will have a column for each feature in the feature vector as well as a MOMENT_ID as primary key
-        * Table callsed DATA_PRED_{run_id} That will have the columns:
+        * Table (default called DATA_{run_id}) where run_id is the run_id of the mlflow run associated to that model. This will have a column for each feature in the feature vector as well as a MOMENT_ID as primary key
+        * Table (default called DATA_{run_id}_PREDS) That will have the columns:
             USER which is the current user who made the request
             EVAL_TIME which is the CURRENT_TIMESTAMP
             MOMENT_ID same as the DATA table to link predictions to rows in the table
             PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be c0,c1,c2 etc for classification models
-            A column for each class of the predictor with the value being the probability/confidence of the model
+            A column for each class of the predictor with the value being the probability/confidence of the model if applicable
         * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, 
             calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run
         * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, parsing the prediction probabilities and filling in proper column values
             
         """
         
-        #See if the df passed in has already been transformed.
-        #If not, transform it
-        if 'prediction' not in df.columns:
-            df = fittedPipe.transform(df)
-        
         run_id = run_id if run_id else self.current_run_id
         db_table_name = db_table_name if db_table_name else f'data_{run_id}'
         schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
+
+        # Get the VectorAssembler so we can get the features of the model
+        # FIXME: this might not be correct. If transformations are made before hitting the VectorAssembler, they
+        # FIXME: Also need to be included in the columns of the table. We need the df columns + VectorAssembler inputCols
+        # FIXME: We can do something similar to the log_feature_transformations function to get necessary columns
+        # FIXME: Or, this may just be df.columns ...
+        feature_columns = df.columns
+        # Get the datatype of each column in the dataframe
+        schema_types = {str(i.name): re.sub("[0-9,()]", "",str(i.dataType)) for i in df.schema}
 
         # Make sure primary_key is valid format
         self.validate_primary_key(primary_key)
@@ -1186,48 +1196,47 @@ class MLManager(MlflowClient):
                 print('Prediction labels found but model is not type Classification. Removing labels')
                 classes = None
             else:
-                #handling spaces in class names
+                # handling spaces in class names
                 classes = [c.replace(' ','_') for c in classes]
                 print(f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
         else:
             if modelType in (ModelType.CLASSIFICATION, ModelType.CLUSTERING_WITH_PROB):
-                #Add a column for each class of the prediction to output the probability of the prediction
+                # Add a column for each class of the prediction to output the probability of the prediction
                 classes = [f'C{i}' for i in range(_get_num_classes(fittedPipe))]
-            
-        #Get the Mleap model and insert it into the MODELS table
+
+        # See if the df passed in has already been transformed.
+        # If not, transform it
+        if 'prediction' not in df.columns:
+            df = fittedPipe.transform(df)
+        # Get the Mleap model and insert it into the MODELS table
         mleap_model = self._get_mleap_model(fittedPipe, df, run_id)
         self.insert_mleap_model(run_id, mleap_model)
         
-        #Get the VectorAssembler so we can get the features of the model
-        feature_columns = _get_feature_vector_columns(fittedPipe)
-        #Get the datatype of each column in the dataframe
-        schema_types = {str(i.name): re.sub("[0-9,()]", "",str(i.dataType)) for i in df.schema}
-        
-        #Create the schema of the table (we use this a few times)
+        # Create the schema of the table (we use this a few times)
         schema_str = ''
         for i in feature_columns:
             schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},\n'
         
         
         try:
-            #Create table 1: DATA
+            # Create table 1: DATA
             print('Creating data table ...', end=' ')
             self.__create_data_table(schema_table_name, schema_str, primary_key, verbose)
             print('Done.')
 
-            #Create table 2: DATA_PREDS
+            # Create table 2: DATA_PREDS
             print('Creating prediction table ...', end=' ')
             self.__create_data_preds_table(schema_table_name, classes, primary_key, modelType, verbose)
             print('Done.')
 
 
-            #Create Trigger 1: (model prediction)
+            # Create Trigger 1: (model prediction)
             print('Creating model prediction trigger ...', end=' ')
             self.__create_prediction_trigger(schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, modelType, verbose)
             print('Done.')
 
             if modelType in (ModelType.CLASSIFICATION, ModelType.CLUSTERING_WITH_PROB):
-                #Create Trigger 2: model parsing
+                # Create Trigger 2: model parsing
                 print('Creating parsing trigger ...', end=' ')
                 self.__create_parsing_trigger(schema_table_name, primary_key, run_id, classes, verbose)
                 print('Done.')
