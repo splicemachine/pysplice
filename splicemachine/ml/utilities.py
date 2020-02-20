@@ -7,6 +7,7 @@ from collections import defaultdict
 import graphviz
 import numpy as np
 from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, BinaryClassificationEvaluator
+from pyspark.ml.classification import LogisticRegressionModel
 from pyspark.sql import Row
 
 
@@ -56,20 +57,20 @@ class SpliceBaseEvaluator(object):
     Base ModelEvaluator
     """
 
-    def __init__(self, spark, evaluator, supported_metrics, prediction_column="prediction",
-                 label_column="label"):
+    def __init__(self, spark, evaluator, supported_metrics, predictionCol="prediction",
+                 labelCol="label"):
         """
         Constructor for SpliceBaseEvaluator
         :param spark: spark from zeppelin
         :param evaluator: evaluator class from spark
         :param supported_metrics: supported metrics list
-        :param prediction_column: prediction column
-        :param label_column: label column
+        :param predictionCol: prediction column
+        :param labelCol: label column
         """
         self.spark = spark
         self.ev = evaluator
-        self.prediction_col = prediction_column
-        self.label = label_column
+        self.prediction_col = predictionCol
+        self.label = labelCol
         self.supported_metrics = supported_metrics
         self.avgs = defaultdict(list)
 
@@ -107,7 +108,7 @@ class SpliceBaseEvaluator(object):
 
 
 class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
-    def __init__(self, spark, prediction_column="prediction", label_column="label", confusion_matrix = True):
+    def __init__(self, spark, predictionCol="prediction", labelCol="label", confusion_matrix = True):
         self.avg_tp = []
         self.avg_tn = []
         self.avg_fn = []
@@ -115,7 +116,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
         self.confusion_matrix = confusion_matrix
 
         supported = ["areaUnderROC", "areaUnderPR",'TPR', 'SPC', 'PPV', 'NPV', 'FPR', 'FDR', 'FNR', 'ACC', 'F1', 'MCC']
-        SpliceBaseEvaluator.__init__(self, spark, BinaryClassificationEvaluator, supported, prediction_column=prediction_column, label_column=label_column)
+        SpliceBaseEvaluator.__init__(self, spark, BinaryClassificationEvaluator, supported, predictionCol=predictionCol, labelCol=labelCol)
 
     def input(self, predictions_dataframe):
         """
@@ -135,14 +136,14 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
                                                   self.prediction_col)  # Select the actual and the predicted labels
 
         # Add confusion stats
-        self.avg_tp.append(pred_v_lab[(pred_v_lab.label == 1)
-                                      & (pred_v_lab.prediction == 1)].count())
-        self.avg_tn.append(pred_v_lab[(pred_v_lab.label == 0)
-                                      & (pred_v_lab.prediction == 0)].count())
-        self.avg_fp.append(pred_v_lab[(pred_v_lab.label == 1)
-                                      & (pred_v_lab.prediction == 0)].count())
-        self.avg_fn.append(pred_v_lab[(pred_v_lab.label == 0)
-                                      & (pred_v_lab.prediction == 1)].count())
+        self.avg_tp.append(pred_v_lab[(pred_v_lab[self.label] == 1)
+                                      & (pred_v_lab[self.prediction_col] == 1)].count())
+        self.avg_tn.append(pred_v_lab[(pred_v_lab[self.label] == 0)
+                                      & (pred_v_lab[self.prediction_col] == 0)].count())
+        self.avg_fp.append(pred_v_lab[(pred_v_lab[self.label] == 1)
+                                      & (pred_v_lab[self.prediction_col] == 0)].count())
+        self.avg_fn.append(pred_v_lab[(pred_v_lab[self.label] == 0)
+                                      & (pred_v_lab[self.prediction_col] == 1)].count())
 
         TP = np.mean(self.avg_tp)
         TN = np.mean(self.avg_tn)
@@ -171,22 +172,26 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
                 float(FN)
             ).show()
 
-    def plotROC(self, trainingSummary, ax):
+    def plotROC(self, fittedEstimator, ax):
         """
         Plots the receiver operating characteristic curve for the trained classifier
 
-        :param trainingSummary: TrainingSummary object accessed by .summary after fitting a binary classification object ONLY VALID FOR LOGISTIC REGRESSION
+        :param fittedEstimator: fitted logistic regression model
         :param ax: matplotlib axis object
 
         :return: axis with ROC plot
         """
-        roc = trainingSummary.roc.toPandas()
-        ax.plot(roc['FPR'],roc['TPR'], label = 'Training set areaUnderROC: \n' + str(trainingSummary.areaUnderROC))
-        ax.set_ylabel('False Positive Rate')
-        ax.set_xlabel('True Positive Rate')
-        ax.set_title('ROC Curve')
-        ax.legend()
-        return ax
+        if fittedEstimator.__class__ == LogisticRegressionModel:
+            trainingSummary = fittedEstimator.summary
+            roc = trainingSummary.roc.toPandas()
+            ax.plot(roc['FPR'],roc['TPR'], label = 'Training set areaUnderROC: \n' + str(trainingSummary.areaUnderROC))
+            ax.set_ylabel('False Positive Rate')
+            ax.set_xlabel('True Positive Rate')
+            ax.set_title('ROC Curve')
+            ax.legend()
+            return ax
+        else:
+            raise NotImplementedError("Only supported for Logistic Regression Models")
 
 
 class SpliceRegressionEvaluator(SpliceBaseEvaluator):
@@ -194,16 +199,16 @@ class SpliceRegressionEvaluator(SpliceBaseEvaluator):
     Splice Regression Evaluator
     """
 
-    def __init__(self, spark, prediction_column="prediction", label_column="label"):
+    def __init__(self, spark, predictionCol="prediction", labelCol="label"):
         supported = ['rmse', 'mse', 'r2', 'mae']
-        SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported, prediction_column=prediction_column, label_column=label_column)
+        SpliceBaseEvaluator.__init__(self, spark, RegressionEvaluator, supported, predictionCol=predictionCol, labelCol=labelCol)
 
 
 class SpliceMultiClassificationEvaluator(SpliceBaseEvaluator):
-    def __init__(self, spark, prediction_column="prediction", label_column="label"):
+    def __init__(self, spark, predictionCol="prediction", labelCol="label"):
         supported = ["f1", "weightedPrecision", "weightedRecall", "accuracy"]
         SpliceBaseEvaluator.__init__(self, spark, MulticlassClassificationEvaluator, supported,
-                                     prediction_column=prediction_column, label_column=label_column)
+                                     predictionCol=predictionCol, labelCol=labelCol)
 
 
 def print_horizontal_line(l):
