@@ -376,7 +376,7 @@ class OverSampleCrossValidator(CrossValidator):
     >>> print(AUCevaluator.evaluate(cvModel.transform(dataset)))
     0.8333333333333333
     """
-    def __init__(self, estimator, estimatorParamMaps, evaluator, numFolds=3, seed=None, parallelism=1, collectSubModels=False, labelCol = 'label', altEvaluators = None, overSample = True):
+    def __init__(self, estimator, estimatorParamMaps, evaluator, numFolds=3, seed=None, parallelism=3, collectSubModels=False, labelCol = 'label', altEvaluators = None, overSample = True):
         """ Initialize Self
 
         :param estimator: Machine Learning Model, defaults to None
