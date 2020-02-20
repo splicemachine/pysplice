@@ -186,9 +186,8 @@ def _get_model_type(pipeline_or_model) -> ModelType:
 class MLManager(MlflowClient):
     """
     A class for managing your MLFlow Runs/Experiments
-    """
-    #FIXME: THIS WILL NEED TO BE MLMANAGER AFTER DBAAS-3254
-    MLMANAGER_SCHEMA = 'SPLICE'
+    """ 
+    MLMANAGER_SCHEMA = 'MLMANAGER'
 
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
