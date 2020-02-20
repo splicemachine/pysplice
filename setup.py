@@ -17,22 +17,11 @@ limitations under the License.
 from setuptools import setup, find_packages
 
 dependencies = [
-    "atomicwrites==1.1.5",
-    "attrs==18.1.0",
-    "more-itertools==4.2.0",
-    "pluggy==0.6.0",
-    "py==1.5.3",
-    "py4j==0.10.7",
-    "pytest==3.6.1",
-    "six==1.11.0",
-    "mlflow==0.8.0",
-    "graphviz==0.8.4",
-    "numpy==1.15.0",
-    "h2o_pysparkling_2.2",
-    "pandas==0.22.0",
-    "pyspark-dist-explore==0.1.7",
-    "tqdm==4.32.2",
-    "statsmodels==0.9.0"
+    "py4j==0.10.8.1",
+    "pytest==5.1.3",
+    "mlflow==1.1.0",
+    "graphviz==0.13",
+    "future"
 ]
 setup(
     name="splicemachine",
@@ -42,7 +31,9 @@ setup(
     license='Apache License, Version 2.0',
     long_description=open('README.md').read(),
     author="Splice Machine, Inc.",
-	author_email="abaveja@splicemachine.com",
-    description="This package contains all of the classes and functions you need to interact with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains several machine learning utilities for use with Apache Spark.",
+    author_email="abaveja@splicemachine.com",
+    description="This package contains all of the classes and functions you need to interact "
+                "with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains"
+                " several machine learning utilities for use with Apache Spark.",
     url="https://github.com/splicemachine/pysplice/"
 )
