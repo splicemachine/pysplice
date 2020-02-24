@@ -426,7 +426,7 @@ def inspectTable(spliceMLCtx, sql, topN = 5):
         if _type == 'double' or _type == 'int':
             df.select(_col).describe().show()
 
-def hide_toggle(toggle_next=False):
+def hide_toggle(for_next=False):
     """
     Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.
     :param toggle_next: Bool determine if the toggle should affect the current cell or the next cell
