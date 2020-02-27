@@ -440,7 +440,7 @@ def hide_toggle(toggle_next=False):
     target_cell = this_cell  # target cell to control with toggle
     js_hide_current = ''  # bit of JS to permanently hide code in current cell (only when toggling next cell)
 
-    if for_next:
+    if toggle_next:
         target_cell = next_cell
         toggle_text += ' next cell'
         js_hide_current = this_cell + '.find("div.input").hide();'
