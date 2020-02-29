@@ -234,7 +234,7 @@ class PySpliceContext:
         """
         return self.context.analyzeSchema(schema_name)
 
-    def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=0.10):
+    def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=10.0):
         """
         collect stats info on a table
         :param schema_table_name: full table name in the format of "schema.table"
@@ -242,7 +242,7 @@ class PySpliceContext:
         :param samplePercent:  the percentage or rows to be sampled.
         :return:
         """
-        return self.context.analyzeTable(schema_table_name, estimateStatistics, samplePercent)
+        return self.context.analyzeTable(schema_table_name, estimateStatistics, float(samplePercent))
 
     def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None,
                fieldSeparator=None,
