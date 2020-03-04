@@ -625,7 +625,7 @@ class MLManager(MlflowClient):
                                                                                  get_input=False)
             if input_cols and output_col:  # make sure it could parse transformer
                 for column in input_cols:
-                    first_column_found = self._find_first_input_by_output(transformations, column)
+                    first_column_found = self._find_inputs_by_output(transformations, column)
                     if first_column_found:  # column is not original
                         for f in first_column_found:
                             transformations[f][1] = output_col
