@@ -598,17 +598,18 @@ class MLManager(MlflowClient):
             self.log_param('Stage' + str(stage_number), readable_stage_name)
 
     @staticmethod
-    def _find_first_input_by_output(dictionary, value):
+    def _find_inputs_by_output(dictionary, value):
         """
-        Find the first input column for a given column
+        Find the input columns for a given output column
         :param dictionary: dictionary to search
         :param value: column
         :return: None if not found, otherwise first column
         """
+        keys = []
         for key in dictionary:
             if dictionary[key][1] == value:  # output column is always the last one
-                return key
-        return None
+                keys.append(key)
+        return keys if len(keys)>0 else None
 
     @check_active
     def log_feature_transformations(self, unfit_pipeline):
@@ -624,11 +625,12 @@ class MLManager(MlflowClient):
                                                                                  get_input=False)
             if input_cols and output_col:  # make sure it could parse transformer
                 for column in input_cols:
-                    first_column_found = self._find_first_input_by_output(transformations, column)
+                    first_column_found = self._find_inputs_by_output(transformations, column)
                     if first_column_found:  # column is not original
-                        transformations[first_column_found][1] = output_col
-                        transformations[first_column_found][0].append(
-                            _readable_pipeline_stage(stage))
+                        for f in first_column_found:
+                            transformations[f][1] = output_col
+                            transformations[f][0].append(
+                                _readable_pipeline_stage(stage))
                     else:
                         transformations[column][1] = output_col
                         transformations[column][0].append(_readable_pipeline_stage(stage))
