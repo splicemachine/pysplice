@@ -609,7 +609,7 @@ class MLManager(MlflowClient):
         for key in dictionary:
             if dictionary[key][1] == value:  # output column is always the last one
                 keys.append(key)
-        return keys if len(keys)>0 else None
+        return keys
 
     @check_active
     def log_feature_transformations(self, unfit_pipeline):
