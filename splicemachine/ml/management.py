@@ -515,8 +515,8 @@ class MLManager(MlflowClient):
             )  # create a pipeline with only the model if a model is passed in
 
         # Zip the Pipeline and insert it as an artifact
-        model.save(f'./{name}')
-        bash(f'zip -r \'{name}.zip\' \'{name}\'')
+        model.save(f'file:///tmp/{name}')
+        bash(f'zip -r /tmp/\'{name}.zip\' \'{name}\'')
         self.log_artifact(f'{name}.zip', name)
         bash(f'rm \'{name}\'.zip')
 
