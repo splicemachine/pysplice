@@ -282,12 +282,12 @@ class DecisionTreeVisualizer(object):
         tree_to_json = DecisionTreeVisualizer.replacer(model.toDebugString,
                                                        ['feature ' + str(i) for i in
                                                         range(len(feature_column_names)-1,-1,-1)],
-                                                       feature_column_names)
+                                                       reversed(feature_column_names))
 
         tree_to_json = DecisionTreeVisualizer.replacer(tree_to_json,
                                                        [f'Predict: {str(i)}.0' for i in
                                                         range(len(label_names)-1,-1,-1)],
-                                                       label_names)
+                                                       reversed(label_names))
         if not visual:
             return tree_to_json
 
