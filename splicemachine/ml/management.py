@@ -548,7 +548,7 @@ class MLManager(MlflowClient):
 
         raise Exception("The model supplied does not appear to be a Spark Model!")
 
-    def _insert_artifact(self, name, byte_array, mleap_model=False, file_ext = None):
+    def _insert_artifact(self, name, byte_array, mleap_model=False, file_ext=None):
         """
         :param name: (str) the path to store the binary
             under (with respect to the current run)
@@ -772,8 +772,12 @@ class MLManager(MlflowClient):
         if '.' not in local_path:
             raise ValueError('local_path variable must contain the file extension!')
         blob_data = self.retrieve_artifact_stream(run_id, name)
-        with open(local_path, 'wb') as artifact_file:
-            artifact_file.write(blob_data)
+        if '.zip' in local_path:
+            zip_file = ZipFile(BytesIO(blob_data))
+            zip_file.extractall()
+        else:
+            with open(local_path, 'wb') as artifact_file:
+                artifact_file.write(blob_data)
 
     def load_spark_model(self, run_id=None, name='model'):
         """
