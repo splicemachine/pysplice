@@ -516,9 +516,9 @@ class MLManager(MlflowClient):
 
         # Zip the Pipeline and insert it as an artifact
         model.save(f'./{name}')
-        bash(f'zip -r {name}.zip {name}')
+        bash(f'zip -r \'{name}.zip\' \'{name}\'')
         self.log_artifact(f'{name}.zip', name)
-        bash(f'rm {name}.zip')
+        bash(f'rm \'{name}\'.zip')
 
         # baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
         # oos = jvm.java.io.ObjectOutputStream(baos)
