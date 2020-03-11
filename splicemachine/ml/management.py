@@ -998,7 +998,7 @@ class MLManager(MlflowClient):
         for i in primary_key:
             feature_name = i[0]
             sql_datatype = regex.sub('',i[1]).upper()
-            if sql_datatype not in CONVERSIONS.values():
+            if sql_datatype not in list(CONVERSIONS.values()) + ['VARCHAR', 'INT']:
                 raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
                              f'Value {primary_key[i][1]} should be a SQL type but isn\'t')
     
@@ -1126,7 +1126,7 @@ class MLManager(MlflowClient):
 
         for i in primary_key:
             SQL_PARSE_TRIGGER += f' {i[0]}=NEWROW.{i[0]} AND'
-        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER.rstrip(' AND')
+        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER.replace(' AND','')
 
         if verbose:
             print()
