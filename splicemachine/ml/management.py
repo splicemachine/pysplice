@@ -6,8 +6,9 @@ from time import time, sleep
 from enum import Enum
 from typing import List, Dict
 import re
-
 import requests
+from zipfile import ZipFile
+from io import BytesIO
 from requests.auth import HTTPBasicAuth
 
 import mlflow
@@ -189,7 +190,7 @@ class MLManager(MlflowClient):
     """ 
     MLMANAGER_SCHEMA = 'MLMANAGER'
 
-    ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
+    ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                              'AND run_uuid=\'{runid}\''
     MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(ID, MODEL) VALUES (?, ?)'
@@ -473,11 +474,14 @@ class MLManager(MlflowClient):
         Log an artifact for the active run
         :param file_name: (str) the name of the file name to log
         :param name: (str) the name of the run relative name to store the model under
+        NOTE: We do not currently support logging directories. If you would like to log a directory, please zip it first
+              and log the zip file
         """
+        file_ext = file_name.split('.')[-1]
         with open(file_name, 'rb') as artifact:
-            byte_stream = bytearray(bytes(artifact.read()))
+           byte_stream = bytearray(bytes(artifact.read()))
 
-        self._insert_artifact(name, byte_stream)
+        self._insert_artifact(name, byte_stream, file_ext=file_ext)
 
     @check_active
     def log_artifacts(self, file_names, names):
@@ -510,13 +514,19 @@ class MLManager(MlflowClient):
                 stages=[model]
             )  # create a pipeline with only the model if a model is passed in
 
-        baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
-        oos = jvm.java.io.ObjectOutputStream(baos)
-        oos.writeObject(model._to_java())
-        oos.flush()
-        oos.close()
+        # Zip the Pipeline and insert it as an artifact
+        model.save(f'./{name}')
+        bash(f'zip -r {name}.zip {name}')
+        self.log_artifact(f'{name}.zip', name)
+        bash(f'rm {name}.zip')
 
-        self._insert_artifact(name, baos.toByteArray())  # write the byte stream to the db as a BLOB
+        # baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
+        # oos = jvm.java.io.ObjectOutputStream(baos)
+        # oos.writeObject(model._to_java())
+        # oos.flush()
+        # oos.close()
+        # self._insert_artifact(name, baos.toByteArray())  # write the byte stream to the db as a BLOB
+        # self._insert_artifact(name, byte_stream, file_ext=file_ext)
 
     @staticmethod
     def _is_spark_model(spark_object):
@@ -538,11 +548,14 @@ class MLManager(MlflowClient):
 
         raise Exception("The model supplied does not appear to be a Spark Model!")
 
-    def _insert_artifact(self, name, byte_array, mleap_model=False):
+    def _insert_artifact(self, name, byte_array, mleap_model=False, file_ext = None):
         """
         :param name: (str) the path to store the binary
             under (with respect to the current run)
         :param byte_array: (byte[]) Java byte array
+        :param mleap_model: (bool) whether or not the artifact is an MLeap model
+                            (We handle mleap models differently, likely to change in future releases)
+        :param file_ext: (str) the file extension of the model (used for downloading)
         """
         db_connection = self.splice_context.getConnection()
         file_size = getsizeof(byte_array)
@@ -562,6 +575,7 @@ class MLManager(MlflowClient):
             prepared_statement.setString(2, name)
             prepared_statement.setInt(3, file_size)
             prepared_statement.setBinaryStream(4, binary_input_stream)
+            prepared_statement.setString(5,file_ext)
 
         prepared_statement.execute()
         prepared_statement.close()
@@ -750,10 +764,13 @@ class MLManager(MlflowClient):
         :param name: (str) artifact name to load
             (with respect to the run)
         :param local_path: (str) local path to download the
-            model to
+            model to. This path MUST include the file extension
         :param run_id: (str) the run id to download the artifact
             from. Defaults to active run
         """
+        run_id = run_id or self.current_run_id
+        if '.' not in local_path:
+            raise ValueError('local_path variable must contain the file extension!')
         blob_data = self.retrieve_artifact_stream(run_id, name)
         with open(local_path, 'wb') as artifact_file:
             artifact_file.write(blob_data)
@@ -765,17 +782,21 @@ class MLManager(MlflowClient):
         :param run_id: the id of the run to get a model from
             (the run must have an associated model with it named spark_model)
         """
-        if not run_id:
-            run_id = self.current_run_id
-        else:
-            run_id = self.get_run(run_id).info.run_uuid
+        run_id = run_id or self.current_run_id
 
         spark_pipeline_blob = self.retrieve_artifact_stream(run_id, name)
-        bis = self.splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
-        ois = self.splice_context.jvm.java.io.ObjectInputStream(bis)
-        pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
-        # PipelineModel to Python PipelineModel
-        ois.close()
+        pipeline_zip = ZipFile(BytesIO(spark_pipeline_blob))
+        pipeline_zip.extractall()
+        pipeline = PipelineModel.load(name)
+        # bash(f'rm -rf {name}')
+        # bis = self.splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
+        # ois = self.splice_context.jvm.java.io.ObjectInputStream(bis)
+        # pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
+        # # PipelineModel to Python PipelineModel
+        # ois.close()
+
+        # Write zip to file and load model
+
 
         if len(pipeline.stages) == 1 and self._is_spark_model(pipeline.stages[0]):
             pipeline = pipeline.stages[0]
