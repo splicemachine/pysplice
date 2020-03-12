@@ -1081,10 +1081,10 @@ class MLManager(MlflowClient):
         :param verbose: (bool) whether to print the SQL query
         """
     
-        if modelType == ModelType.CLASSIFICATION: prediction_call = 'PREDICT_CLASSIFICATION'
-        elif modelType == ModelType.REGRESSION: prediction_call = 'PREDICT_REGRESSION'
-        elif modelType == ModelType.CLUSTERING_WITH_PROB: prediction_call = 'PREDICT_CLUSTER_PROBABILITIES'
-        else: prediction_call = 'PREDICT_CLUSTER'
+        if modelType == ModelType.CLASSIFICATION: prediction_call = 'MLMANAGER.PREDICT_CLASSIFICATION'
+        elif modelType == ModelType.REGRESSION: prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
+        elif modelType == ModelType.CLUSTERING_WITH_PROB: prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
+        else: prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
 
         SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".","_")}_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO {schema_table_name}_PREDS('
         pk_vals = ''
@@ -1118,8 +1118,8 @@ class MLManager(MlflowClient):
         SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".","_")}_{run_id}\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
         case_str = 'PREDICTION=\n\t\tCASE\n'
         for i,c in enumerate(classes):
-            SQL_PARSE_TRIGGER += f'{c}=PARSEPROBS(NEWROW.prediction,{i}),'
-            case_str += f'\t\tWHEN GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
+            SQL_PARSE_TRIGGER += f'{c}=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+            case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
         case_str += '\t\tEND'
         SQL_PARSE_TRIGGER += case_str + ' WHERE'
 
