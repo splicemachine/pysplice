@@ -514,19 +514,12 @@ class MLManager(MlflowClient):
                 stages=[model]
             )  # create a pipeline with only the model if a model is passed in
 
-        # Zip the Pipeline and insert it as an artifact
-        model.save(f'file:///tmp/{name}')
-        bash(f'zip -r /tmp/\'{name}.zip\' \'{name}\'')
-        self.log_artifact(f'{name}.zip', name)
-        bash(f'rm \'{name}\'.zip')
-
-        # baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
-        # oos = jvm.java.io.ObjectOutputStream(baos)
-        # oos.writeObject(model._to_java())
-        # oos.flush()
-        # oos.close()
-        # self._insert_artifact(name, baos.toByteArray())  # write the byte stream to the db as a BLOB
-        # self._insert_artifact(name, byte_stream, file_ext=file_ext)
+        baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
+        oos = jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model._to_java())
+        oos.flush()
+        oos.close()
+        self._insert_artifact(name, baos.toByteArray(), file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
 
     @staticmethod
     def _is_spark_model(spark_object):
