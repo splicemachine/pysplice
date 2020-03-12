@@ -1,6 +1,6 @@
 from builtins import super
 from collections import defaultdict
-from os import environ as env_vars, popen as rbash, system as bash
+from os import environ as env_vars, popen as rbash, system as bash, path
 from sys import getsizeof
 from time import time, sleep
 from enum import Enum
@@ -477,7 +477,7 @@ class MLManager(MlflowClient):
         NOTE: We do not currently support logging directories. If you would like to log a directory, please zip it first
               and log the zip file
         """
-        file_ext = file_name.split('.')[-1]
+        file_ext = path.splitext(file_name)[1]
         with open(file_name, 'rb') as artifact:
            byte_stream = bytearray(bytes(artifact.read()))
 
@@ -761,11 +761,13 @@ class MLManager(MlflowClient):
         :param run_id: (str) the run id to download the artifact
             from. Defaults to active run
         """
-        run_id = run_id or self.current_run_id
-        if '.' not in local_path:
+        file_ext = path.splitext(local_path)[1]
+        if not file_ext:
             raise ValueError('local_path variable must contain the file extension!')
+
+        run_id = run_id or self.current_run_id
         blob_data = self.retrieve_artifact_stream(run_id, name)
-        if '.zip' in local_path:
+        if file_ext == '.zip':
             zip_file = ZipFile(BytesIO(blob_data))
             zip_file.extractall()
         else:
