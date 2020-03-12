@@ -186,14 +186,13 @@ def _get_model_type(pipeline_or_model) -> ModelType:
 class MLManager(MlflowClient):
     """
     A class for managing your MLFlow Runs/Experiments
+    """
     MLMANAGER_SCHEMA = 'MLMANAGER'
-
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary") VALUES (?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                              'AND run_uuid=\'{runid}\''
     MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
     MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
-
     def __init__(self, splice_context, tracking_uri=None, _testing=False):
         """
         Tracking URI: the URL for
@@ -1035,7 +1034,6 @@ class MLManager(MlflowClient):
         :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
         :param modelType: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
         :param verbose: (bool) whether to print the SQL query
-
         Regression models output a DOUBLE as the prediction field with no probabilities
         Classification models and Certain Clustering models have probabilities associated with them, so we need to handle the extra columns holding those probabilities
         Clustering models without probabilities return only an INT.
@@ -1137,7 +1135,7 @@ class MLManager(MlflowClient):
     def __drop_tables_on_failure(self, schema_table_name, run_id) -> None:
         self.splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
         self.splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}_preds')
-        self.splice_context.execute(f'DELETE FROM {self.MLMANAGER_SCHEMA}.MODELS WHERE ID=\'{run_id}\'')
+        self.splice_context.execute(f'DELETE FROM {self.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
 
 
     def deploy_model(self, fittedPipe, df, db_schema_name: str, db_table_name: str, primary_key: List[Tuple[str, str]], run_id: str = None, classes:List[str]=[], verbose: bool=False, replace=False) -> None:
