@@ -273,6 +273,7 @@ class DecisionTreeVisualizer(object):
         :param feature_column_names: (List[str]) column names for features
                You can access these feature names by using your VectorAssembler (in PySpark) and calling it's .getInputCols() function
         :param label_names: (List[str]) labels vector (below avg, above avg)
+        :param size: tuple(int,int) The size of the graph. If unspecified, graphviz will automatically assign a size
         :param horizontal: (Bool) if the tree should be rendered horizontally
         :param tree_name: the name you would like to call the tree
         :param visual: bool, true if you want a graphviz pdf containing your file
