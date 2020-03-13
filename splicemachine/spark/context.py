@@ -36,7 +36,7 @@ class PySpliceContext:
         'LongType': 'BIGINT',
         'NullType': 'VARCHAR(50)',
         'ShortType': 'SMALLINT',
-        'StringType': 'VARCHAR(500)',
+        'StringType': 'VARCHAR(5000)',
         'TimestampType': 'TIMESTAMP',
         'UnknownType': 'BLOB',
         'FloatType': 'FLOAT'
@@ -315,7 +315,7 @@ class PySpliceContext:
         """
         Drop table if it exists
         """
-        print('Creating table {schema}.{table}'.format(schema=schema,table=table))
+        print('Droping table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
     def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types = {}):
