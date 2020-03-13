@@ -262,52 +262,52 @@ class DecisionTreeVisualizer(object):
             model,
             feature_column_names,
             label_names,
-            tree_name,
+            size=None,
+            horizontal=False,
+            tree_name='tree',
             visual=False,
     ):
         """
         Visualize a decision tree, either in a code like format, or graphviz
         :param model: the fitted decision tree classifier
-        :param feature_column_names: column names for features
-        :param label_names: labels vector (below avg, above avg)
+        :param feature_column_names: (List[str]) column names for features
+               You can access these feature names by using your VectorAssembler (in PySpark) and calling it's .getInputCols() function
+        :param label_names: (List[str]) labels vector (below avg, above avg)
+        :param size: tuple(int,int) The size of the graph. If unspecified, graphviz will automatically assign a size
+        :param horizontal: (Bool) if the tree should be rendered horizontally
         :param tree_name: the name you would like to call the tree
         :param visual: bool, true if you want a graphviz pdf containing your file
-        :return: none
+        :return dot: The graphvis object
         """
 
         tree_to_json = DecisionTreeVisualizer.replacer(model.toDebugString,
                                                        ['feature ' + str(i) for i in
-                                                        range(0, len(feature_column_names))],
-                                                       feature_column_names)
+                                                        range(len(feature_column_names)-1,-1,-1)],
+                                                       reversed(feature_column_names))
 
         tree_to_json = DecisionTreeVisualizer.replacer(tree_to_json,
                                                        [f'Predict: {str(i)}.0' for i in
-                                                        range(0, len(label_names))],
-                                                       label_names)
+                                                        range(len(label_names)-1,-1,-1)],
+                                                       reversed(label_names))
         if not visual:
             return tree_to_json
 
         dot = graphviz.Digraph(comment='Decision Tree')
-        dot.attr(size='7.75,15.25')
+        if size:
+            dot.attr(size=size)
+        if horizontal:
+            dot.attr(rankdir="LR")
         dot.node_attr.update(color='lightblue2', style='filled')
         json_d = DecisionTreeVisualizer.tree_json(tree_to_json)
-        dot.format = 'pdf'
 
         DecisionTreeVisualizer.add_node(dot, '', '', json_d,
                                         realroot=True)
-        dot.render('/zeppelin/webapps/webapp/assets/images/'
-                   + tree_name)
-        print('Successfully uploaded file to Zeppelin Assets on this cluster')
-        print('Uploading.')
-
-        time.sleep(3)
-        print('Uploading..')
-        time.sleep(3)
-
-        print(
-            'You can find your visualization at "https://docs.google.com/gview?url=https://'
-            '<cluster_name>.splicemachine.io/assets/images/' \
-            + tree_name + '.pdf&embedded=true#view=fith')
+        dot.render(tree_name)
+        print(f'Generated pdf file of tree. You can view it in your Jupyter directory under {dot.filepath}.pdf\n'\
+             'If you want your tree visualized in your Jupyter notebook, simply enter the returned value from this function '\
+             '(ie `dot`) in a new cell and run that cell')
+        dot.view()
+        return(dot)
 
     @staticmethod
     def replacer(string, bad, good):
