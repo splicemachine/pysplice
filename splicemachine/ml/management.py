@@ -784,17 +784,14 @@ class MLManager(MlflowClient):
         run_id = run_id or self.current_run_id
 
         spark_pipeline_blob = self.retrieve_artifact_stream(run_id, name)
-        pipeline_zip = ZipFile(BytesIO(spark_pipeline_blob))
-        pipeline_zip.extractall()
-        pipeline = PipelineModel.load(name)
-        # bash(f'rm -rf {name}')
-        # bis = self.splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
-        # ois = self.splice_context.jvm.java.io.ObjectInputStream(bis)
-        # pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
-        # # PipelineModel to Python PipelineModel
-        # ois.close()
-
-        # Write zip to file and load model
+        # pipeline_zip = ZipFile(BytesIO(spark_pipeline_blob))
+        # pipeline_zip.extractall()
+        # pipeline = PipelineModel.load(name)
+        bis = self.splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
+        ois = self.splice_context.jvm.java.io.ObjectInputStream(bis)
+        pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
+                                                               # PipelineModel to Python PipelineModel
+        ois.close()
 
 
         if len(pipeline.stages) == 1 and self._is_spark_model(pipeline.stages[0]):
