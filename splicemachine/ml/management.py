@@ -477,7 +477,7 @@ class MLManager(MlflowClient):
         NOTE: We do not currently support logging directories. If you would like to log a directory, please zip it first
               and log the zip file
         """
-        file_ext = path.splitext(file_name)[1]
+        file_ext = path.splitext(file_name)[1].lstrip('.')
         with open(file_name, 'rb') as artifact:
            byte_stream = bytearray(bytes(artifact.read()))
 
