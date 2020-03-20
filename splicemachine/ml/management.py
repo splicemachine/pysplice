@@ -194,7 +194,7 @@ class MLManager(MlflowClient):
                              'AND run_uuid=\'{runid}\''
     MLEAP_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
     MLEAP_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
-    def __init__(self, splice_context, tracking_uri=None, _testing=False):
+    def __init__(self, splice_context, tracking_uri=None, _testing=False, autolog=False):
         """
         Tracking URI: the URL for
         :param splice_context: (PySpliceContext) the Python Native Spark Datasource
@@ -229,6 +229,9 @@ class MLManager(MlflowClient):
         self.timer_start_time = None  # for timer
         self.timer_name = None
         self._basic_auth = None
+
+        if autolog:
+            mlflow.spark.autolog()
 
     @property
     def current_run_id(self):
