@@ -718,7 +718,7 @@ class MLManager(MlflowClient):
         """
         Terminate the current run
         """
-        super(MLManager, self).end_run()
+        super(MLManager, self).set_terminated(self.active_run.info.run_uuid, status='FINISHED')
         self.active_run = None
 
     @check_active
