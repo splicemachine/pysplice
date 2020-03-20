@@ -388,7 +388,7 @@ class MLManager(MlflowClient):
         if run_name:
             self.set_tag('mlflow.runName', run_name)
             print(f'Setting {run_name} to active run')
-        mlflow.start_run(run_id=self.active_run.info.run_uuid,nested=nested)
+        mlflow.start_run(run_id=self.active_run.info.run_uuid,nested=nested, experiment_id=new_run_exp_id)
 
     def get_run(self, run_id):
         """
