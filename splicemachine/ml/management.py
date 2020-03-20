@@ -714,14 +714,12 @@ class MLManager(MlflowClient):
                 self.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
 
     @check_active
-    def end_run(self, create=False, metadata={}):
+    def end_run(self):
         """
         Terminate the current run
         """
+        super(MLManager, self).end_run()
         self.active_run = None
-
-        if create:
-            self.start_run(metadata)
 
     @check_active
     def delete_active_run(self):
