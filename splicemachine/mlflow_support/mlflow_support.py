@@ -1,37 +1,49 @@
-from os import environ as env_vars
-from py4j.java_gateway import java_import
+import time
+from functools import partial as fix_params
 from collections import defaultdict
+from contextlib import contextmanager
+from io import BytesIO
+from zipfile import ZipFile
+
 import gorilla
 import mlflow
-import time
-from zipfile import ZipFile
-from io import BytesIO
 import path
+from py4j.java_gateway import java_import
 
-from contextlib import contextmanager
 from splicemachine.mlflow_support.utilities import *
 
 _TESTING = env_vars.get("TESTING", False)
-TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
+_TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 
-CLIENT = mlflow.tracking.MlflowClient(tracking_uri=TRACKING_URL)
+_CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
 
-mlflow.set_tracking_uri(TRACKING_URL)
+_GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
+
+
+def _mlflow_patch(name):
+    """
+    Create a MLFlow Patch that applies the
+    default gorilla settings
+    :param name: destination name under mlflow package
+    :return: decorator for patched function
+    """
+    return gorilla.patch(mlflow, name, settings=_GORILLA_SETTINGS)
 
 
 def _get_current_run_data():
     """
     Get the data associated with the current run.
     As of MLFLow 1.6, it currently does not support getting
+
     run info from the mlflow.active_run object, so we need it
     to be retrieved via the tracking client.
     :return: active run data object
     """
-    return CLIENT.get_run(mlflow.active_run().info.run_id).data
+    return _CLIENT.get_run(mlflow.active_run().info.run_id).data
 
 
-@gorilla.patch(mlflow)
-def register_splice_context(splice_context):
+@_mlflow_patch('register_splice_context')
+def _register_splice_context(splice_context):
     """
     Register a Splice Context for Spark/Database operations
     (artifact storage, for example)
@@ -59,8 +71,8 @@ def _check_for_splice_ctx(func):
     return wrapped
 
 
-@gorilla.patch(mlflow)
-def current_run_id():
+@_mlflow_patch('current_run_id')
+def _current_run_id():
     """
     Retrieve the current run id
     :return: the current run id
@@ -68,8 +80,8 @@ def current_run_id():
     return mlflow.active_run().info.run_uuid
 
 
-@gorilla.patch(mlflow)
-def current_exp_id():
+@_mlflow_patch('current_exp_id')
+def _current_exp_id():
     """
     Retrieve the current exp id
     :return: the current experiment id
@@ -77,8 +89,8 @@ def current_exp_id():
     return mlflow.active_run().info.experiment_id
 
 
-@gorilla.patch(mlflow)
-def lp(key, value):
+@_mlflow_patch('lp')
+def _lp(key, value):
     """
     Add a shortcut for logging parameters in MLFlow.
     Accessible from mlflow.lp
@@ -88,8 +100,8 @@ def lp(key, value):
     mlflow.log_param(key, value)
 
 
-@gorilla.patch(mlflow)
-def lm(key, value):
+@_mlflow_patch('lm')
+def _lm(key, value):
     """
     Add a shortcut for logging metrics in MLFlow.
     Accessible from mlflow.lm
@@ -99,9 +111,9 @@ def lm(key, value):
     mlflow.log_metric(key, value)
 
 
-@gorilla.patch(mlflow)
+@_mlflow_patch('log_spark_model')
 @_check_for_splice_ctx
-def log_spark_model(model, name='model'):
+def _log_spark_model(model, name='model'):
     """
     Log a fitted spark pipeline or model
     :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline to store
@@ -130,8 +142,8 @@ def log_spark_model(model, name='model'):
                     file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
 
 
-@gorilla.patch(mlflow)
-def start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
+@_mlflow_patch('start_run')
+def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
     """
     Start a new run
     :param tags: a dictionary containing metadata about the current run.
@@ -155,15 +167,15 @@ def start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=
     orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
 
 
-@gorilla.patch(mlflow)
-def log_pipeline_stages(pipeline):
+@_mlflow_patch('log_pipeline_stages')
+def _log_pipeline_stages(pipeline):
     for stage_number, pipeline_stage in enumerate(SparkUtils.get_stages(pipeline)):
         readable_stage_name = SparkUtils.readable_pipeline_stage(pipeline_stage)
         mlflow.log_param('Stage' + str(stage_number), readable_stage_name)
 
 
-@gorilla.patch(mlflow)
-def log_feature_transformations(unfit_pipeline):
+@_mlflow_patch('log_feature_transformations')
+def _log_feature_transformations(unfit_pipeline):
     """
     Log feature transformations for an unfit pipeline
     Logs --> feature movement through the pipelien
@@ -191,8 +203,8 @@ def log_feature_transformations(unfit_pipeline):
         mlflow.log_param('Column- ' + column, param_value)
 
 
-@gorilla.patch(mlflow)
-def log_model_params(pipeline_or_model):
+@_mlflow_patch('log_model_params')
+def _log_model_params(pipeline_or_model):
     """
     Log the parameters of a fitted model or a
     model part of a fitted pipeline
@@ -216,9 +228,9 @@ def log_model_params(pipeline_or_model):
             mlflow.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
 
 
-@gorilla.patch(mlflow)
+@_mlflow_patch('timer')
 @contextmanager
-def timer(timer_name, param=True):
+def _timer(timer_name, param=True):
     """
     Context manager for logging
     :param timer_name:
@@ -233,9 +245,9 @@ def timer(timer_name, param=True):
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
 
 
-@gorilla.patch(mlflow)
+@_mlflow_patch('download_artifact')
 @_check_for_splice_ctx
-def download_artifact(name, local_path, run_id=None):
+def _download_artifact(name, local_path, run_id=None):
     """
     Download the artifact at the given
     run id (active default) + name
@@ -261,9 +273,9 @@ def download_artifact(name, local_path, run_id=None):
             artifact_file.write(blob_data)
 
 
-@gorilla.patch(mlflow)
+@_mlflow_patch('load_spark_model')
 @_check_for_splice_ctx
-def load_spark_model(run_id=None, name='model'):
+def _load_spark_model(run_id=None, name='model'):
     """
     Download a model from database
     and load it into Spark
@@ -285,9 +297,9 @@ def load_spark_model(run_id=None, name='model'):
     return pipeline
 
 
-@gorilla.patch(mlflow)
+@_mlflow_patch('log_artifact')
 @_check_for_splice_ctx
-def log_artifact(file_name, name, run_uuid=None):
+def _log_artifact(file_name, name, run_uuid=None):
     """
     Log an artifact for the active run
     :param file_name: (str) the name of the file name to log
@@ -305,14 +317,22 @@ def log_artifact(file_name, name, run_uuid=None):
     insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
 
 
-def _apply_patches():
+def apply_patches():
     """
-    Apply all the Gorilla Patches
+    Apply all the Gorilla Patches;
+    ALL GORILLA PATCHES SHOULD BE PREFIXED WITH "_" BEFORE THEIR DESTINATION IN MLFLOW
     """
-    for obj in globals():
-        patch_data = gorilla.get_decorator_data(obj)
-        if patch_data and getattr(patch_data, 'patches') is not None:
-            gorilla.apply(patch_data.patches)
+    targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+               _log_model_params, _log_pipeline_stages, _log_spark_model, _load_spark_model, _download_artifact,
+               _start_run, _current_run_id, _current_exp_id]
+
+    for target in targets:
+        gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
 
 
-_apply_patches()
+def main():
+    mlflow.set_tracking_uri(_TRACKING_URL)
+    apply_patches()
+
+
+main()
