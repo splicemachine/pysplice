@@ -475,7 +475,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param classes: (List[str]) the labels of the model (if they exist)
     :param verbose: (bool) whether to print the SQL query
     """
-    SQL_PARSE_TRIGGER = f'CREAvTE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
+    SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
                         f'\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
                         f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
     case_str = 'PREDICTION=\n\t\tCASE\n'
