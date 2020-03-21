@@ -9,8 +9,7 @@ from io import BytesIO
 import path
 
 from contextlib import contextmanager
-from splicemachine.mlmanager import SparkUtils, get_pod_uri, insert_artifact, get_user, find_inputs_by_output, \
-    PipelineModel, SpliceMachineException
+from splicemachine.mlmanager.utilities import *
 
 _TESTING = env_vars.get("TESTING", False)
 TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
@@ -304,3 +303,17 @@ def log_artifact(file_name, name, run_uuid=None):
     run_id = run_uuid if run_uuid else mlflow.active_run().info.run_uuid
 
     insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
+
+
+def _apply_patches():
+    """
+    Apply all the Gorilla Patches
+    """
+    for obj in globals():
+        patch_data = gorilla.get_decorator_data(obj)
+        if getattr(patch_data, 'patches'):
+            gorilla.apply(patch_data.patches)
+
+
+if __name__ == "__main__":
+    _apply_patches()
