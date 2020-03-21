@@ -1,5 +1,6 @@
 import random
 
+
 def hide_toggle(toggle_next=False):
     """
     Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.

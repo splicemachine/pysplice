@@ -19,7 +19,7 @@ import os
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
-from splicemachine.spark.constants import SparkConstants
+from splicemachine.spark.constants import CONVERSIONS
 
 
 class PySpliceContext:
@@ -261,7 +261,7 @@ class PySpliceContext:
                 print('Column {} is of type {}'.format(i.name.upper(), i.dataType))
                 dt = types[i.name.upper()]
             else:
-                dt = SparkConstants.CONVERSIONS[str(i.dataType)]
+                dt = CONVERSIONS[str(i.dataType)]
             db_schema.append((i.name.upper(), dt))
 
         return db_schema
