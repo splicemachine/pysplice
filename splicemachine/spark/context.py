@@ -220,7 +220,7 @@ class PySpliceContext:
     def export(self, dataframe, location, compression=False, replicationCount=1, fileEncoding=None,
                fieldSeparator=None,
                quoteCharacter=None):
-        '''
+        """
         Export a dataFrame in CSV
         :param dataframe:
         :param location: Destination directory
@@ -230,20 +230,20 @@ class PySpliceContext:
         :param fieldSeparator: fieldSeparator or null, defaults to ','
         :param quoteCharacter: quoteCharacter or null, defaults to '"'
         :return:
-        '''
+        """
         return self.context.export(dataframe._jdf, location, compression, replicationCount,
                                    fileEncoding,
                                    fieldSeparator, quoteCharacter)
 
     def exportBinary(self, dataframe, location, compression, e_format):
-        '''
+        """
         Export a dataFrame in binary format
         :param dataframe:
         :param location: Destination directory
         :param compression: Whether to compress the output or not
         :param e_format: Binary format to be used, currently only 'parquet' is supported
         :return:
-        '''
+        """
         return self.context.exportBinary(dataframe._jdf, location, compression, e_format)
 
     def _generateDBSchema(self, dataframe, types={}):
