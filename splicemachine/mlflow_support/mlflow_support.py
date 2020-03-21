@@ -527,8 +527,8 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     if 'prediction' not in df.columns:
         df = fittedPipe.transform(df)
     # Get the Mleap model and insert it into the MODELS table
-    mleap_model = get_mleap_model(mlflow._spark_context, fittedPipe, df, run_id)
-    insert_mleap_model(mlflow._spark_context, run_id, mleap_model)
+    mleap_model = get_mleap_model(mlflow._splice_context, fittedPipe, df, run_id)
+    insert_mleap_model(mlflow._splice_context, run_id, mleap_model)
 
     # Create the schema of the table (we use this a few times)
     schema_str = ''
