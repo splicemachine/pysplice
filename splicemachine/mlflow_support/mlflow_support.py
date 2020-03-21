@@ -108,7 +108,6 @@ def _lm(key, value):
 
 
 @_mlflow_patch('log_spark_model')
-@_check_for_splice_ctx
 def _log_spark_model(model, name='model'):
     """
     Log a fitted spark pipeline or model
@@ -116,6 +115,7 @@ def _log_spark_model(model, name='model'):
         with the current run
     :param name: (str) the run relative name to store the model under
     """
+    _check_for_splice_ctx()
     if _get_current_run_data().tags['splice.model_name']:  # this function has already run
         raise Exception("Only one model is permitted per run.")
 
