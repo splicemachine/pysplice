@@ -363,8 +363,8 @@ def _initiate_job(payload, endpoint):
 
 
 @_mlflow_patch('deploy_aws')
-def deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
-               run_id=None, instance_count=1, deployment_mode='replace'):
+def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
+                run_id=None, instance_count=1, deployment_mode='replace'):
     """
     Queue Job to deploy a run to sagemaker with the
     given run id (found in MLFlow UI or through search API)
@@ -409,8 +409,8 @@ def deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
 
 
 @_mlflow_patch('deploy_azure')
-def deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region='East US',
-                 cpu_cores=0.1, allocated_ram=0.5, model_name=None):
+def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region='East US',
+                  cpu_cores=0.1, allocated_ram=0.5, model_name=None):
     """
     Deploy a given run to AzureML.
     :param endpoint_name: (str) the name of the endpoint in AzureML when deployed to
@@ -454,8 +454,8 @@ def deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region='
 
 
 @_mlflow_patch('deploy_database')
-def deploy_model(fittedPipe, df, db_schema_name, db_table_name, primary_key,
-                 run_id=None, classes=None, verbose=False, replace=False) -> None:
+def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
+               run_id=None, classes=None, verbose=False, replace=False) -> None:
     """
     Function to deploy a trained (Spark for now) model to the Database. This creates 2 tables: One with the features of the model, and one with the prediction and metadata.
     They are linked with a column called MOMENT_ID
@@ -576,7 +576,7 @@ def apply_patches():
     """
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_spark_model, _load_spark_model, _download_artifact,
-               _start_run, _current_run_id, _current_exp_id]
+               _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
