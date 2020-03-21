@@ -1,41 +1,26 @@
 import warnings
+from multiprocessing.pool import ThreadPool
+import random
+from collections import defaultdict, OrderedDict
+
 import numpy as np
 import pandas as pd
 import scipy.stats as st
+import graphviz
 from numpy.linalg import eigh
-from multiprocessing.pool import ThreadPool
-
-from pyspark.sql import functions as F
+from tqdm import tqdm
+from IPython.display import HTML
+import pyspark_dist_explore as dist_explore
+from pyspark.sql import functions as F, Row
 from pyspark.sql.types import DoubleType, ArrayType, IntegerType, StringType
 from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
 from pyspark.ml import Pipeline, Transformer
+from pyspark.ml.classification import LogisticRegressionModel
 from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
 from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler, Bucketizer, PCA
 from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, BinaryClassificationEvaluator
 from pyspark import keyword_only
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder, CrossValidatorModel
-
-import pyspark_dist_explore as dist_explore
-from tqdm import tqdm
-import random
-
-from IPython.display import HTML
-from collections import defaultdict, OrderedDict
-
-import graphviz
-from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, BinaryClassificationEvaluator
-from pyspark.ml.classification import LogisticRegressionModel
-from pyspark.sql import Row
-
-
-class Run(object):
-    def __init__(self, *args, **kwargs):
-        ERROR = """
-        This class has been deprecated and all of
-        its components have been integrated into the
-        new splicemachine.ml.management.MLManager class.
-        """
-        raise Exception(ERROR)
 
 
 def get_confusion_matrix(spark, TP, TN, FP, FN):
@@ -52,21 +37,6 @@ def get_confusion_matrix(spark, TP, TN, FP, FN):
     confusion_matrix = spark._wrapped.createDataFrame([row('True', TP, FN),
                                                        row('False', FP, TN)])
     return confusion_matrix
-
-
-def experiment_maker(experiment_id):
-    ERROR = """
-    This function has been deprecated in favor of the splicemachine.ml.management.MLManager class
-    """
-    raise Exception(ERROR)
-
-
-class ModelEvaluator():
-    def __init__(self, *args, **kwargs):
-        ERROR = """
-        This class has been renamed to SpliceBinaryClassificationEvaluator
-        """
-        raise Exception(ERROR)
 
 
 class SpliceBaseEvaluator(object):
@@ -426,7 +396,7 @@ def hide_toggle(toggle_next=False):
     """
     Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.
     :param toggle_next: Bool determine if the toggle should affect the current cell or the next cell
-    Usage: from splicemachine.ml.utilities import hide_toggle
+    Usage: from splicemachine.stats.utilities import hide_toggle
            hide_toggle()
     """
     this_cell = """$('div.cell.code_cell.rendered.selected')"""
@@ -472,7 +442,7 @@ class Rounder(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, Def
     Example:
     --------
     >>> from pyspark.sql.session import SparkSession
-    >>> from splicemachine.ml.stats import Rounder
+    >>> from splicemachine.stats.stats import Rounder
     >>> spark = SparkSession.builder.getOrCreate()
     >>> dataset = spark.createDataFrame(
     ...      [(0.2, 0.0),
@@ -687,8 +657,8 @@ class OverSampler(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable,
     -------
     >>> from pyspark.sql import functions as F
     >>> from pyspark.sql.session import SparkSession
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from splicemachine.ml.stats import OverSampler
+    >>> from pyspark.stats.linalg import Vectors
+    >>> from splicemachine.stats.stats import OverSampler
     >>> spark = SparkSession.builder.getOrCreate()
     >>> df = spark.createDataFrame(
     ...      [(Vectors.dense([0.0]), 0.0),
@@ -790,10 +760,10 @@ class OverSampleCrossValidator(CrossValidator):
     Example:
     -------
     >>> from pyspark.sql.session import SparkSession
-    >>> from pyspark.ml.classification import LogisticRegression
-    >>> from pyspark.ml.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from splicemachine.ml.stats import OverSampleCrossValidator
+    >>> from pyspark.stats.classification import LogisticRegression
+    >>> from pyspark.stats.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
+    >>> from pyspark.stats.linalg import Vectors
+    >>> from splicemachine.stats.stats import OverSampleCrossValidator
     >>> spark = SparkSession.builder.getOrCreate()
     >>> dataset = spark.createDataFrame(
     ...      [(Vectors.dense([0.0]), 0.0),
