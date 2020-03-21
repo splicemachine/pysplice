@@ -164,9 +164,9 @@ try:
                   'pyspark.mllib',
                   'pyspark.mllib.linalg',
                   'pyspark.mllib.stat',
-                  'pyspark.mlmanager',
-                  'pyspark.mlmanager.linalg',
-                  'pyspark.mlmanager.param',
+                  'pyspark.mlflow_support',
+                  'pyspark.mlflow_support.linalg',
+                  'pyspark.mlflow_support.param',
                   'pyspark.sql',
                   'pyspark.streaming',
                   'pyspark.bin',
@@ -197,7 +197,7 @@ try:
         install_requires=['py4j==0.10.4'],
         setup_requires=['pypandoc'],
         extras_require={
-            'mlmanager': ['numpy>=1.7'],
+            'mlflow_support': ['numpy>=1.7'],
             'mllib': ['numpy>=1.7'],
             'sql': ['pandas']
         },

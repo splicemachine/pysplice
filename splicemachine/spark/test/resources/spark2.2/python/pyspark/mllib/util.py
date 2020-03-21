@@ -207,7 +207,7 @@ class MLUtils(object):
         """
         Converts vector columns in an input DataFrame from the
         :py:class:`pyspark.mllib.linalg.Vector` type to the new
-        :py:class:`pyspark.mlmanager.linalg.Vector` type under the `spark.mlmanager`
+        :py:class:`pyspark.mlflow_support.linalg.Vector` type under the `spark.mlflow_support`
         package.
 
         :param dataset:
@@ -227,12 +227,12 @@ class MLUtils(object):
         ...     [(0, Vectors.sparse(2, [1], [1.0]), Vectors.dense(2.0, 3.0))],
         ...     ["id", "x", "y"])
         >>> r1 = MLUtils.convertVectorColumnsToML(df).first()
-        >>> isinstance(r1.x, pyspark.mlmanager.linalg.SparseVector)
+        >>> isinstance(r1.x, pyspark.mlflow_support.linalg.SparseVector)
         True
-        >>> isinstance(r1.y, pyspark.mlmanager.linalg.DenseVector)
+        >>> isinstance(r1.y, pyspark.mlflow_support.linalg.DenseVector)
         True
         >>> r2 = MLUtils.convertVectorColumnsToML(df, "x").first()
-        >>> isinstance(r2.x, pyspark.mlmanager.linalg.SparseVector)
+        >>> isinstance(r2.x, pyspark.mlflow_support.linalg.SparseVector)
         True
         >>> isinstance(r2.y, pyspark.mllib.linalg.DenseVector)
         True
@@ -247,7 +247,7 @@ class MLUtils(object):
         """
         Converts vector columns in an input DataFrame to the
         :py:class:`pyspark.mllib.linalg.Vector` type from the new
-        :py:class:`pyspark.mlmanager.linalg.Vector` type under the `spark.mlmanager`
+        :py:class:`pyspark.mlflow_support.linalg.Vector` type under the `spark.mlflow_support`
         package.
 
         :param dataset:
@@ -261,7 +261,7 @@ class MLUtils(object):
           old vector type
 
         >>> import pyspark
-        >>> from pyspark.mlmanager.linalg import Vectors
+        >>> from pyspark.mlflow_support.linalg import Vectors
         >>> from pyspark.mllib.util import MLUtils
         >>> df = spark.createDataFrame(
         ...     [(0, Vectors.sparse(2, [1], [1.0]), Vectors.dense(2.0, 3.0))],
@@ -274,7 +274,7 @@ class MLUtils(object):
         >>> r2 = MLUtils.convertVectorColumnsFromML(df, "x").first()
         >>> isinstance(r2.x, pyspark.mllib.linalg.SparseVector)
         True
-        >>> isinstance(r2.y, pyspark.mlmanager.linalg.DenseVector)
+        >>> isinstance(r2.y, pyspark.mlflow_support.linalg.DenseVector)
         True
         """
         if not isinstance(dataset, DataFrame):
@@ -287,7 +287,7 @@ class MLUtils(object):
         """
         Converts matrix columns in an input DataFrame from the
         :py:class:`pyspark.mllib.linalg.Matrix` type to the new
-        :py:class:`pyspark.mlmanager.linalg.Matrix` type under the `spark.mlmanager`
+        :py:class:`pyspark.mlflow_support.linalg.Matrix` type under the `spark.mlflow_support`
         package.
 
         :param dataset:
@@ -307,12 +307,12 @@ class MLUtils(object):
         ...     [(0, Matrices.sparse(2, 2, [0, 2, 3], [0, 1, 1], [2, 3, 4]),
         ...     Matrices.dense(2, 2, range(4)))], ["id", "x", "y"])
         >>> r1 = MLUtils.convertMatrixColumnsToML(df).first()
-        >>> isinstance(r1.x, pyspark.mlmanager.linalg.SparseMatrix)
+        >>> isinstance(r1.x, pyspark.mlflow_support.linalg.SparseMatrix)
         True
-        >>> isinstance(r1.y, pyspark.mlmanager.linalg.DenseMatrix)
+        >>> isinstance(r1.y, pyspark.mlflow_support.linalg.DenseMatrix)
         True
         >>> r2 = MLUtils.convertMatrixColumnsToML(df, "x").first()
-        >>> isinstance(r2.x, pyspark.mlmanager.linalg.SparseMatrix)
+        >>> isinstance(r2.x, pyspark.mlflow_support.linalg.SparseMatrix)
         True
         >>> isinstance(r2.y, pyspark.mllib.linalg.DenseMatrix)
         True
@@ -327,7 +327,7 @@ class MLUtils(object):
         """
         Converts matrix columns in an input DataFrame to the
         :py:class:`pyspark.mllib.linalg.Matrix` type from the new
-        :py:class:`pyspark.mlmanager.linalg.Matrix` type under the `spark.mlmanager`
+        :py:class:`pyspark.mlflow_support.linalg.Matrix` type under the `spark.mlflow_support`
         package.
 
         :param dataset:
@@ -341,7 +341,7 @@ class MLUtils(object):
           old matrix type
 
         >>> import pyspark
-        >>> from pyspark.mlmanager.linalg import Matrices
+        >>> from pyspark.mlflow_support.linalg import Matrices
         >>> from pyspark.mllib.util import MLUtils
         >>> df = spark.createDataFrame(
         ...     [(0, Matrices.sparse(2, 2, [0, 2, 3], [0, 1, 1], [2, 3, 4]),
@@ -354,7 +354,7 @@ class MLUtils(object):
         >>> r2 = MLUtils.convertMatrixColumnsFromML(df, "x").first()
         >>> isinstance(r2.x, pyspark.mllib.linalg.SparseMatrix)
         True
-        >>> isinstance(r2.y, pyspark.mlmanager.linalg.DenseMatrix)
+        >>> isinstance(r2.y, pyspark.mlflow_support.linalg.DenseMatrix)
         True
         """
         if not isinstance(dataset, DataFrame):

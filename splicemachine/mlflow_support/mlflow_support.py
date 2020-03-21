@@ -9,7 +9,7 @@ from io import BytesIO
 import path
 
 from contextlib import contextmanager
-from splicemachine.mlmanager.utilities import *
+from splicemachine.mlflow_support.utilities import *
 
 _TESTING = env_vars.get("TESTING", False)
 TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
@@ -311,9 +311,8 @@ def _apply_patches():
     """
     for obj in globals():
         patch_data = gorilla.get_decorator_data(obj)
-        if getattr(patch_data, 'patches'):
+        if patch_data and getattr(patch_data, 'patches') is not None:
             gorilla.apply(patch_data.patches)
 
 
-if __name__ == "__main__":
-    _apply_patches()
+_apply_patches()
