@@ -137,7 +137,7 @@ def _log_spark_model(model, name='model'):
     oos.writeObject(model._to_java())
     oos.flush()
     oos.close()
-    insert_artifact(name, baos.toByteArray(), mlflow._splice_context, mlflow.active_run().info.run_uuid,
+    insert_artifact(mlflow._splice_context, name, baos.toByteArray(), mlflow.active_run().info.run_uuid,
                     file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
 
 
