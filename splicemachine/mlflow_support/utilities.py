@@ -276,9 +276,10 @@ def get_pod_uri(pod, port, _testing=False):
     return url
 
 
-def get_mleap_model(self, fittedPipe, df, run_id: str):
+def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
     """
     Turns a fitted Spark Pipeline into an Mleap Transformer
+    :param splice_context: pysplicectx
     :param fittedPipe: Fitted Spark Pipeline
     :param df: A TRANSFORMED dataframe. ie a dataframe that the pipeline has called .transform() on
     :param run_id: (str) the MLFlow run associated with the model
@@ -291,7 +292,7 @@ def get_mleap_model(self, fittedPipe, df, run_id: str):
         bash(f'rm /tmp/{run_id}.zip')
     fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
 
-    jvm = self.splice_context.jvm
+    jvm = splice_context.jvm
     java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
     obj = jvm.FileRetriever.loadBundle(f'jar:file:///tmp/{run_id}.zip')
     bash(f'rm /tmp/{run_id}.zip"')
@@ -474,7 +475,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param classes: (List[str]) the labels of the model (if they exist)
     :param verbose: (bool) whether to print the SQL query
     """
-    SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
+    SQL_PARSE_TRIGGER = f'CREAvTE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
                         f'\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
                         f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
     case_str = 'PREDICTION=\n\t\tCASE\n'
