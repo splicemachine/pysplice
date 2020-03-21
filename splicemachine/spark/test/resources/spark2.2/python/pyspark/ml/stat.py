@@ -45,8 +45,8 @@ class ChiSquareTest(object):
       - `statistics: Vector`
       Each of these fields has one value per feature.
 
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from pyspark.ml.stat import ChiSquareTest
+    >>> from pyspark.mlmanager.linalg import Vectors
+    >>> from pyspark.mlmanager.stat import ChiSquareTest
     >>> dataset = [[0, Vectors.dense([0, 0, 1])],
     ...            [0, Vectors.dense([1, 0, 1])],
     ...            [1, Vectors.dense([2, 1, 1])],
@@ -97,8 +97,8 @@ class Correlation(object):
       dataframe contains a single row and a single column of name
       '$METHODNAME($COLUMN)'.
 
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from pyspark.ml.stat import Correlation
+    >>> from pyspark.mlmanager.linalg import Vectors
+    >>> from pyspark.mlmanager.stat import Correlation
     >>> dataset = [[Vectors.dense([1, 0, 0, -2])],
     ...            [Vectors.dense([4, 5, 0, 3])],
     ...            [Vectors.dense([6, 7, 0, 8])],
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder \
         .master("local[2]") \
-        .appName("ml.stat tests") \
+        .appName("mlmanager.stat tests") \
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

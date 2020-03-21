@@ -156,7 +156,7 @@ class GaussianMixture(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIte
           (based on statistical/theoretical arguments) and (b) numerical issues with
           Gaussian distributions.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
 
     >>> data = [(Vectors.dense([-0.1, -0.05 ]),),
     ...         (Vectors.dense([-0.01, -0.1]),),
@@ -221,7 +221,7 @@ class GaussianMixture(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIte
                  probabilityCol="probability", tol=0.01, maxIter=100, seed=None)
         """
         super(GaussianMixture, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.clustering.GaussianMixture",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.clustering.GaussianMixture",
                                             self.uid)
         self._setDefault(k=2, tol=0.01, maxIter=100)
         kwargs = self._input_kwargs
@@ -352,7 +352,7 @@ class KMeans(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIter, HasTol
     K-means clustering with a k-means++ like initialization mode
     (the k-means|| algorithm by Bahmani et al).
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> data = [(Vectors.dense([0.0, 0.0]),), (Vectors.dense([1.0, 1.0]),),
     ...         (Vectors.dense([9.0, 8.0]),), (Vectors.dense([8.0, 9.0]),)]
     >>> df = spark.createDataFrame(data, ["features"])
@@ -412,7 +412,7 @@ class KMeans(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIter, HasTol
                  initMode="k-means||", initSteps=2, tol=1e-4, maxIter=20, seed=None)
         """
         super(KMeans, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.clustering.KMeans", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.clustering.KMeans", self.uid)
         self._setDefault(k=2, initMode="k-means||", initSteps=2, tol=1e-4, maxIter=20)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -531,7 +531,7 @@ class BisectingKMeans(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIte
     If bisecting all divisible clusters on the bottom level would result more than `k` leaf
     clusters, larger clusters get higher priority.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> data = [(Vectors.dense([0.0, 0.0]),), (Vectors.dense([1.0, 1.0]),),
     ...         (Vectors.dense([9.0, 8.0]),), (Vectors.dense([8.0, 9.0]),)]
     >>> df = spark.createDataFrame(data, ["features"])
@@ -588,7 +588,7 @@ class BisectingKMeans(JavaEstimator, HasFeaturesCol, HasPredictionCol, HasMaxIte
                  seed=None, k=4, minDivisibleClusterSize=1.0)
         """
         super(BisectingKMeans, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.clustering.BisectingKMeans",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.clustering.BisectingKMeans",
                                             self.uid)
         self._setDefault(maxIter=20, k=4, minDivisibleClusterSize=1.0)
         kwargs = self._input_kwargs
@@ -818,11 +818,11 @@ class LDA(JavaEstimator, HasFeaturesCol, HasMaxIter, HasSeed, HasCheckpointInter
     LDA is given a collection of documents as input data, via the featuresCol parameter.
     Each document is specified as a :py:class:`Vector` of length vocabSize, where each entry is the
     count for the corresponding term (word) in the document.  Feature transformers such as
-    :py:class:`pyspark.ml.feature.Tokenizer` and :py:class:`pyspark.ml.feature.CountVectorizer`
+    :py:class:`pyspark.mlmanager.feature.Tokenizer` and :py:class:`pyspark.mlmanager.feature.CountVectorizer`
     can be useful for converting text to word count vectors.
 
-    >>> from pyspark.ml.linalg import Vectors, SparseVector
-    >>> from pyspark.ml.clustering import LDA
+    >>> from pyspark.mlmanager.linalg import Vectors, SparseVector
+    >>> from pyspark.mlmanager.clustering import LDA
     >>> df = spark.createDataFrame([[1, Vectors.dense([0.0, 1.0])],
     ...      [2, SparseVector(2, {0: 1.0})],], ["id", "features"])
     >>> lda = LDA(k=2, seed=1, optimizer="em")
@@ -911,7 +911,7 @@ class LDA(JavaEstimator, HasFeaturesCol, HasMaxIter, HasSeed, HasCheckpointInter
                   topicDistributionCol="topicDistribution", keepLastCheckpoint=True):
         """
         super(LDA, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.clustering.LDA", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.clustering.LDA", self.uid)
         self._setDefault(maxIter=20, checkpointInterval=10,
                          k=10, optimizer="online", learningOffset=1024.0, learningDecay=0.51,
                          subsamplingRate=0.05, optimizeDocConcentration=True,
@@ -1135,7 +1135,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.clustering tests")\
+        .appName("mlmanager.clustering tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

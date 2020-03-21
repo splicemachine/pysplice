@@ -222,7 +222,7 @@ def _regression_train_wrapper(train_func, modelClass, data, initial_weights):
 class LinearRegressionWithSGD(object):
     """
     .. versionadded:: 0.9.0
-    .. note:: Deprecated in 2.0.0. Use ml.regression.LinearRegression.
+    .. note:: Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression.
     """
     @classmethod
     @since("0.9.0")
@@ -278,7 +278,7 @@ class LinearRegressionWithSGD(object):
           A condition which decides iteration termination.
           (default: 0.001)
         """
-        warnings.warn("Deprecated in 2.0.0. Use ml.regression.LinearRegression.")
+        warnings.warn("Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression.")
 
         def train(rdd, i):
             return callMLlibFunc("trainLinearRegressionModelWithSGD", rdd, int(iterations),
@@ -370,7 +370,7 @@ class LassoModel(LinearRegressionModelBase):
 class LassoWithSGD(object):
     """
     .. versionadded:: 0.9.0
-    .. note:: Deprecated in 2.0.0. Use ml.regression.LinearRegression with elasticNetParam = 1.0.
+    .. note:: Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression with elasticNetParam = 1.0.
             Note the default regParam is 0.01 for LassoWithSGD, but is 0.0 for LinearRegression.
     """
     @classmethod
@@ -420,7 +420,7 @@ class LassoWithSGD(object):
           (default: 0.001)
         """
         warnings.warn(
-            "Deprecated in 2.0.0. Use ml.regression.LinearRegression with elasticNetParam = 1.0. "
+            "Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression with elasticNetParam = 1.0. "
             "Note the default regParam is 0.01 for LassoWithSGD, but is 0.0 for LinearRegression.")
 
         def train(rdd, i):
@@ -513,7 +513,7 @@ class RidgeRegressionModel(LinearRegressionModelBase):
 class RidgeRegressionWithSGD(object):
     """
     .. versionadded:: 0.9.0
-    .. note:: Deprecated in 2.0.0. Use ml.regression.LinearRegression with elasticNetParam = 0.0.
+    .. note:: Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression with elasticNetParam = 0.0.
             Note the default regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for
             LinearRegression.
     """
@@ -564,7 +564,7 @@ class RidgeRegressionWithSGD(object):
           (default: 0.001)
         """
         warnings.warn(
-            "Deprecated in 2.0.0. Use ml.regression.LinearRegression with elasticNetParam = 0.0. "
+            "Deprecated in 2.0.0. Use mlmanager.regression.LinearRegression with elasticNetParam = 0.0. "
             "Note the default regParam is 0.01 for RidgeRegressionWithSGD, but is 0.0 for "
             "LinearRegression.")
 

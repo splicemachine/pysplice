@@ -256,7 +256,7 @@ class Vector(object):
         Convert this vector to the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :return: :py:class:`pyspark.ml.linalg.Vector`
+        :return: :py:class:`pyspark.mlmanager.linalg.Vector`
         """
         raise NotImplementedError
 
@@ -426,7 +426,7 @@ class DenseVector(Vector):
         Convert this vector to the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :return: :py:class:`pyspark.ml.linalg.DenseVector`
+        :return: :py:class:`pyspark.mlmanager.linalg.DenseVector`
 
         .. versionadded:: 2.0.0
         """
@@ -766,7 +766,7 @@ class SparseVector(Vector):
         Convert this vector to the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :return: :py:class:`pyspark.ml.linalg.SparseVector`
+        :return: :py:class:`pyspark.mlmanager.linalg.SparseVector`
 
         .. versionadded:: 2.0.0
         """
@@ -887,7 +887,7 @@ class Vectors(object):
         Convert a vector from the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :param vec: a :py:class:`pyspark.ml.linalg.Vector`
+        :param vec: a :py:class:`pyspark.mlmanager.linalg.Vector`
         :return: a :py:class:`pyspark.mllib.linalg.Vector`
 
         .. versionadded:: 2.0.0
@@ -1110,7 +1110,7 @@ class DenseMatrix(Matrix):
         Convert this matrix to the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :return: :py:class:`pyspark.ml.linalg.DenseMatrix`
+        :return: :py:class:`pyspark.mlmanager.linalg.DenseMatrix`
 
         .. versionadded:: 2.0.0
         """
@@ -1293,7 +1293,7 @@ class SparseMatrix(Matrix):
         Convert this matrix to the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :return: :py:class:`pyspark.ml.linalg.SparseMatrix`
+        :return: :py:class:`pyspark.mlmanager.linalg.SparseMatrix`
 
         .. versionadded:: 2.0.0
         """
@@ -1326,7 +1326,7 @@ class Matrices(object):
         Convert a matrix from the new mllib-local representation.
         This does NOT copy the data; it copies references.
 
-        :param mat: a :py:class:`pyspark.ml.linalg.Matrix`
+        :param mat: a :py:class:`pyspark.mlmanager.linalg.Matrix`
         :return: a :py:class:`pyspark.mllib.linalg.Matrix`
 
         .. versionadded:: 2.0.0

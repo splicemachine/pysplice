@@ -113,7 +113,7 @@ class BinaryClassificationEvaluator(JavaEvaluator, HasLabelCol, HasRawPrediction
     The rawPrediction column can be of type double (binary 0/1 prediction, or probability of label
     1) or of type vector (length-2 vector of raw predictions, scores, or label probabilities).
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> scoreAndLabels = map(lambda x: (Vectors.dense([1.0 - x[0], x[0]]), x[1]),
     ...    [(0.1, 0.0), (0.1, 1.0), (0.4, 0.0), (0.6, 0.0), (0.6, 1.0), (0.6, 1.0), (0.8, 1.0)])
     >>> dataset = spark.createDataFrame(scoreAndLabels, ["raw", "label"])
@@ -145,7 +145,7 @@ class BinaryClassificationEvaluator(JavaEvaluator, HasLabelCol, HasRawPrediction
         """
         super(BinaryClassificationEvaluator, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.evaluation.BinaryClassificationEvaluator", self.uid)
+            "org.apache.spark.mlmanager.evaluation.BinaryClassificationEvaluator", self.uid)
         self._setDefault(rawPredictionCol="rawPrediction", labelCol="label",
                          metricName="areaUnderROC")
         kwargs = self._input_kwargs
@@ -223,7 +223,7 @@ class RegressionEvaluator(JavaEvaluator, HasLabelCol, HasPredictionCol,
         """
         super(RegressionEvaluator, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.evaluation.RegressionEvaluator", self.uid)
+            "org.apache.spark.mlmanager.evaluation.RegressionEvaluator", self.uid)
         self._setDefault(predictionCol="prediction", labelCol="label",
                          metricName="rmse")
         kwargs = self._input_kwargs
@@ -296,7 +296,7 @@ class MulticlassClassificationEvaluator(JavaEvaluator, HasLabelCol, HasPredictio
         """
         super(MulticlassClassificationEvaluator, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator", self.uid)
+            "org.apache.spark.mlmanager.evaluation.MulticlassClassificationEvaluator", self.uid)
         self._setDefault(predictionCol="prediction", labelCol="label",
                          metricName="f1")
         kwargs = self._input_kwargs
@@ -338,7 +338,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.evaluation tests")\
+        .appName("mlmanager.evaluation tests")\
         .getOrCreate()
     globs['spark'] = spark
     temp_path = tempfile.mkdtemp()

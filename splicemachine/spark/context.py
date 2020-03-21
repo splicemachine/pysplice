@@ -1,5 +1,5 @@
 """
-Copyright 2018 Splice Machine, Inc.
+Copyright 2020 Splice Machine, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,30 +19,15 @@ import os
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
+from splicemachine.spark.constants import SparkConstants
 
 
 class PySpliceContext:
     """
     This class implements a SpliceMachineContext object (similar to the SparkContext object)
     """
-    CONVERSIONS = {
-        'BinaryType': 'BLOB',
-        'BooleanType': 'BOOLEAN',
-        'ByteType': 'TINYINT',
-        'DateType': 'DATE',
-        'DoubleType': 'DOUBLE',
-        'DecimalType': 'DOUBLE',
-        'IntegerType': 'INTEGER',
-        'LongType': 'BIGINT',
-        'NullType': 'VARCHAR(50)',
-        'ShortType': 'SMALLINT',
-        'StringType': 'VARCHAR(5000)',
-        'TimestampType': 'TIMESTAMP',
-        'UnknownType': 'BLOB',
-        'FloatType': 'FLOAT'
-    }
 
-    def __init__(self, sparkSession, JDBC_URL=None, _unit_testing=False):
+    def __init__(self, sparkSession, JDBC_URL=None):
         """
         :param JDBC_URL: (string) The JDBC URL Connection String for your Splice Machine Cluster
         :param sparkSession: (sparkContext) A SparkSession object for talking to Spark
@@ -59,27 +44,18 @@ class PySpliceContext:
                     "please specify the JDBC_URL=<some url> keyword argument in the constructor"
                 )
 
-        self._unit_testing = _unit_testing
+        self.spark_session = sparkSession
+        self.jvm = self.spark_session.sparkContext._jvm
+        java_import(self.jvm, "com.splicemachine.spark.splicemachine.*")
+        java_import(self.jvm,
+                    "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
+        java_import(self.jvm, "scala.collection.JavaConverters._")
+        java_import(self.jvm, "com.splicemachine.derby.impl.*")
+        self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
+            self.spark_session._wrapped._jsc)
+        self.context = self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(
+            self.jdbcurl)
 
-        if not _unit_testing:  # Private Internal Argument to Override Using JVM
-            self.spark_sql_context = sparkSession._wrapped
-            self.jvm = self.spark_sql_context._sc._jvm
-            java_import(self.jvm, "com.splicemachine.spark.splicemachine.*")
-            java_import(self.jvm,
-                        "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
-            java_import(self.jvm, "scala.collection.JavaConverters._")
-            java_import(self.jvm, "com.splicemachine.derby.impl.*")
-            self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
-                self.spark_sql_context._jsc)
-            self.context = self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(
-                self.jdbcurl)
-
-        else:
-            from .tests.mocked import MockedScalaContext
-            self.spark_sql_context = sparkSession._wrapped
-            self.jvm = ''
-            self.context = MockedScalaContext(self.jdbcurl)
-            
     def toUpper(self, dataframe):
         """
         Returns a dataframe with all of the columns in uppercase
@@ -96,10 +72,10 @@ class PySpliceContext:
         :param schema_table_name: The schema.table with the correct column cases to pull from the database
         """
         cols = self.df('select top 1 * from {}'.format(schema_table_name)).columns
-        #sort the columns case insensitive so we are replacing the right ones in the dataframe
+        # sort the columns case insensitive so we are replacing the right ones in the dataframe
         old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
         new_cols = sorted(cols, key=lambda s: s.lower())
-        for old_col,new_col in zip(old_cols,new_cols):
+        for old_col, new_col in zip(old_cols, new_cols):
             dataframe = dataframe.withColumnRenamed(old_col, new_col)
         return dataframe
 
@@ -132,9 +108,7 @@ class PySpliceContext:
         :param sql: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: A Spark DataFrame containing the results
         """
-        if self._unit_testing:
-            return self.context.df(sql)
-        return DataFrame(self.context.df(sql), self.spark_sql_context)
+        return DataFrame(self.context.df(sql), self.spark_session._wrapped)
 
     def insert(self, dataframe, schema_table_name):
         """
@@ -187,7 +161,8 @@ class PySpliceContext:
 
         :param schema_table_name: (DF) Table name
         """
-        df = self.df("select * from " + schema_table_name) #should call python method self.df instead of java method df
+        df = self.df(
+            "select * from " + schema_table_name)  # should call python method self.df instead of java method df
         schm = df.schema
         return schm
 
@@ -214,9 +189,7 @@ class PySpliceContext:
         :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: pyspark dataframe contains the result of query_string
         '''
-        if self._unit_testing:
-            return self.context.internalDf(query_string)
-        return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
+        return DataFrame(self.context.internalDf(query_string), self.spark_session._wrapped)
 
     def truncateTable(self, schema_table_name):
         """
@@ -277,48 +250,48 @@ class PySpliceContext:
         """
         Generate the schema for create table
         """
-        #convert keys and values to uppercase in the types dictionary
-        types = dict((key.upper(), val) for key,val in types.items())
+        # convert keys and values to uppercase in the types dictionary
+        types = dict((key.upper(), val) for key, val in types.items())
         db_schema = []
-        #convert dataframe to have all uppercase column names
+        # convert dataframe to have all uppercase column names
         dataframe = self.toUpper(dataframe)
-        #i contains the name and pyspark datatype of the column
+        # i contains the name and pyspark datatype of the column
         for i in dataframe.schema:
             if i.name.upper() in types:
-                print('Column {} is of type {}'.format(i.name.upper(),i.dataType))
+                print('Column {} is of type {}'.format(i.name.upper(), i.dataType))
                 dt = types[i.name.upper()]
             else:
-                dt = PySpliceContext.CONVERSIONS[str(i.dataType)]
-            db_schema.append((i.name.upper(),dt))
-        
+                dt = SparkConstants.CONVERSIONS[str(i.dataType)]
+            db_schema.append((i.name.upper(), dt))
+
         return db_schema
-    
+
     def _getCreateTableSchema(self, schema_table_name, new_schema=False):
         """
         Parse schema for new table; if it is needed,
         create it
         """
-        #try to get schema and table, else set schema to splice
+        # try to get schema and table, else set schema to splice
         if '.' in schema_table_name:
             schema, table = schema_table_name.upper().split('.')
         else:
             schema = self.getConnection().getCurrentSchemaName()
             table = schema_table_name.upper()
-        #check for new schema
+        # check for new schema
         if new_schema:
             print('Creating schema {}'.format(schema))
             self.execute('CREATE SCHEMA {}'.format(schema))
-        
+
         return schema, table
-    
+
     def _dropTableIfExists(self, schema, table):
         """
         Drop table if it exists
         """
-        print('Droping table {schema}.{table}'.format(schema=schema,table=table))
-        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
-    
-    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types = {}):
+        print('Droping table {schema}.{table}'.format(schema=schema, table=table))
+        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema, table=table))
+
+    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types={}):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -345,21 +318,13 @@ class PySpliceContext:
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
         # Make sure table doesn't exists already
-        if(not drop_table and self.tableExists(schema_table_name)):
-           return('ERROR: Table already exists. Please drop it or set drop_table option to True')
-           
-        self._dropTableIfExists(schema,table)
-        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
-        for name,typ in db_schema:
-            sql += '{} {},\n'.format(name,typ)
+        if (not drop_table and self.tableExists(schema_table_name)):
+            return ('ERROR: Table already exists. Please drop it or set drop_table option to True')
+
+        self._dropTableIfExists(schema, table)
+        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema, table=table)
+        for name, typ in db_schema:
+            sql += '{} {},\n'.format(name, typ)
         sql = sql[:-2] + ')'
         print(sql)
         self.execute(sql)
-
-
-class SpliceMLContext(object):
-    def __init__(self):
-        raise Exception("This class has been deprecated in favor of the PySpliceContext class. "
-                        "the JDBC URL argument in the constructor is now *optional*. Thus, if "
-                        "running on the cloud service, you could do this "
-                        "`splice=PySpliceContext(spark)` to achieve the same result")

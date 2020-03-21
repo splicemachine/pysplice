@@ -93,7 +93,7 @@ class Binarizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, Java
         __init__(self, threshold=0.0, inputCol=None, outputCol=None)
         """
         super(Binarizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Binarizer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Binarizer", self.uid)
         self._setDefault(threshold=0.0)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -208,7 +208,7 @@ class BucketedRandomProjectionLSH(JavaEstimator, LSHParams, HasInputCol, HasOutp
     <https://en.wikipedia.org/wiki/Locality-sensitive_hashing#Stable_distributions>`_
     .. seealso:: `Hashing for Similarity Search: A Survey <https://arxiv.org/abs/1408.2927>`_
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> from pyspark.sql.functions import col
     >>> data = [(0, Vectors.dense([-1.0, -1.0 ]),),
     ...         (1, Vectors.dense([-1.0, 1.0 ]),),
@@ -264,7 +264,7 @@ class BucketedRandomProjectionLSH(JavaEstimator, LSHParams, HasInputCol, HasOutp
         """
         super(BucketedRandomProjectionLSH, self).__init__()
         self._java_obj = \
-            self._new_java_obj("org.apache.spark.ml.feature.BucketedRandomProjectionLSH", self.uid)
+            self._new_java_obj("org.apache.spark.mlmanager.feature.BucketedRandomProjectionLSH", self.uid)
         self._setDefault(numHashTables=1)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -369,7 +369,7 @@ class Bucketizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, Jav
         __init__(self, splits=None, inputCol=None, outputCol=None, handleInvalid="error")
         """
         super(Bucketizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Bucketizer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Bucketizer", self.uid)
         self._setDefault(handleInvalid="error")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -482,7 +482,7 @@ class CountVectorizer(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, 
                  outputCol=None)
         """
         super(CountVectorizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.CountVectorizer",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.CountVectorizer",
                                             self.uid)
         self._setDefault(minTF=1.0, minDF=1.0, vocabSize=1 << 18, binary=False)
         kwargs = self._input_kwargs
@@ -588,7 +588,7 @@ class DCT(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWrit
     .. seealso:: `More information on Wikipedia \
     <https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II Wikipedia>`_.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df1 = spark.createDataFrame([(Vectors.dense([5.0, 8.0, 6.0]),)], ["vec"])
     >>> dct = DCT(inverse=False, inputCol="vec", outputCol="resultVec")
     >>> df2 = dct.transform(df1)
@@ -615,7 +615,7 @@ class DCT(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWrit
         __init__(self, inverse=False, inputCol=None, outputCol=None)
         """
         super(DCT, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.DCT", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.DCT", self.uid)
         self._setDefault(inverse=False)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -653,7 +653,7 @@ class ElementwiseProduct(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReada
     with a provided "weight" vector. In other words, it scales each column of the dataset
     by a scalar multiplier.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([2.0, 1.0, 3.0]),)], ["values"])
     >>> ep = ElementwiseProduct(scalingVec=Vectors.dense([1.0, 2.0, 3.0]),
     ...     inputCol="values", outputCol="eprod")
@@ -679,7 +679,7 @@ class ElementwiseProduct(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReada
         __init__(self, scalingVec=None, inputCol=None, outputCol=None)
         """
         super(ElementwiseProduct, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.ElementwiseProduct",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.ElementwiseProduct",
                                             self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -749,7 +749,7 @@ class HashingTF(JavaTransformer, HasInputCol, HasOutputCol, HasNumFeatures, Java
         __init__(self, numFeatures=1 << 18, binary=False, inputCol=None, outputCol=None)
         """
         super(HashingTF, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.HashingTF", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.HashingTF", self.uid)
         self._setDefault(numFeatures=1 << 18, binary=False)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -784,7 +784,7 @@ class IDF(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWritab
     """
     Compute the Inverse Document Frequency (IDF) given a collection of documents.
 
-    >>> from pyspark.ml.linalg import DenseVector
+    >>> from pyspark.mlmanager.linalg import DenseVector
     >>> df = spark.createDataFrame([(DenseVector([1.0, 2.0]),),
     ...     (DenseVector([0.0, 1.0]),), (DenseVector([3.0, 0.2]),)], ["tf"])
     >>> idf = IDF(minDocFreq=3, inputCol="tf", outputCol="idf")
@@ -822,7 +822,7 @@ class IDF(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWritab
         __init__(self, minDocFreq=0, inputCol=None, outputCol=None)
         """
         super(IDF, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.IDF", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.IDF", self.uid)
         self._setDefault(minDocFreq=0)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -948,7 +948,7 @@ class Imputer(JavaEstimator, HasInputCols, JavaMLReadable, JavaMLWritable):
                  outputCols=None):
         """
         super(Imputer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Imputer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Imputer", self.uid)
         self._setDefault(strategy="mean", missingValue=float("nan"))
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1037,7 +1037,7 @@ class MaxAbsScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Jav
     absolute value in each feature. It does not shift/center the data, and thus does not destroy
     any sparsity.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([1.0]),), (Vectors.dense([2.0]),)], ["a"])
     >>> maScaler = MaxAbsScaler(inputCol="a", outputCol="scaled")
     >>> model = maScaler.fit(df)
@@ -1071,7 +1071,7 @@ class MaxAbsScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Jav
         __init__(self, inputCol=None, outputCol=None)
         """
         super(MaxAbsScaler, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.MaxAbsScaler", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.MaxAbsScaler", self.uid)
         self._setDefault()
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1121,7 +1121,7 @@ class MinHashLSH(JavaEstimator, LSHParams, HasInputCol, HasOutputCol, HasSeed,
 
     .. seealso:: `Wikipedia on MinHash <https://en.wikipedia.org/wiki/MinHash>`_
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> from pyspark.sql.functions import col
     >>> data = [(0, Vectors.sparse(6, [0, 1, 2], [1.0, 1.0, 1.0]),),
     ...         (1, Vectors.sparse(6, [2, 3, 4], [1.0, 1.0, 1.0]),),
@@ -1169,7 +1169,7 @@ class MinHashLSH(JavaEstimator, LSHParams, HasInputCol, HasOutputCol, HasSeed,
         __init__(self, inputCol=None, outputCol=None, seed=None, numHashTables=1)
         """
         super(MinHashLSH, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.MinHashLSH", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.MinHashLSH", self.uid)
         self._setDefault(numHashTables=1)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1219,7 +1219,7 @@ class MinMaxScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Jav
     .. note:: Since zero values will probably be transformed to non-zero values, output of the
         transformer will be DenseVector even for sparse input.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([0.0]),), (Vectors.dense([2.0]),)], ["a"])
     >>> mmScaler = MinMaxScaler(inputCol="a", outputCol="scaled")
     >>> model = mmScaler.fit(df)
@@ -1264,7 +1264,7 @@ class MinMaxScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Jav
         __init__(self, min=0.0, max=1.0, inputCol=None, outputCol=None)
         """
         super(MinMaxScaler, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.MinMaxScaler", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.MinMaxScaler", self.uid)
         self._setDefault(min=0.0, max=1.0)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1382,7 +1382,7 @@ class NGram(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWr
         __init__(self, n=2, inputCol=None, outputCol=None)
         """
         super(NGram, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.NGram", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.NGram", self.uid)
         self._setDefault(n=2)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1417,7 +1417,7 @@ class Normalizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, Jav
     """
      Normalize a vector to have unit norm using the given p-norm.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> svec = Vectors.sparse(4, {1: 4.0, 3: 3.0})
     >>> df = spark.createDataFrame([(Vectors.dense([3.0, -4.0]), svec)], ["dense", "sparse"])
     >>> normalizer = Normalizer(p=2.0, inputCol="dense", outputCol="features")
@@ -1446,7 +1446,7 @@ class Normalizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, Jav
         __init__(self, p=2.0, inputCol=None, outputCol=None)
         """
         super(Normalizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Normalizer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Normalizer", self.uid)
         self._setDefault(p=2.0)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1526,7 +1526,7 @@ class OneHotEncoder(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, 
         __init__(self, dropLast=True, inputCol=None, outputCol=None)
         """
         super(OneHotEncoder, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.OneHotEncoder", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.OneHotEncoder", self.uid)
         self._setDefault(dropLast=True)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1566,7 +1566,7 @@ class PolynomialExpansion(JavaTransformer, HasInputCol, HasOutputCol, JavaMLRead
     multiplication distributes over addition". Take a 2-variable feature vector as an example:
     `(x, y)`, if we want to expand it with degree 2, then we get `(x, x * x, y, x * y, y * y)`.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([0.5, 2.0]),)], ["dense"])
     >>> px = PolynomialExpansion(degree=2, inputCol="dense", outputCol="expanded")
     >>> px.transform(df).head().expanded
@@ -1592,7 +1592,7 @@ class PolynomialExpansion(JavaTransformer, HasInputCol, HasOutputCol, JavaMLRead
         """
         super(PolynomialExpansion, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.feature.PolynomialExpansion", self.uid)
+            "org.apache.spark.mlmanager.feature.PolynomialExpansion", self.uid)
         self._setDefault(degree=2)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1697,7 +1697,7 @@ class QuantileDiscretizer(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadab
                  handleInvalid="error")
         """
         super(QuantileDiscretizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.QuantileDiscretizer",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.QuantileDiscretizer",
                                             self.uid)
         self._setDefault(numBuckets=2, relativeError=0.001, handleInvalid="error")
         kwargs = self._input_kwargs
@@ -1823,7 +1823,7 @@ class RegexTokenizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable,
                  outputCol=None, toLowercase=True)
         """
         super(RegexTokenizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.RegexTokenizer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.RegexTokenizer", self.uid)
         self._setDefault(minTokenLength=1, gaps=True, pattern="\\s+", toLowercase=True)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1927,7 +1927,7 @@ class SQLTransformer(JavaTransformer, JavaMLReadable, JavaMLWritable):
         __init__(self, statement=None)
         """
         super(SQLTransformer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.SQLTransformer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.SQLTransformer", self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
@@ -1966,7 +1966,7 @@ class StandardScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, J
     <https://en.wikipedia.org/wiki/Standard_deviation#Corrected_sample_standard_deviation>`_,
     which is computed as the square root of the unbiased sample variance.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([0.0]),), (Vectors.dense([2.0]),)], ["a"])
     >>> standardScaler = StandardScaler(inputCol="a", outputCol="scaled")
     >>> model = standardScaler.fit(df)
@@ -2005,7 +2005,7 @@ class StandardScaler(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, J
         __init__(self, withMean=False, withStd=True, inputCol=None, outputCol=None)
         """
         super(StandardScaler, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.StandardScaler", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.StandardScaler", self.uid)
         self._setDefault(withMean=False, withStd=True)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -2121,7 +2121,7 @@ class StringIndexer(JavaEstimator, HasInputCol, HasOutputCol, HasHandleInvalid, 
         __init__(self, inputCol=None, outputCol=None, handleInvalid="error")
         """
         super(StringIndexer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.StringIndexer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.StringIndexer", self.uid)
         self._setDefault(handleInvalid="error")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -2179,7 +2179,7 @@ class IndexToString(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, 
         __init__(self, inputCol=None, outputCol=None, labels=None)
         """
         super(IndexToString, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.IndexToString",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.IndexToString",
                                             self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -2241,7 +2241,7 @@ class StopWordsRemover(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadabl
         __init__(self, inputCol=None, outputCol=None, stopWords=None, caseSensitive=false)
         """
         super(StopWordsRemover, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.StopWordsRemover",
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.StopWordsRemover",
                                             self.uid)
         self._setDefault(stopWords=StopWordsRemover.loadDefaultStopWords("english"),
                          caseSensitive=False)
@@ -2337,7 +2337,7 @@ class Tokenizer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, Java
         __init__(self, inputCol=None, outputCol=None)
         """
         super(Tokenizer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Tokenizer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Tokenizer", self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
@@ -2381,7 +2381,7 @@ class VectorAssembler(JavaTransformer, HasInputCols, HasOutputCol, JavaMLReadabl
         __init__(self, inputCols=None, outputCol=None)
         """
         super(VectorAssembler, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.VectorAssembler", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.VectorAssembler", self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
@@ -2434,7 +2434,7 @@ class VectorIndexer(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Ja
       - Add warning if a categorical feature has only 1 category.
       - Add option for allowing unknown categories.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([(Vectors.dense([-1.0, 0.0]),),
     ...     (Vectors.dense([0.0, 1.0]),), (Vectors.dense([0.0, 2.0]),)], ["a"])
     >>> indexer = VectorIndexer(maxCategories=2, inputCol="a", outputCol="indexed")
@@ -2478,7 +2478,7 @@ class VectorIndexer(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, Ja
         __init__(self, maxCategories=20, inputCol=None, outputCol=None)
         """
         super(VectorIndexer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.VectorIndexer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.VectorIndexer", self.uid)
         self._setDefault(maxCategories=20)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -2560,7 +2560,7 @@ class VectorSlicer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, J
     The output vector will order features with the selected indices first (in the order given),
     followed by the selected names (in the order given).
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (Vectors.dense([-2.0, 2.3, 0.0, 0.0, 1.0]),),
     ...     (Vectors.dense([0.0, 0.0, 0.0, 0.0, 0.0]),),
@@ -2584,7 +2584,7 @@ class VectorSlicer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, J
                     typeConverter=TypeConverters.toListInt)
     names = Param(Params._dummy(), "names", "An array of feature names to select features from " +
                   "a vector column. These names must be specified by ML " +
-                  "org.apache.spark.ml.attribute.Attribute. There can be no overlap with " +
+                  "org.apache.spark.mlmanager.attribute.Attribute. There can be no overlap with " +
                   "indices.", typeConverter=TypeConverters.toListString)
 
     @keyword_only
@@ -2593,7 +2593,7 @@ class VectorSlicer(JavaTransformer, HasInputCol, HasOutputCol, JavaMLReadable, J
         __init__(self, inputCol=None, outputCol=None, indices=None, names=None)
         """
         super(VectorSlicer, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.VectorSlicer", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.VectorSlicer", self.uid)
         self._setDefault(indices=[], names=[])
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -2715,7 +2715,7 @@ class Word2Vec(JavaEstimator, HasStepSize, HasMaxIter, HasSeed, HasInputCol, Has
                  seed=None, inputCol=None, outputCol=None, windowSize=5, maxSentenceLength=1000)
         """
         super(Word2Vec, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.Word2Vec", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.Word2Vec", self.uid)
         self._setDefault(vectorSize=100, minCount=5, numPartitions=1, stepSize=0.025, maxIter=1,
                          windowSize=5, maxSentenceLength=1000)
         kwargs = self._input_kwargs
@@ -2841,7 +2841,7 @@ class PCA(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWritab
     PCA trains a model to project vectors to a lower dimensional space of the
     top :py:attr:`k` principal components.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> data = [(Vectors.sparse(5, [(1, 1.0), (3, 7.0)]),),
     ...     (Vectors.dense([2.0, 0.0, 3.0, 4.0, 5.0]),),
     ...     (Vectors.dense([4.0, 0.0, 0.0, 6.0, 7.0]),)]
@@ -2877,7 +2877,7 @@ class PCA(JavaEstimator, HasInputCol, HasOutputCol, JavaMLReadable, JavaMLWritab
         __init__(self, k=None, inputCol=None, outputCol=None)
         """
         super(PCA, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.PCA", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.PCA", self.uid)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
@@ -3016,7 +3016,7 @@ class RFormula(JavaEstimator, HasFeaturesCol, HasLabelCol, JavaMLReadable, JavaM
                  forceIndexLabel=False)
         """
         super(RFormula, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.RFormula", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.RFormula", self.uid)
         self._setDefault(forceIndexLabel=False)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -3114,7 +3114,7 @@ class ChiSqSelector(JavaEstimator, HasFeaturesCol, HasOutputCol, HasLabelCol, Ja
     set to 50.
 
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlmanager.linalg import Vectors
     >>> df = spark.createDataFrame(
     ...    [(Vectors.dense([0.0, 0.0, 18.0, 1.0]), 1.0),
     ...     (Vectors.dense([0.0, 1.0, 12.0, 0.0]), 0.0),
@@ -3174,7 +3174,7 @@ class ChiSqSelector(JavaEstimator, HasFeaturesCol, HasOutputCol, HasLabelCol, Ja
                  fdr=0.05, fwe=0.05)
         """
         super(ChiSqSelector, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.feature.ChiSqSelector", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlmanager.feature.ChiSqSelector", self.uid)
         self._setDefault(numTopFeatures=50, selectorType="numTopFeatures", percentile=0.1,
                          fpr=0.05, fdr=0.05, fwe=0.05)
         kwargs = self._input_kwargs
@@ -3320,7 +3320,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.feature tests")\
+        .appName("mlmanager.feature tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

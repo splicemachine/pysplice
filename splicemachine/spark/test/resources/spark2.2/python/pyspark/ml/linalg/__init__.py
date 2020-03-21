@@ -149,11 +149,11 @@ class VectorUDT(UserDefinedType):
 
     @classmethod
     def module(cls):
-        return "pyspark.ml.linalg"
+        return "pyspark.mlmanager.linalg"
 
     @classmethod
     def scalaUDT(cls):
-        return "org.apache.spark.ml.linalg.VectorUDT"
+        return "org.apache.spark.mlmanager.linalg.VectorUDT"
 
     def serialize(self, obj):
         if isinstance(obj, SparseVector):
@@ -199,11 +199,11 @@ class MatrixUDT(UserDefinedType):
 
     @classmethod
     def module(cls):
-        return "pyspark.ml.linalg"
+        return "pyspark.mlmanager.linalg"
 
     @classmethod
     def scalaUDT(cls):
-        return "org.apache.spark.ml.linalg.MatrixUDT"
+        return "org.apache.spark.mlmanager.linalg.MatrixUDT"
 
     def serialize(self, obj):
         if isinstance(obj, SparseMatrix):

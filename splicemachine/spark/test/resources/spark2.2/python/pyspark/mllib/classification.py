@@ -261,7 +261,7 @@ class LogisticRegressionModel(LinearClassificationModel):
 class LogisticRegressionWithSGD(object):
     """
     .. versionadded:: 0.9.0
-    .. note:: Deprecated in 2.0.0. Use ml.classification.LogisticRegression or
+    .. note:: Deprecated in 2.0.0. Use mlmanager.classification.LogisticRegression or
             LogisticRegressionWithLBFGS.
     """
     @classmethod
@@ -310,7 +310,7 @@ class LogisticRegressionWithSGD(object):
           (default: 0.001)
         """
         warnings.warn(
-            "Deprecated in 2.0.0. Use ml.classification.LogisticRegression or "
+            "Deprecated in 2.0.0. Use mlmanager.classification.LogisticRegression or "
             "LogisticRegressionWithLBFGS.")
 
         def train(rdd, i):
@@ -358,7 +358,7 @@ class LogisticRegressionWithLBFGS(object):
         :param corrections:
           The number of corrections used in the LBFGS update.
           If a known updater is used for binary classification,
-          it calls the ml implementation and this parameter will
+          it calls the mlmanager implementation and this parameter will
           have no effect. (default: 10)
         :param tolerance:
           The convergence tolerance of iterations for L-BFGS.
