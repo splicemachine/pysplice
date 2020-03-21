@@ -161,10 +161,11 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
         tags = {}
     tags['mlflow.user'] = get_user()
 
-    for key in tags:
-        mlflow.set_tag(key, tags[key])
     orig = gorilla.get_original_attribute(mlflow, "start_run")
     orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
+
+    for key in tags:
+        mlflow.set_tag(key, tags[key])
 
 
 @_mlflow_patch('log_pipeline_stages')
