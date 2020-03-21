@@ -119,7 +119,7 @@ def _log_spark_model(model, name='model'):
     :param name: (str) the run relative name to store the model under
     """
     _check_for_splice_ctx()
-    if _get_current_run_data().tags['splice.model_name']:  # this function has already run
+    if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise Exception("Only one model is permitted per run.")
 
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
