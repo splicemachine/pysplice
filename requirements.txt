@@ -4,7 +4,6 @@ mlflow==1.6.0
 mleap==0.15.0
 graphviz==0.13
 gorilla==0.3.0
-path==13.2.0
 tqdm==4.43.0
 pyspark-dist-explore==0.1.8
 numpy==1.18.2

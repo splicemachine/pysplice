@@ -60,7 +60,7 @@ def _check_for_splice_ctx():
     spark operations to take place
     """
 
-    if not mlflow._splice_context:
+    if not getattr(mlflow, '_splice_context'):
         raise SpliceMachineException(
             "You must run `mlflow.register_splice_context(py_splice_context) before "
             "you can run mlflow artifact operations!"
@@ -241,6 +241,9 @@ def _timer(timer_name, param=True):
         t1 = time.time() - t0
         # Syntactic Sugar
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
+        print(
+            f"Code Block {timer_name}:\nRan in {round(t1, 3)} ms\nRan in {round(t1 / 1000, 3)}"
+            f" secs\nRan in {round(t1 / 1000 / 60, 3)} mins")
 
 
 @_mlflow_patch('download_artifact')
@@ -257,13 +260,13 @@ def _download_artifact(name, local_path, run_id=None):
       from. Defaults to active run
     """
     _check_for_splice_ctx()
-    file_ext = path.splitext(local_path)[1]
+    file_ext = local_path.split('.')[-1]
     if not file_ext:
         raise ValueError('local_path variable must contain the file extension!')
 
     run_id = run_id or mlflow.active_run().info.run_uuid
     blob_data = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-    if file_ext == '.zip':
+    if file_ext == 'zip':
         zip_file = ZipFile(BytesIO(blob_data))
         zip_file.extractall()
     else:
@@ -306,7 +309,7 @@ def _log_artifact(file_name, name, run_uuid=None):
           and log the zip file
     """
     _check_for_splice_ctx()
-    file_ext = path.splitext(file_name)[1].lstrip('.')
+    file_ext = file_name.split('.')[-1]
     with open(file_name, 'rb') as artifact:
         byte_stream = bytearray(bytes(artifact.read()))
 
