@@ -1,5 +1,4 @@
 import time
-from functools import partial as fix_params
 from collections import defaultdict
 from contextlib import contextmanager
 from io import BytesIO
@@ -11,6 +10,7 @@ import path
 from py4j.java_gateway import java_import
 
 from splicemachine.mlflow_support.utilities import *
+from splicemachine.spark.context import PySpliceContext
 
 _TESTING = env_vars.get("TESTING", False)
 _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
@@ -49,26 +49,22 @@ def _register_splice_context(splice_context):
     (artifact storage, for example)
     :param splice_context:  splice context to input
     """
+    assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
 
-def _check_for_splice_ctx(func):
+def _check_for_splice_ctx():
     """
     Check to make sure that the user has registered
     a PySpliceContext with the mlflow object before allowing
     spark operations to take place
-    :param func: function to wrap before checking
     """
 
-    def wrapped(*args, **kwargs):
-        if not mlflow._splice_context:
-            raise SpliceMachineException(
-                "You must run `mlflow.register_splice_context(py_splice_context) before "
-                "you can run mlflow artifact operations!"
-            )
-        return func(*args, **kwargs)
-
-    return wrapped
+    if not mlflow._splice_context:
+        raise SpliceMachineException(
+            "You must run `mlflow.register_splice_context(py_splice_context) before "
+            "you can run mlflow artifact operations!"
+        )
 
 
 @_mlflow_patch('current_run_id')
@@ -248,7 +244,6 @@ def _timer(timer_name, param=True):
 
 
 @_mlflow_patch('download_artifact')
-@_check_for_splice_ctx
 def _download_artifact(name, local_path, run_id=None):
     """
     Download the artifact at the given
@@ -261,6 +256,7 @@ def _download_artifact(name, local_path, run_id=None):
     :param run_id: (str) the run id to download the artifact
       from. Defaults to active run
     """
+    _check_for_splice_ctx()
     file_ext = path.splitext(local_path)[1]
     if not file_ext:
         raise ValueError('local_path variable must contain the file extension!')
@@ -276,7 +272,6 @@ def _download_artifact(name, local_path, run_id=None):
 
 
 @_mlflow_patch('load_spark_model')
-@_check_for_splice_ctx
 def _load_spark_model(run_id=None, name='model'):
     """
     Download a model from database
@@ -285,6 +280,7 @@ def _load_spark_model(run_id=None, name='model'):
         (the run must have an associated model with it named spark_model)
     :param name: the name of the model in the database
     """
+    _check_for_splice_ctx()
     run_id = run_id or mlflow.active_run().info.run_uuid
     spark_pipeline_blob = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
     bis = mlflow._splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
@@ -300,7 +296,6 @@ def _load_spark_model(run_id=None, name='model'):
 
 
 @_mlflow_patch('log_artifact')
-@_check_for_splice_ctx
 def _log_artifact(file_name, name, run_uuid=None):
     """
     Log an artifact for the active run
@@ -310,6 +305,7 @@ def _log_artifact(file_name, name, run_uuid=None):
     NOTE: We do not currently support logging directories. If you would like to log a directory, please zip it first
           and log the zip file
     """
+    _check_for_splice_ctx()
     file_ext = path.splitext(file_name)[1].lstrip('.')
     with open(file_name, 'rb') as artifact:
         byte_stream = bytearray(bytes(artifact.read()))
