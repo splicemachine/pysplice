@@ -240,6 +240,7 @@ def _timer(timer_name, param=True):
     """
     try:
         t0 = time.time()
+        yield
     finally:
         t1 = time.time() - t0
         # Syntactic Sugar
