@@ -165,6 +165,8 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
 
     for key in tags:
         mlflow.set_tag(key, tags[key])
+    if run_name:
+        mlflow.set_tag('mlflow.runName', run_name)
 
 
 @_mlflow_patch('log_pipeline_stages')
