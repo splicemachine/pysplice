@@ -246,6 +246,7 @@ def _timer(timer_name, param=True):
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
         print(
             f"Code Block {timer_name}:\nRan in {round(t1, 3)} secs\nRan in {round(t1 / 60, 3)} mins"
+        )
 
 
 @_mlflow_patch('download_artifact')
