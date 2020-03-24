@@ -171,8 +171,8 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
             trainingSummary = fittedEstimator.summary
             roc = trainingSummary.roc.toPandas()
             ax.plot(roc['FPR'], roc['TPR'], label='Training set areaUnderROC: \n' + str(trainingSummary.areaUnderROC))
-            ax.set_ylabel('False Positive Rate')
-            ax.set_xlabel('True Positive Rate')
+            ax.set_xlabel('False Positive Rate')
+            ax.set_ylabel('True Positive Rate')
             ax.set_title('ROC Curve')
             ax.legend()
             return ax

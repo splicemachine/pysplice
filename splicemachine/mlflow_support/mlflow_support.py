@@ -165,6 +165,8 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
 
     for key in tags:
         mlflow.set_tag(key, tags[key])
+    if run_name:
+        mlflow.set_tag('mlflow.runName', run_name)
 
 
 @_mlflow_patch('log_pipeline_stages')
@@ -246,6 +248,7 @@ def _timer(timer_name, param=True):
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
         print(
             f"Code Block {timer_name}:\nRan in {round(t1, 3)} secs\nRan in {round(t1 / 60, 3)} mins"
+        )
 
 
 @_mlflow_patch('download_artifact')
