@@ -48,7 +48,7 @@ class JavaClassificationModel(JavaPredictionModel):
     """
     (Private) Java Model produced by a ``Classifier``.
     Classes are indexed {0, 1, ..., numClasses - 1}.
-    To be mixed in with class:`pyspark.ml.JavaModel`
+    To be mixed in with class:`pyspark.mlflow_support.JavaModel`
     """
 
     @property
@@ -73,7 +73,7 @@ class LinearSVC(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol, Ha
     Only supports L2 regularization currently.
 
     >>> from pyspark.sql import Row
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = sc.parallelize([
     ...     Row(label=1.0, features=Vectors.dense(1.0, 1.0, 1.0)),
     ...     Row(label=0.0, features=Vectors.dense(1.0, 2.0, 3.0))]).toDF()
@@ -128,7 +128,7 @@ class LinearSVC(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol, Ha
         """
         super(LinearSVC, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.LinearSVC", self.uid)
+            "org.apache.spark.mlflow_support.classification.LinearSVC", self.uid)
         self._setDefault(maxIter=100, regParam=0.0, tol=1e-6, fitIntercept=True,
                          standardization=True, threshold=0.0, aggregationDepth=2)
         kwargs = self._input_kwargs
@@ -202,7 +202,7 @@ class LogisticRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredicti
     This class supports multinomial logistic (softmax) and binomial logistic regression.
 
     >>> from pyspark.sql import Row
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> bdf = sc.parallelize([
     ...     Row(label=1.0, weight=1.0, features=Vectors.dense(0.0, 5.0)),
     ...     Row(label=0.0, weight=2.0, features=Vectors.dense(1.0, 2.0)),
@@ -280,7 +280,7 @@ class LogisticRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredicti
         """
         super(LogisticRegression, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.LogisticRegression", self.uid)
+            "org.apache.spark.mlflow_support.classification.LogisticRegression", self.uid)
         self._setDefault(maxIter=100, regParam=0.0, tol=1E-6, threshold=0.5, family="auto")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -709,8 +709,8 @@ class DecisionTreeClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPred
     It supports both binary and multiclass labels, as well as both continuous and categorical
     features.
 
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from pyspark.ml.feature import StringIndexer
+    >>> from pyspark.mlflow_support.linalg import Vectors
+    >>> from pyspark.mlflow_support.feature import StringIndexer
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -772,7 +772,7 @@ class DecisionTreeClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPred
         """
         super(DecisionTreeClassifier, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.DecisionTreeClassifier", self.uid)
+            "org.apache.spark.mlflow_support.classification.DecisionTreeClassifier", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          impurity="gini")
@@ -845,8 +845,8 @@ class RandomForestClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPred
 
     >>> import numpy
     >>> from numpy import allclose
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from pyspark.ml.feature import StringIndexer
+    >>> from pyspark.mlflow_support.linalg import Vectors
+    >>> from pyspark.mlflow_support.feature import StringIndexer
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -901,7 +901,7 @@ class RandomForestClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPred
         """
         super(RandomForestClassifier, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.RandomForestClassifier", self.uid)
+            "org.apache.spark.mlflow_support.classification.RandomForestClassifier", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          impurity="gini", numTrees=20, featureSubsetStrategy="auto",
@@ -983,8 +983,8 @@ class GBTClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol
     .. note:: Multiclass labels are not currently supported.
 
     >>> from numpy import allclose
-    >>> from pyspark.ml.linalg import Vectors
-    >>> from pyspark.ml.feature import StringIndexer
+    >>> from pyspark.mlflow_support.linalg import Vectors
+    >>> from pyspark.mlflow_support.feature import StringIndexer
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -1043,7 +1043,7 @@ class GBTClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol
         """
         super(GBTClassifier, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.GBTClassifier", self.uid)
+            "org.apache.spark.mlflow_support.classification.GBTClassifier", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          lossType="logistic", maxIter=20, stepSize=0.1, subsamplingRate=1.0)
@@ -1128,7 +1128,7 @@ class NaiveBayes(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol, H
     The input feature values must be nonnegative.
 
     >>> from pyspark.sql import Row
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     Row(label=0.0, weight=0.1, features=Vectors.dense([0.0, 0.0])),
     ...     Row(label=0.0, weight=0.5, features=Vectors.dense([0.0, 1.0])),
@@ -1188,7 +1188,7 @@ class NaiveBayes(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol, H
         """
         super(NaiveBayes, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.NaiveBayes", self.uid)
+            "org.apache.spark.mlflow_support.classification.NaiveBayes", self.uid)
         self._setDefault(smoothing=1.0, modelType="multinomial")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1273,7 +1273,7 @@ class MultilayerPerceptronClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol,
     Number of inputs has to be equal to the size of feature vectors.
     Number of outputs has to be equal to the total number of labels.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (0.0, Vectors.dense([0.0, 0.0])),
     ...     (1.0, Vectors.dense([0.0, 1.0])),
@@ -1343,7 +1343,7 @@ class MultilayerPerceptronClassifier(JavaEstimator, HasFeaturesCol, HasLabelCol,
         """
         super(MultilayerPerceptronClassifier, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.classification.MultilayerPerceptronClassifier", self.uid)
+            "org.apache.spark.mlflow_support.classification.MultilayerPerceptronClassifier", self.uid)
         self._setDefault(maxIter=100, tol=1E-4, blockSize=128, stepSize=0.03, solver="l-bfgs")
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -1497,7 +1497,7 @@ class OneVsRest(Estimator, OneVsRestParams, MLReadable, MLWritable):
     is picked to label the example.
 
     >>> from pyspark.sql import Row
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> data_path = "data/mllib/sample_multiclass_classification_data.txt"
     >>> df = spark.read.format("libsvm").load(data_path)
     >>> lr = LogisticRegression(regParam=0.01)
@@ -1640,7 +1640,7 @@ class OneVsRest(Estimator, OneVsRestParams, MLReadable, MLWritable):
 
         :return: Java object equivalent to this instance.
         """
-        _java_obj = JavaParams._new_java_obj("org.apache.spark.ml.classification.OneVsRest",
+        _java_obj = JavaParams._new_java_obj("org.apache.spark.mlflow_support.classification.OneVsRest",
                                              self.uid)
         _java_obj.setClassifier(self.getClassifier()._to_java())
         _java_obj.setFeaturesCol(self.getFeaturesCol())
@@ -1772,7 +1772,7 @@ class OneVsRestModel(Model, OneVsRestParams, MLReadable, MLWritable):
         java_models_array = JavaWrapper._new_java_array(
             java_models, sc._gateway.jvm.org.apache.spark.ml.classification.ClassificationModel)
         metadata = JavaParams._new_java_obj("org.apache.spark.sql.types.Metadata")
-        _java_obj = JavaParams._new_java_obj("org.apache.spark.ml.classification.OneVsRestModel",
+        _java_obj = JavaParams._new_java_obj("org.apache.spark.mlflow_support.classification.OneVsRestModel",
                                              self.uid, metadata.empty(), java_models_array)
         _java_obj.set("classifier", self.getClassifier()._to_java())
         _java_obj.set("featuresCol", self.getFeaturesCol())
@@ -1790,7 +1790,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.classification tests")\
+        .appName("mlflow_support.classification tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

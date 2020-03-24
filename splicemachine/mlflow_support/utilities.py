@@ -1,0 +1,504 @@
+from os import environ as env_vars, popen as rbash, system as bash
+from sys import getsizeof
+import re
+
+from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.base import Model as SparkModel
+from py4j.java_gateway import java_import
+
+from splicemachine.spark.constants import SQL_TYPES
+from splicemachine.mlflow_support.constants import SparkModelType
+from mleap.pyspark.spark_support import SimpleSparkSerializer
+
+
+class SpliceMachineException(Exception):
+    pass
+
+
+class SQL:
+    MLMANAGER_SCHEMA = 'MLMANAGER'
+    ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
+    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
+                                                                                'AND run_uuid=\'{runid}\''
+    MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
+    MODEL_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
+
+
+class SparkUtils:
+    @staticmethod
+    def get_stages(pipeline):
+        """
+        Extract the stages from a fit or unfit pipeline
+        :param pipeline: a fit or unfit Spark pipeline
+        :return: stages list
+        """
+        if hasattr(pipeline, 'getStages'):
+            return pipeline.getStages()  # fit pipeline
+        return pipeline.stages  # unfit pipeline
+
+    @staticmethod
+    def get_cols(transformer, get_input=True):
+        """
+        Get columns from a transformer
+        :param transformer: the transformer (fit or unfit)
+        :param get_input: whether or not to return the input columns
+        :return: a list of either input or output columns
+        """
+        col_type = 'Input' if get_input else 'Output'
+        if hasattr(transformer, 'get' + col_type + 'Col'):  # single transformer 1:1 (regular)
+            col_function = transformer.getInputCol if get_input else transformer.getOutputCol
+            return [
+                col_function()] if get_input else col_function()  # so we don't need to change code for
+            # a single transformer
+        elif hasattr(transformer, col_type + "Col"):  # single transformer 1:1 (vec)
+            return getattr(transformer, col_type + "Col")
+        elif get_input and hasattr(transformer,
+                                   'get' + col_type + 'Cols'):  # multi ple transformer n:1 (regular)
+            return transformer.getInputCols()  # we can never have > 1 output column (goes to vector)
+        elif get_input and hasattr(transformer, col_type + 'Cols'):  # multiple transformer n:1 (vec)
+            return getattr(transformer, col_type + "Cols")
+        else:
+            print(
+                "Warning: Transformer " + str(
+                    transformer) + " could not be parsed. If this is a model, this is expected.")
+
+    @staticmethod
+    def readable_pipeline_stage(pipeline_stage):
+        """
+        Get a readable version of the Pipeline stage
+        (without the memory address)
+        :param pipeline_stage: the name of the stage to parse
+        """
+        if '_' in str(pipeline_stage):
+            return str(pipeline_stage).split('_')[0]
+        return str(pipeline_stage)
+
+    @staticmethod
+    def is_spark_pipeline(spark_object):
+        """
+        Returns whether or not the given
+        object is a spark pipeline. If it
+        is a model, it will return True, if it is a
+        pipeline model is will return False.
+        Otherwise, it will throw an exception
+        :param spark_object: (Model) Spark object to check
+        :return: (bool) whether or not the object is a model
+        :exception: (Exception) throws an error if it is not either
+        """
+        if isinstance(spark_object, PipelineModel):
+            return True
+
+        if isinstance(spark_object, SparkModel):
+            return False
+
+        raise Exception("The model supplied does not appear to be a Spark Model!")
+
+    @staticmethod
+    def get_model_stage(pipeline):
+        """"
+        Gets the Model stage of a PipelineModel
+        """
+        for i in SparkUtils.get_stages(pipeline):
+            # FIXME: We need a better way to determine if a stage is a model
+            if 'Model' in str(i.__class__) and i.__module__.split('.')[-1] in ['clustering', 'classification',
+                                                                               'regression']:
+                return i
+        raise AttributeError('Could not find model stage in Pipeline!')
+
+    @staticmethod
+    def parse_string_parameters(string_parameters):
+        """
+        Parse string rendering of extractParamMap
+        :param string_parameters:
+        :return:
+        """
+        parameters = {}
+        parsed_mapping = str(string_parameters).replace("{", "").replace(
+            "}", "").replace("\n", "").replace("\t", "").split(',')
+
+        for mapping in parsed_mapping:
+            param = mapping[mapping.index('-') + 1:].split(':')[0]
+            value = mapping[mapping.index('-') + 1:].split(':')[1]
+
+            parameters[param.strip()] = value.strip()
+        return parameters
+
+    @staticmethod
+    def retrieve_artifact_stream(splice_context, run_id, name):
+        """
+        Retrieve the binary stream for a given
+        artifact with the specified name and run id
+        :param splice_context: splice context 
+        :param run_id: (str) the run id for the run
+            that the artifact belongs to
+        :param name: (str) the name of the artifact
+        :return: (bytearray(byte)) byte array from BLOB
+        """
+        try:
+            return splice_context.df(
+                SQL.ARTIFACT_RETRIEVAL_SQL.format(name=name, runid=run_id)
+            ).collect()[0][0]
+        except IndexError as e:
+            raise Exception(f"Unable to find the artifact with the given run id {run_id} and name {name}")
+
+    @staticmethod
+    def get_feature_vector_columns(fittedPipe):
+        """
+        Gets the input columns from the VectorAssembler stage of a fitted Pipeline
+        """
+        vec_stage = None
+        for i in fittedPipe.stages:
+            if 'VectorAssembler' in str(i):
+                vec_stage = i
+                break
+        return SparkUtils.get_cols(vec_stage)
+
+    @staticmethod
+    def get_num_classes(pipeline_or_model):
+        '''
+        Tries to find the number of classes in a Pipeline or Model object
+        :param pipeline_or_model: The Pipeline or Model object
+        '''
+        if 'pipeline' in str(pipeline_or_model.__class__).lower():
+            model = SparkUtils.get_model_stage(pipeline_or_model)
+        else:
+            model = pipeline_or_model
+        num_classes = model.numClasses if model.hasParam('numClasses') else model.numClasses if hasattr(model,
+                                                                                                        'numClasses') else model.summary.k
+        return num_classes
+
+    @staticmethod
+    def get_model_type(pipeline_or_model):
+        """
+        Takes a fitted Spark Pipeline or Model and determines if it is a Regression, Classification, or Clustering model
+        """
+        model = SparkUtils.get_model_stage(pipeline_or_model)
+
+        if model.__module__ == 'pyspark.ml.classification':
+            m_type = SparkModelType.CLASSIFICATION
+        elif model.__module__ == 'pyspark.ml.regression':
+            m_type = SparkModelType.REGRESSION
+        elif model.__module__ == 'pyspark.ml.clustering':
+            if 'probabilityCol' in model.explainParams():
+                m_type = SparkModelType.CLUSTERING_WITH_PROB
+            else:
+                m_type = SparkModelType.CLUSTERING_WO_PROB
+
+        return m_type
+
+
+def find_inputs_by_output(dictionary, value):
+    """
+    Find the input columns for a given output column
+    :param dictionary: dictionary to search
+    :param value: column
+    :return: None if not found, otherwise first column
+    """
+    keys = []
+    for key in dictionary:
+        if dictionary[key][1] == value:  # output column is always the last one
+            keys.append(key)
+    return keys
+
+
+def get_user():
+    """
+    Get the current logged in user to
+    Jupyter
+    :return: (str) name of the logged in user
+    """
+    try:
+        uname = env_vars.get('JUPYTERHUB_USER') or env_vars['USER']
+        return uname
+    except KeyError:
+        raise Exception(
+            "Could not determine current running user. Running MLManager outside of Splice Machine"
+            " Cloud Jupyter is currently unsupported")
+
+
+def insert_model(splice_context, run_id, byte_array):
+    """
+    Insert a serialized model into the Mlmanager models table
+    :param splice_context: pysplicectx
+    :param run_id: mlflow run id
+    :param byte_array: byte array
+    """
+    db_connection = splice_context.getConnection()
+    file_size = getsizeof(byte_array)
+    print(f"Saving model of size: {file_size / 1000.0} KB to Splice Machine DB")
+    binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+
+    prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
+    prepared_statement.setString(1, run_id)
+    prepared_statement.setBinaryStream(2, binary_input_stream)
+
+    prepared_statement.execute()
+    prepared_statement.close()
+
+
+def insert_artifact(splice_context, name, byte_array, run_uuid, file_ext=None):
+    """
+    :param name: (str) the path to store the binary
+        under (with respect to the current run)
+    :param byte_array: (byte[]) Java byte array
+    :param run_uuid: run uuid for the run
+    :param file_ext: (str) the file extension of the model (used for downloading)
+    """
+    db_connection = splice_context.getConnection()
+    file_size = getsizeof(byte_array)
+    print(f"Saving artifact of size: {file_size / 1000.0} KB to Splice Machine DB")
+    binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+    prepared_statement = db_connection.prepareStatement(SQL.ARTIFACT_INSERT_SQL)
+    prepared_statement.setString(1, run_uuid)
+    prepared_statement.setString(2, name)
+    prepared_statement.setInt(3, file_size)
+    prepared_statement.setBinaryStream(4, binary_input_stream)
+    prepared_statement.setString(5, file_ext)
+
+    prepared_statement.execute()
+    prepared_statement.close()
+
+
+def get_pod_uri(pod, port, _testing=False):
+    """
+    Get address of MLFlow Container for Kubernetes
+    """
+
+    if _testing:
+        url = f"http://{pod}:{port}"  # mlflow docker container endpoint
+
+    elif 'MLFLOW_URL' in env_vars:
+        url = env_vars['MLFLOW_URL'].rstrip(':5001')
+        url += f':{port}'  # 5001 or 5003 for tracking or deployment
+    else:
+        raise KeyError(
+            "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
+    return url
+
+
+def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
+    """
+    Turns a fitted Spark Pipeline into an Mleap Transformer
+    :param splice_context: pysplicectx
+    :param fittedPipe: Fitted Spark Pipeline
+    :param df: A TRANSFORMED dataframe. ie a dataframe that the pipeline has called .transform() on
+    :param run_id: (str) the MLFlow run associated with the model
+    """
+    SimpleSparkSerializer()  # Adds the serializeToBundle function from Mleap
+    if 'tmp' not in rbash('ls /').read():
+        bash('mkdir /tmp')
+    # Serialize the Spark model into Mleap format
+    if f'{run_id}.zip' in rbash('ls /tmp').read():
+        bash(f'rm /tmp/{run_id}.zip')
+    fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
+
+    jvm = splice_context.jvm
+    java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
+    obj = jvm.FileRetriever.loadBundle(f'jar:file:///tmp/{run_id}.zip')
+    bash(f'rm /tmp/{run_id}.zip"')
+    return obj
+
+
+def insert_mleap_model(splice_context, run_id, model):
+    """
+    Insert an MLeap Transformer model into the database as a Blob
+    :param splice_context: pysplicectx
+    :param model_id: (str) the mlflow run_id that the model is associated with
+        (with respect to the current run)
+    :param model: (Transformer) the fitted Mleap Transformer (pipeline)
+    """
+
+    # If a model with this run_id already exists in the table, gracefully fail
+    # May be faster to use prepared statement
+    model_exists = splice_context.df(
+        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
+    if model_exists:
+        print(
+            'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
+
+    else:
+        # Serialize Mleap model to BLOB
+        baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+        oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model)
+        oos.flush()
+        oos.close()
+        byte_array = baos.toByteArray()
+        insert_model(splice_context, run_id, byte_array)
+
+
+def validate_primary_key(primary_key):
+    """
+    Function to validate the primary key passed by the user conforms to SQL
+    :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    """
+    regex = re.compile('[^a-zA-Z]')
+    for i in primary_key:
+        sql_datatype = regex.sub('', i[1]).upper()
+        if sql_datatype not in SQL_TYPES:
+            raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
+                             f'Value {primary_key[i][1]} should be a SQL type but isn\'t')
+
+
+def create_data_table(splice_context, schema_table_name, schema_str, primary_key,
+                        verbose):
+    """
+    Creates the table that holds the columns of the feature vector as well as a unique MOMENT_ID
+    :param splice_context: pysplicectx
+    :param schema_table_name: (str) the schema.table to create the table under
+    :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
+    :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    :param verbose: (bool) whether to print the SQL query
+    """
+    if splice_context.tableExists(schema_table_name):
+        raise NotImplementedError(
+            f'A model has already been deployed to table {schema_table_name}. We currently only support deploying 1 model per table')
+    SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n' + schema_str
+
+    # FIXME: Add the run_id as a column with constant default value to always be the run_id
+    pk_cols = ''
+    for i in primary_key:
+        # If pk is already in the schema_string, don't add another column. PK may be an existing value
+        if i[0] not in schema_str:
+            SQL_TABLE += f'\t{i[0]} {i[1]},\n'
+        pk_cols += f'{i[0]},'
+    SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
+
+    if verbose: print('\n', SQL_TABLE, end='\n\n')
+    splice_context.execute(SQL_TABLE)
+
+
+def create_data_preds_table(splice_context, schema_table_name, classes, primary_key,
+                              modelType, verbose):
+    """
+    Creates the data prediction table that holds the prediction for the rows of the data table
+    :param splice_context: pysplicectx
+    :param schema_table_name: (str) the schema.table to create the table under
+    :param classes: (List[str]) the labels of the model (if they exist)
+    :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    :param modelType: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
+    :param verbose: (bool) whether to print the SQL query
+    Regression models output a DOUBLE as the prediction field with no probabilities
+    Classification models and Certain Clustering models have probabilities associated with them, so we need to handle the extra columns holding those probabilities
+    Clustering models without probabilities return only an INT.
+    The database is strongly typed so we need to specify the output type for each ModelType
+    """
+    SQL_PRED_TABLE = f'''CREATE TABLE {schema_table_name}_PREDS (
+        \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
+        \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        '''
+    # FIXME: Add the run_id as a column with constant default value to always be the run_id
+    pk_cols = ''
+    for i in primary_key:
+        SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
+        pk_cols += f'{i[0]},'
+
+    if modelType == SparkModelType.REGRESSION:
+        SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
+
+    elif modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
+        SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
+        for i in classes:
+            SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
+
+    elif modelType == SparkModelType.CLUSTERING_WO_PROB:
+        SQL_PRED_TABLE += '\tPREDICTION INT,\n'
+
+    SQL_PRED_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
+
+    if verbose:
+        print()
+        print(SQL_PRED_TABLE, end='\n\n')
+    splice_context.execute(SQL_PRED_TABLE)
+
+
+def create_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns,
+                                schema_types, schema_str, primary_key,
+                                modelType, verbose):
+    """
+    Creates the trigger that calls the model on data row insert. This trigger will call predict when a new row is inserted into the data table
+    and insert the result into the predictions table.
+    :param splice_context: pysplicectx
+    :param schema_table_name: (str) the schema.table to create the table under
+    :param run_id: (str) the run_id to deploy the model under
+    :param feature_columns: (List[str]) the original features that are transformed into the final feature vector
+    :param schema_types: (Dict[str, str]) a mapping of feature column to data type
+    :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
+    :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    :param modelType: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
+    :param verbose: (bool) whether to print the SQL query
+    """
+
+    if modelType == SparkModelType.CLASSIFICATION:
+        prediction_call = 'MLMANAGER.PREDICT_CLASSIFICATION'
+    elif modelType == SparkModelType.REGRESSION:
+        prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
+    elif modelType == SparkModelType.CLUSTERING_WITH_PROB:
+        prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
+    else:
+        prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
+
+    SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
+                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
+                       f'{schema_table_name}_PREDS('
+    pk_vals = ''
+    for i in primary_key:
+        SQL_PRED_TRIGGER += f'\t{i[0]},'
+        pk_vals += f'\tNEWROW.{i[0]},'
+
+    SQL_PRED_TRIGGER += f'PREDICTION) VALUES({pk_vals}' + f'{prediction_call}(\'{run_id}\','
+
+    for i, col in enumerate(feature_columns):
+        SQL_PRED_TRIGGER += '||' if i != 0 else ''
+        inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
+                                                                                           'DecimalType'} else f'NEWROW.{col}'
+        SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
+
+    # Cleanup + schema for PREDICT call
+    SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t', '').replace('\n',
+                                                                                                           '').rstrip(
+        ',') + '\'))'
+    if verbose:
+        print()
+        print(SQL_PRED_TRIGGER, end='\n\n')
+    splice_context.execute(SQL_PRED_TRIGGER.replace('\n', ' ').replace('\t', ' '))
+
+
+def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_id,
+                             classes, verbose):
+    """
+    Creates the secondary trigger that parses the results of the first trigger and updates the prediction row populating the relevant columns
+    :param splice_context: splice context specified in mlflow
+    :param schema_table_name: (str) the schema.table to create the table under
+    :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    :param run_id: (str) the run_id to deploy the model under
+    :param classes: (List[str]) the labels of the model (if they exist)
+    :param verbose: (bool) whether to print the SQL query
+    """
+    SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
+                        f'\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
+                        f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
+    case_str = 'PREDICTION=\n\t\tCASE\n'
+    for i, c in enumerate(classes):
+        SQL_PARSE_TRIGGER += f'{c}=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+        case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
+    case_str += '\t\tEND'
+    SQL_PARSE_TRIGGER += case_str + ' WHERE'
+
+    for i in primary_key:
+        SQL_PARSE_TRIGGER += f' {i[0]}=NEWROW.{i[0]} AND'
+    SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER.replace(' AND', '')
+
+    if verbose:
+        print()
+        print(SQL_PARSE_TRIGGER, end='\n\n')
+    splice_context.execute(SQL_PARSE_TRIGGER.replace('\n', ' ').replace('\t', ' '))
+
+
+def drop_tables_on_failure(splice_context, schema_table_name, run_id) -> None:
+    """
+    Drop the tables if the db deployment fails
+    """
+    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
+    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}_preds')
+    splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')

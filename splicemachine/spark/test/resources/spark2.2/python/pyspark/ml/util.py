@@ -273,7 +273,7 @@ class JavaMLReadable(MLReadable):
 class JavaPredictionModel():
     """
     (Private) Java Model for prediction tasks (regression and classification).
-    To be mixed in with class:`pyspark.ml.JavaModel`
+    To be mixed in with class:`pyspark.mlflow_support.JavaModel`
     """
 
     @property

@@ -32,7 +32,7 @@ class ParamGridBuilder(object):
     r"""
     Builder for a param grid used in grid search-based model selection.
 
-    >>> from pyspark.ml.classification import LogisticRegression
+    >>> from pyspark.mlflow_support.classification import LogisticRegression
     >>> lr = LogisticRegression()
     >>> output = ParamGridBuilder() \
     ...     .baseOn({lr.labelCol: 'l'}) \
@@ -148,9 +148,9 @@ class CrossValidator(Estimator, ValidatorParams):
     test set exactly once.
 
 
-    >>> from pyspark.ml.classification import LogisticRegression
-    >>> from pyspark.ml.evaluation import BinaryClassificationEvaluator
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.classification import LogisticRegression
+    >>> from pyspark.mlflow_support.evaluation import BinaryClassificationEvaluator
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> dataset = spark.createDataFrame(
     ...     [(Vectors.dense([0.0]), 0.0),
     ...      (Vectors.dense([0.4]), 1.0),
@@ -311,9 +311,9 @@ class TrainValidationSplit(Estimator, ValidatorParams):
     validation sets, and uses evaluation metric on the validation set to select the best model.
     Similar to :class:`CrossValidator`, but only splits the set once.
 
-    >>> from pyspark.ml.classification import LogisticRegression
-    >>> from pyspark.ml.evaluation import BinaryClassificationEvaluator
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.classification import LogisticRegression
+    >>> from pyspark.mlflow_support.evaluation import BinaryClassificationEvaluator
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> dataset = spark.createDataFrame(
     ...     [(Vectors.dense([0.0]), 0.0),
     ...      (Vectors.dense([0.4]), 1.0),
@@ -467,7 +467,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.tuning tests")\
+        .appName("mlflow_support.tuning tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

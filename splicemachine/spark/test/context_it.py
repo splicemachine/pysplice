@@ -1,5 +1,4 @@
 import unittest
-import logging
 import time
 from pyspark.sql import SparkSession
 from splicemachine.spark.context import PySpliceContext

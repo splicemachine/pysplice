@@ -21,6 +21,6 @@ splicemachine/.DS_Store
 *.pyc
 *.pyo
 **/__pycache__
-splicemachine/ml/test/
-splicemachine/ml/utilities.pyc
+splicemachine/stats/test/
+splicemachine/stats/utilities.pyc
 ./splicemachine/ml/.vscode/

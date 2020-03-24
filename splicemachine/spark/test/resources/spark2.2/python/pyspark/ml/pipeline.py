@@ -170,7 +170,7 @@ class Pipeline(Estimator, MLReadable, MLWritable):
         for idx, stage in enumerate(self.getStages()):
             java_stages[idx] = stage._to_java()
 
-        _java_obj = JavaParams._new_java_obj("org.apache.spark.ml.Pipeline", self.uid)
+        _java_obj = JavaParams._new_java_obj("org.apache.spark.mlflow_support.Pipeline", self.uid)
         _java_obj.setStages(java_stages)
 
         return _java_obj
@@ -249,6 +249,6 @@ class PipelineModel(Model, MLReadable, MLWritable):
             java_stages[idx] = stage._to_java()
 
         _java_obj =\
-            JavaParams._new_java_obj("org.apache.spark.ml.PipelineModel", self.uid, java_stages)
+            JavaParams._new_java_obj("org.apache.spark.mlflow_support.PipelineModel", self.uid, java_stages)
 
         return _java_obj

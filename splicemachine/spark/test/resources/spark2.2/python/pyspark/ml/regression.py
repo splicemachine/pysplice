@@ -57,7 +57,7 @@ class LinearRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPrediction
 
      * L2 + L1 (elastic net)
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, 2.0, Vectors.dense(1.0)),
     ...     (0.0, 2.0, Vectors.sparse(1, [], []))], ["label", "weight", "features"])
@@ -106,7 +106,7 @@ class LinearRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPrediction
         """
         super(LinearRegression, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.LinearRegression", self.uid)
+            "org.apache.spark.mlflow_support.regression.LinearRegression", self.uid)
         self._setDefault(maxIter=100, regParam=0.0, tol=1e-6)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -425,7 +425,7 @@ class IsotonicRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredicti
     Currently implemented using parallelized pool adjacent violators algorithm.
     Only univariate (single feature) algorithm supported.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -470,7 +470,7 @@ class IsotonicRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredicti
         """
         super(IsotonicRegression, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.IsotonicRegression", self.uid)
+            "org.apache.spark.mlflow_support.regression.IsotonicRegression", self.uid)
         self._setDefault(isotonic=True, featureIndex=0)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
@@ -657,7 +657,7 @@ class DecisionTreeRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
     learning algorithm for regression.
     It supports both continuous and categorical features.
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -708,7 +708,7 @@ class DecisionTreeRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
         """
         super(DecisionTreeRegressor, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.DecisionTreeRegressor", self.uid)
+            "org.apache.spark.mlflow_support.regression.DecisionTreeRegressor", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          impurity="variance")
@@ -847,7 +847,7 @@ class RandomForestRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
     It supports both continuous and categorical features.
 
     >>> from numpy import allclose
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -898,7 +898,7 @@ class RandomForestRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
         """
         super(RandomForestRegressor, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.RandomForestRegressor", self.uid)
+            "org.apache.spark.mlflow_support.regression.RandomForestRegressor", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          impurity="variance", subsamplingRate=1.0, numTrees=20,
@@ -968,7 +968,7 @@ class GBTRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol,
     It supports both continuous and categorical features.
 
     >>> from numpy import allclose
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0)),
     ...     (0.0, Vectors.sparse(1, [], []))], ["label", "features"])
@@ -1025,7 +1025,7 @@ class GBTRegressor(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredictionCol,
                  impurity="variance")
         """
         super(GBTRegressor, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.regression.GBTRegressor", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlflow_support.regression.GBTRegressor", self.uid)
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, subsamplingRate=1.0,
                          checkpointInterval=10, lossType="squared", maxIter=20, stepSize=0.1,
@@ -1112,7 +1112,7 @@ class AFTSurvivalRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
 
     .. seealso:: `AFT Model <https://en.wikipedia.org/wiki/Accelerated_failure_time_model>`_
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(1.0), 1.0),
     ...     (0.0, Vectors.sparse(1, [], []), 0.0)], ["label", "features", "censor"])
@@ -1175,7 +1175,7 @@ class AFTSurvivalRegression(JavaEstimator, HasFeaturesCol, HasLabelCol, HasPredi
         """
         super(AFTSurvivalRegression, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.AFTSurvivalRegression", self.uid)
+            "org.apache.spark.mlflow_support.regression.AFTSurvivalRegression", self.uid)
         self._setDefault(censorCol="censor",
                          quantileProbabilities=[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99],
                          maxIter=100, tol=1E-6)
@@ -1318,7 +1318,7 @@ class GeneralizedLinearRegression(JavaEstimator, HasLabelCol, HasFeaturesCol, Ha
 
     .. seealso:: `GLM <https://en.wikipedia.org/wiki/Generalized_linear_model>`_
 
-    >>> from pyspark.ml.linalg import Vectors
+    >>> from pyspark.mlflow_support.linalg import Vectors
     >>> df = spark.createDataFrame([
     ...     (1.0, Vectors.dense(0.0, 0.0)),
     ...     (1.0, Vectors.dense(1.0, 2.0)),
@@ -1385,7 +1385,7 @@ class GeneralizedLinearRegression(JavaEstimator, HasLabelCol, HasFeaturesCol, Ha
         """
         super(GeneralizedLinearRegression, self).__init__()
         self._java_obj = self._new_java_obj(
-            "org.apache.spark.ml.regression.GeneralizedLinearRegression", self.uid)
+            "org.apache.spark.mlflow_support.regression.GeneralizedLinearRegression", self.uid)
         self._setDefault(family="gaussian", maxIter=25, tol=1e-6, regParam=0.0, solver="irls",
                          variancePower=0.0)
         kwargs = self._input_kwargs
@@ -1728,7 +1728,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.regression tests")\
+        .appName("mlflow_support.regression tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

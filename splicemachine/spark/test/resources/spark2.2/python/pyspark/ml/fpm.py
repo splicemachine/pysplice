@@ -224,7 +224,7 @@ class FPGrowth(JavaEstimator, HasItemsCol, HasPredictionCol,
                  predictionCol="prediction", numPartitions=None)
         """
         super(FPGrowth, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.fpm.FPGrowth", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlflow_support.fpm.FPGrowth", self.uid)
         self._setDefault(minSupport=0.3, minConfidence=0.8,
                          itemsCol="items", predictionCol="prediction")
         kwargs = self._input_kwargs

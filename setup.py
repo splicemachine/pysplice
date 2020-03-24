@@ -16,18 +16,15 @@ limitations under the License.
 
 from setuptools import setup, find_packages
 
-dependencies = [
-    "py4j==0.10.8.1",
-    "pytest==5.1.3",
-    "mlflow==1.6.0",
-    "mleap==0.15.0",
-    "graphviz==0.13",
-    "future"
-]
+REQUIREMENTS_FILE = "requirements.txt"
+
+with open(REQUIREMENTS_FILE, "r") as dependencies_file:
+    DEPENDENCIES = dependencies_file.readlines()
+
 setup(
     name="splicemachine",
-    version="1.0.10",
-    install_requires=dependencies,
+    version="2.0.0",
+    install_requires=DEPENDENCIES,
     packages=find_packages(),
     license='Apache License, Version 2.0',
     long_description=open('README.md').read(),

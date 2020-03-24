@@ -117,7 +117,7 @@ def launch_gateway(conf=None):
     java_import(gateway.jvm, "org.apache.spark.SparkConf")
     java_import(gateway.jvm, "org.apache.spark.api.java.*")
     java_import(gateway.jvm, "org.apache.spark.api.python.*")
-    java_import(gateway.jvm, "org.apache.spark.ml.python.*")
+    java_import(gateway.jvm, "org.apache.spark.mlflow_support.python.*")
     java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
     # TODO(davies): move into sql
     java_import(gateway.jvm, "org.apache.spark.sql.*")

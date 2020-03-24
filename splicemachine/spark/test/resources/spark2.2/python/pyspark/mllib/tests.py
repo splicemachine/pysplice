@@ -437,7 +437,7 @@ class VectorTests(MLlibTestCase):
         self.assertEqual(tmp.numNonzeros(), 1)
 
     def test_ml_mllib_vector_conversion(self):
-        # to ml
+        # to mlflow_support
         # dense
         mllibDV = Vectors.dense([1, 2, 3])
         mlDV1 = newlinalg.Vectors.dense([1, 2, 3])
@@ -448,7 +448,7 @@ class VectorTests(MLlibTestCase):
         mlSV1 = newlinalg.Vectors.sparse(4, {1: 1.0, 3: 5.5})
         mlSV2 = mllibSV.asML()
         self.assertEqual(mlSV2, mlSV1)
-        # from ml
+        # from mlflow_support
         # dense
         mllibDV1 = Vectors.dense([1, 2, 3])
         mlDV = newlinalg.Vectors.dense([1, 2, 3])
@@ -461,7 +461,7 @@ class VectorTests(MLlibTestCase):
         self.assertEqual(mllibSV1, mllibSV2)
 
     def test_ml_mllib_matrix_conversion(self):
-        # to ml
+        # to mlflow_support
         # dense
         mllibDM = Matrices.dense(2, 2, [0, 1, 2, 3])
         mlDM1 = newlinalg.Matrices.dense(2, 2, [0, 1, 2, 3])
@@ -482,7 +482,7 @@ class VectorTests(MLlibTestCase):
         mlSMt1 = newlinalg.SparseMatrix(2, 2, [0, 2, 3], [0, 1, 1], [2, 3, 4], True)
         mlSMt2 = mllibSMt.asML()
         self.assertEqual(mlSMt2, mlSMt1)
-        # from ml
+        # from mlflow_support
         # dense
         mllibDM1 = Matrices.dense(2, 2, [1, 2, 3, 4])
         mlDM = newlinalg.Matrices.dense(2, 2, [1, 2, 3, 4])

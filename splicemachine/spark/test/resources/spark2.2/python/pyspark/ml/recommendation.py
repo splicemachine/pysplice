@@ -154,7 +154,7 @@ class ALS(JavaEstimator, HasCheckpointInterval, HasMaxIter, HasPredictionCol, Ha
                  finalStorageLevel="MEMORY_AND_DISK", coldStartStrategy="nan")
         """
         super(ALS, self).__init__()
-        self._java_obj = self._new_java_obj("org.apache.spark.ml.recommendation.ALS", self.uid)
+        self._java_obj = self._new_java_obj("org.apache.spark.mlflow_support.recommendation.ALS", self.uid)
         self._setDefault(rank=10, maxIter=10, regParam=0.1, numUserBlocks=10, numItemBlocks=10,
                          implicitPrefs=False, alpha=1.0, userCol="user", itemCol="item",
                          ratingCol="rating", nonnegative=False, checkpointInterval=10,
@@ -424,7 +424,7 @@ if __name__ == "__main__":
     # even in these small test examples:
     spark = SparkSession.builder\
         .master("local[2]")\
-        .appName("ml.recommendation tests")\
+        .appName("mlflow_support.recommendation tests")\
         .getOrCreate()
     sc = spark.sparkContext
     globs['sc'] = sc

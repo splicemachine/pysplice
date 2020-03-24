@@ -128,7 +128,7 @@ class JavaParams(JavaWrapper, Params):
         """
         Transforms a Python ParamMap into a Java ParamMap.
         """
-        paramMap = JavaWrapper._new_java_obj("org.apache.spark.ml.param.ParamMap")
+        paramMap = JavaWrapper._new_java_obj("org.apache.spark.mlflow_support.param.ParamMap")
         for param in self.params:
             if param in pyParamMap:
                 pair = self._make_java_param_pair(param, pyParamMap[param])
@@ -301,8 +301,8 @@ class JavaModel(JavaTransformer, Model):
         it will be assigned after that, but this scenario only used by
         :py:class:`JavaMLReader` to load models.  This is a bit of a
         hack, but it is easiest since a proper fix would require
-        MLReader (in pyspark.ml.util) to depend on these wrappers, but
-        these wrappers depend on pyspark.ml.util (both directly and via
+        MLReader (in pyspark.mlflow_support.util) to depend on these wrappers, but
+        these wrappers depend on pyspark.mlflow_support.util (both directly and via
         other ML classes).
         """
         super(JavaModel, self).__init__(java_model)
