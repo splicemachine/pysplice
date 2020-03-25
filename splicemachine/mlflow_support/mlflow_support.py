@@ -142,7 +142,6 @@ def _log_spark_model(model, name='model'):
 
 
 @_mlflow_patch('start_run')
-@contextmanager
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
     """
     Start a new run
@@ -157,21 +156,20 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param experiment_id: if you would like to create an experiment/use one for this run
     :param nested: Controls whether run is nested in parent run. True creates a nest run
     """
-    try:
-        if not tags:
-            tags = {}
-        tags['mlflow.user'] = get_user()
 
-        orig = gorilla.get_original_attribute(mlflow, "start_run")
-        orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
+    if not tags:
+        tags = {}
+    tags['mlflow.user'] = get_user()
 
-        for key in tags:
-            mlflow.set_tag(key, tags[key])
-        if run_name:
-            mlflow.set_tag('mlflow.runName', run_name)
-        yield
-    finally:
-        mlflow.end_run()
+    orig = gorilla.get_original_attribute(mlflow, "start_run")
+    active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
+
+    for key in tags:
+        mlflow.set_tag(key, tags[key])
+    if run_name:
+        mlflow.set_tag('mlflow.runName', run_name)
+
+    return active_run
 
 
 @_mlflow_patch('log_pipeline_stages')
