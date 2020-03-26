@@ -156,21 +156,28 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param experiment_id: if you would like to create an experiment/use one for this run
     :param nested: Controls whether run is nested in parent run. True creates a nest run
     """
+
     if not tags:
         tags = {}
     tags['mlflow.user'] = get_user()
 
     orig = gorilla.get_original_attribute(mlflow, "start_run")
-    orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
+    active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
 
     for key in tags:
         mlflow.set_tag(key, tags[key])
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
 
+    return active_run
+
 
 @_mlflow_patch('log_pipeline_stages')
 def _log_pipeline_stages(pipeline):
+    """
+    Log the pipeline stages as params for the run
+    :param pipeline: fitted/unitted pipeline
+    """
     for stage_number, pipeline_stage in enumerate(SparkUtils.get_stages(pipeline)):
         readable_stage_name = SparkUtils.readable_pipeline_stage(pipeline_stage)
         mlflow.log_param('Stage' + str(stage_number), readable_stage_name)
