@@ -66,7 +66,7 @@ def _check_for_splice_ctx():
     if not getattr(mlflow, '_splice_context'):
         raise SpliceMachineException(
             "You must run `mlflow.register_splice_context(py_splice_context) before "
-            "you can run mlflow artifact operations!"
+            "you can run this mlflow operation!"
         )
 
 
@@ -156,16 +156,26 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param experiment_id: if you would like to create an experiment/use one for this run
     :param nested: Controls whether run is nested in parent run. True creates a nest run
     """
+    # Get the current running transaction ID for time travel/data governance
+    _check_for_splice_ctx()
+    db_connection = mlflow._splice_context.getConnection()
+    prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
+    x = prepared_statement.executeQuery()
+    x.next()
+    timestamp = x.getInt(1)
+    prepared_statement.close()
 
-    if not tags:
-        tags = {}
+    tags = tags if tags else {}
     tags['mlflow.user'] = get_user()
+    tags['DB_Transaction_ID'] = timestamp
 
     orig = gorilla.get_original_attribute(mlflow, "start_run")
     active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
 
     for key in tags:
         mlflow.set_tag(key, tags[key])
+    if not run_id:
+        mlflow.set_tag('run_id',mlflow._current_run_id())
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
 
