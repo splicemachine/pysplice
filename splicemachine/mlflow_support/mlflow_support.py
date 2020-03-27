@@ -175,7 +175,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     for key in tags:
         mlflow.set_tag(key, tags[key])
     if not run_id:
-        mlflow.set_tag('run_id',mlflow._current_run_id())
+        mlflow.set_tag('run_id',mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
 
