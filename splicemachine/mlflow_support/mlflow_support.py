@@ -167,7 +167,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
 
     tags = tags if tags else {}
     tags['mlflow.user'] = get_user()
-    tags['DB_Transaction_ID'] = timestamp
+    tags['DB Transaction ID'] = timestamp
 
     orig = gorilla.get_original_attribute(mlflow, "start_run")
     active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
@@ -175,7 +175,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     for key in tags:
         mlflow.set_tag(key, tags[key])
     if not run_id:
-        mlflow.set_tag('run_id',mlflow.active_run().info.run_uuid)
+        mlflow.set_tag('Run ID', mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
 
