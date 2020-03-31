@@ -1,4 +1,4 @@
-from os import environ as env_vars, popen as rbash, system as bash
+from os import environ as env_vars, popen as rbash, system as bash, remove
 from sys import getsizeof
 import re
 
@@ -9,7 +9,9 @@ from py4j.java_gateway import java_import
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import SparkModelType
 from mleap.pyspark.spark_support import SimpleSparkSerializer
+import h2o
 
+from pyspark.ml.pipeline import PipelineModel
 
 class SpliceMachineException(Exception):
     pass
@@ -18,7 +20,7 @@ class SpliceMachineException(Exception):
 class SQL:
     MLMANAGER_SCHEMA = 'MLMANAGER'
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
-    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary" FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
+    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary", file_extension FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                                                                                 'AND run_uuid=\'{runid}\''
     MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
     MODEL_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
@@ -137,7 +139,7 @@ class SparkUtils:
         try:
             return splice_context.df(
                 SQL.ARTIFACT_RETRIEVAL_SQL.format(name=name, runid=run_id)
-            ).collect()[0][0]
+            ).collect()[0]
         except IndexError as e:
             raise Exception(f"Unable to find the artifact with the given run id {run_id} and name {name}")
 
@@ -185,7 +187,37 @@ class SparkUtils:
                 m_type = SparkModelType.CLUSTERING_WO_PROB
 
         return m_type
+    @staticmethod
+    def log_spark_model(splice_ctx, model, name, run_id):
+        jvm = splice_ctx.jvm
+        java_import(jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
 
+        if not SparkUtils.is_spark_pipeline(model):
+            model = PipelineModel(
+                stages=[model]
+            )  # create a pipeline with only the model if a model is passed in
+
+        baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
+        oos = jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model._to_java())
+        oos.flush()
+        oos.close()
+        insert_artifact(splice_ctx, name, baos.toByteArray(), run_id,
+                    file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
+
+    @staticmethod
+    def load_spark_model(splice_ctx, spark_pipeline_blob):
+        jvm = splice_ctx.jvm
+        bis = jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
+        ois = jvm.java.io.ObjectInputStream(bis)
+        pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
+        # PipelineModel to Python PipelineModel
+        ois.close()
+
+        if len(pipeline.stages) == 1 and not SparkUtils.is_spark_pipeline(pipeline.stages[0]):
+            pipeline = pipeline.stages[0]
+
+        return pipeline
 
 def find_inputs_by_output(dictionary, value):
     """
@@ -368,12 +400,13 @@ def create_data_table(splice_context, schema_table_name, schema_str, primary_key
     splice_context.execute(SQL_TABLE)
 
 
-def create_data_preds_table(splice_context, schema_table_name, classes, primary_key,
+def create_data_preds_table(splice_context, run_id, schema_table_name, classes, primary_key,
                               modelType, verbose):
     """
     Creates the data prediction table that holds the prediction for the rows of the data table
     :param splice_context: pysplicectx
     :param schema_table_name: (str) the schema.table to create the table under
+    :param run_id: (str) the run_id for this model
     :param classes: (List[str]) the labels of the model (if they exist)
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
     :param modelType: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
@@ -386,8 +419,8 @@ def create_data_preds_table(splice_context, schema_table_name, classes, primary_
     SQL_PRED_TABLE = f'''CREATE TABLE {schema_table_name}_PREDS (
         \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
         \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \tRUN_ID VARCHAR(50) DEFAULT \'{run_id}\',
         '''
-    # FIXME: Add the run_id as a column with constant default value to always be the run_id
     pk_cols = ''
     for i in primary_key:
         SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
