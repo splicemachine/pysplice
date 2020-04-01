@@ -22,7 +22,7 @@ class SQL:
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary", file_extension FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                                                                                 'AND run_uuid=\'{runid}\''
-    MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL) VALUES (?, ?)'
+    MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL, LIBRARY, VERSION) VALUES (?, ?, ?, ?)'
     MODEL_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
 
 
@@ -263,6 +263,9 @@ def insert_model(splice_context, run_id, byte_array):
     prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
     prepared_statement.setString(1, run_id)
     prepared_statement.setBinaryStream(2, binary_input_stream)
+    # FIXME: Dynamically set this per model type (only mleap for now)
+    prepared_statement.setString(3, 'MLEAP')
+    prepared_statement.setString(4, '0.15.0')
 
     prepared_statement.execute()
     prepared_statement.close()
