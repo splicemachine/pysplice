@@ -127,11 +127,12 @@ def _log_model(model, name='model'):
         raise SpliceMachineException("Only one model is permitted per run.")
 
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
-    mlflow.set_tag('splice.model_type', str(model.__class__))
+    model_class = str(model.__class__)
+    mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-    if 'h2o' in model.__class__:
+    if 'h2o' in model_class.lower():
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
         model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
         with open(model_path, 'rb') as artifact:
@@ -139,7 +140,7 @@ def _log_model(model, name='model'):
         insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext='h2omodel')
         rmtree('/tmp/model')
 
-    elif 'spark' in model.__class__:
+    elif 'spark' in model_class.lower():
         mlflow.set_tag('splice.spark_version', pyspark.__version__)
         SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id=run_id)
     else:
