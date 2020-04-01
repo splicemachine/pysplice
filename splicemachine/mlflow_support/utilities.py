@@ -22,7 +22,7 @@ class SQL:
     ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
     ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary", file_extension FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
                                                                                 'AND run_uuid=\'{runid}\''
-    MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL, LIBRARY, VERSION) VALUES (?, ?, ?, ?)'
+    MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL, LIBRARY, "version") VALUES (?, ?, ?, ?)'
     MODEL_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
 
 
