@@ -319,7 +319,7 @@ def _load_model(run_id=None, name='model'):
         with open('/tmp/model', 'wb') as file:
             file.write(model_blob)
         model = h2o.load_model('/tmp/model')
-        rmtree('/tmp/model')
+        remove('/tmp/model')
     return model
 
 
