@@ -2,14 +2,18 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from io import BytesIO
-from os import path
+from os import path, remove
+from shutil import rmtree
 from zipfile import ZipFile
+from sys import version as py_version
 
 import gorilla
 import mlflow
 import requests
 from requests.auth import HTTPBasicAuth
 from mleap.pyspark import spark_support
+import h2o
+import pyspark
 
 from splicemachine.mlflow_support.utilities import *
 from splicemachine.spark.context import PySpliceContext
@@ -21,7 +25,7 @@ _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
 
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
-
+_PYTHON_VERSION = py_version.split('|')[0].strip()
 
 def _mlflow_patch(name):
     """
@@ -110,8 +114,8 @@ def _lm(key, value):
     mlflow.log_metric(key, value)
 
 
-@_mlflow_patch('log_spark_model')
-def _log_spark_model(model, name='model'):
+@_mlflow_patch('log_model')
+def _log_model(model, name='model'):
     """
     Log a fitted spark pipeline or model
     :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline to store
@@ -120,26 +124,27 @@ def _log_spark_model(model, name='model'):
     """
     _check_for_splice_ctx()
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
-        raise Exception("Only one model is permitted per run.")
+        raise SpliceMachineException("Only one model is permitted per run.")
 
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
+    model_class = str(model.__class__)
+    mlflow.set_tag('splice.model_type', model_class)
+    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
-    jvm = mlflow._splice_context.jvm
-    java_import(jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
+    run_id = mlflow.active_run().info.run_uuid
+    if 'h2o' in model_class.lower():
+        mlflow.set_tag('splice.h2o_version', h2o.__version__)
+        model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
+        with open(model_path, 'rb') as artifact:
+            byte_stream = bytearray(bytes(artifact.read()))
+        insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext='h2omodel')
+        rmtree('/tmp/model')
 
-    if not SparkUtils.is_spark_pipeline(model):
-        model = PipelineModel(
-            stages=[model]
-        )  # create a pipeline with only the model if a model is passed in
-
-    baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
-    oos = jvm.java.io.ObjectOutputStream(baos)
-    oos.writeObject(model._to_java())
-    oos.flush()
-    oos.close()
-    insert_artifact(mlflow._splice_context, name, baos.toByteArray(), mlflow.active_run().info.run_uuid,
-                    file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
-
+    elif 'spark' in model_class.lower():
+        mlflow.set_tag('splice.spark_version', pyspark.__version__)
+        SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id=run_id)
+    else:
+        raise SpliceMachineException('Currently we only support logging Spark and H2O models.')
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -284,21 +289,18 @@ def _download_artifact(name, local_path, run_id=None):
     _check_for_splice_ctx()
     file_ext = path.splitext(local_path)[1]
 
-    if not file_ext:
-        raise ValueError('local_path variable must contain the file extension!')
-
     run_id = run_id or mlflow.active_run().info.run_uuid
-    blob_data = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-    if file_ext == '.zip':
-        zip_file = ZipFile(BytesIO(blob_data))
-        zip_file.extractall()
-    else:
-        with open(local_path, 'wb') as artifact_file:
+    blob_data, f_etx = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+
+    if not file_ext: # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
+        local_path += f'/{name}.{f_etx}'
+
+    with open(local_path, 'wb') as artifact_file:
             artifact_file.write(blob_data)
 
 
-@_mlflow_patch('load_spark_model')
-def _load_spark_model(run_id=None, name='model'):
+@_mlflow_patch('load_model')
+def _load_model(run_id=None, name='model'):
     """
     Download a model from database
     and load it into Spark
@@ -308,17 +310,17 @@ def _load_spark_model(run_id=None, name='model'):
     """
     _check_for_splice_ctx()
     run_id = run_id or mlflow.active_run().info.run_uuid
-    spark_pipeline_blob = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-    bis = mlflow._splice_context.jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
-    ois = mlflow._splice_context.jvm.java.io.ObjectInputStream(bis)
-    pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
-    # PipelineModel to Python PipelineModel
-    ois.close()
+    model_blob, file_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
-    if len(pipeline.stages) == 1 and SparkUtils.is_spark_pipeline(pipeline.stages[0]):
-        pipeline = pipeline.stages[0]
+    if file_ext == 'sparkmodel':
+        model = SparkUtils.load_spark_model(mlflow._splice_context, model_blob)
 
-    return pipeline
+    elif file_ext == 'h2omodel':
+        with open('/tmp/model', 'wb') as file:
+            file.write(model_blob)
+        model = h2o.load_model('/tmp/model')
+        rmtree('/tmp/model')
+    return model
 
 
 @_mlflow_patch('log_artifact')
@@ -510,11 +512,6 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'
     schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
 
-    # Get the VectorAssembler so we can get the features of the model
-    # FIXME: this might not be correct. If transformations are made before hitting the VectorAssembler, they
-    # FIXME: Also need to be included in the columns of the table. We need the df columns + VectorAssembler inputCols
-    # FIXME: We can do something similar to the log_feature_transformations function to get necessary columns
-    # FIXME: Or, this may just be df.columns ...
     feature_columns = df.columns
     # Get the datatype of each column in the dataframe
     schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in df.schema}
@@ -562,7 +559,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
 
         # Create table 2: DATA_PREDS
         print('Creating prediction table ...', end=' ')
-        create_data_preds_table(mlflow._splice_context, schema_table_name, classes, primary_key, modelType, verbose)
+        create_data_preds_table(mlflow._splice_context, run_id, schema_table_name, classes, primary_key, modelType, verbose)
         print('Done.')
 
         # Create Trigger 1: (model prediction)
@@ -594,7 +591,7 @@ def apply_patches():
     ALL GORILLA PATCHES SHOULD BE PREFIXED WITH "_" BEFORE THEIR DESTINATION IN MLFLOW
     """
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
-               _log_model_params, _log_pipeline_stages, _log_spark_model, _load_spark_model, _download_artifact,
+               _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director]
 
     for target in targets:
