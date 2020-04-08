@@ -76,7 +76,7 @@ class SpliceBaseEvaluator(object):
                                                           metric_val=self.avgs
                                                           [metric][-1]))
 
-    def get_results(self, dict=False):
+    def get_results(self, as_dict=False):
         """
         Get Results
         :param dict: whether to get results in a dict or not
@@ -86,7 +86,7 @@ class SpliceBaseEvaluator(object):
         for key in self.avgs:
             computed_avgs[key] = np.mean(self.avgs[key])
 
-        if dict:
+        if as_dict:
             return computed_avgs
 
         metrics_row = Row(*self.supported_metrics)

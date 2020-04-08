@@ -7,7 +7,7 @@ from pyspark.ml.base import Model as SparkModel
 from py4j.java_gateway import java_import
 
 from splicemachine.spark.constants import SQL_TYPES
-from splicemachine.mlflow_support.constants import SparkModelType
+from splicemachine.mlflow_support.constants import *
 from mleap.pyspark.spark_support import SimpleSparkSerializer
 import h2o
 
@@ -24,6 +24,81 @@ class SQL:
                                                                                 'AND run_uuid=\'{runid}\''
     MODEL_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.MODELS(RUN_UUID, MODEL, LIBRARY, "version") VALUES (?, ?, ?, ?)'
     MODEL_RETRIEVAL_SQL = 'SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_uuid}\''
+
+
+class H2OUtils:
+    @staticmethod
+    def prep_model_for_deployment(splice_context, model, classes, run_id):
+        """
+        All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
+        :param fittedPipe:
+        :param df:
+        :param classes:
+        :return:  model (mleap), modelType (Enum), classes (List(str))
+        """
+
+        # Get the Mleap model and insert it into the MODELS table
+        h2omojo, rawmojo = H2OUtils.get_h2omojo_model(splice_context, model)
+        H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
+
+        # Get model type
+        model_category = h2omojo.getModelCategory.toString()
+        modelType = H2OUtils.get_model_type(h2omojo)
+        if classes:
+            if modelType not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.KNOWN_OUTPUTS):
+                print('Prediction labels found but model is not type Classification. Removing labels')
+                classes = None
+            else:
+                # handling spaces in class names
+                classes = [c.replace(' ', '_') for c in classes]
+                print(
+                    f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
+        else:
+            if modelType == H2OModelType.KEY_VALUE_RETURN:
+                # Add a column for each class of the prediction to output the probability of the prediction
+                classes = [f'C{i}' for i in range(rawmojo.getNumResponseClasses())]
+            elif modelType == H2OModelType.KNOWN_OUTPUTS:
+                # These types have defined outputs, and we can preformat the column names
+                if model_category == 'AutoEncoder': # The input columns are the output columns (reconstruction)
+                    classes = [f'{i}_reconstr' for i in list(rawmojo.getNames())]
+                elif model_category == 'TargetEncoder':
+                    pass
+                elif model_category == 'DimReduction':
+                    pass
+                elif model_category == 'WordEmbedding':
+                    pass
+                elif model_category == 'AnomalyDetection':
+
+
+        return modelType, classes
+
+    @staticmethod
+    def get_model_type(h2omojo):
+        cat = h2omojo.getModelCategory().toString()
+        if cat in ('Regression', 'HGLMRegression', 'Clustering'):
+            modelType = H2OModelType.SINGULAR
+        elif cat in ('Binomial', 'Multinomial', 'Ordinal'):
+            modelType = H2OModelType.KEY_VALUE_RETURN
+        elif cat in ('AutoEncoder', 'TargetEncoder', 'DimReduction', 'WordEmbedding', 'AnomalyDetection'):
+            modelType = H2OModelType.KNOWN_OUTPUTS
+        else:
+            raise SpliceMachineException("H2O model is not supported! Only models with MOJOs are currently supported.")
+
+
+    @staticmethod
+    def get_h2omojo_model(splice_context, model):
+        jvm = splice_context.jvm
+        java_import(jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
+        java_import(jvm, 'hex.genmodel.easy.EasyPredictModelWrapper')
+        java_import(jvm, 'hex.genmodel.MojoModel')
+        model_path = model.download_mojo('/tmp/model.zip')
+        raw_mojo = jvm.MojoModel.load(model_path)
+        java_mojo_c = jvm.EasyPredictModelWrapper.Config().setModel(raw_mojo)
+        java_mojo = jvm.EasyPredictModelWrapper(java_mojo_c)
+        return java_mojo, raw_mojo
+
+    @staticmethod
+    def insert_h2omojo_model():
 
 
 class SparkUtils:
@@ -98,14 +173,14 @@ class SparkUtils:
     @staticmethod
     def get_model_stage(pipeline):
         """"
-        Gets the Model stage of a PipelineModel
+        Gets the Model stage of a FIT PipelineModel
         """
         for i in SparkUtils.get_stages(pipeline):
             # FIXME: We need a better way to determine if a stage is a model
             if 'Model' in str(i.__class__) and i.__module__.split('.')[-1] in ['clustering', 'classification',
                                                                                'regression']:
                 return i
-        raise AttributeError('Could not find model stage in Pipeline!')
+        raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
 
     @staticmethod
     def parse_string_parameters(string_parameters):
@@ -219,6 +294,40 @@ class SparkUtils:
 
         return pipeline
 
+    @staticmethod
+    def prep_model_for_deployment(splice_context, fittedPipe, df, classes, run_id):
+        """
+        All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
+        :param fittedPipe:
+        :param df:
+        :param classes:
+        :return:  model (mleap), modelType (Enum), classes (List(str))
+        """
+        # Get model type
+        modelType = SparkUtils.get_model_type(fittedPipe)
+        if classes:
+            if modelType not in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
+                print('Prediction labels found but model is not type Classification. Removing labels')
+                classes = None
+            else:
+                # handling spaces in class names
+                classes = [c.replace(' ', '_') for c in classes]
+                print(
+                    f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
+        else:
+            if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
+                # Add a column for each class of the prediction to output the probability of the prediction
+                classes = [f'C{i}' for i in range(SparkUtils.get_num_classes(fittedPipe))]
+        # See if the df passed in has already been transformed.
+        # If not, transform it
+        if 'prediction' not in df.columns:
+            df = fittedPipe.transform(df)
+        # Get the Mleap model and insert it into the MODELS table
+        mleap_model = get_mleap_model(splice_context, fittedPipe, df, run_id)
+        insert_mleap_model(splice_context, run_id, mleap_model)
+
+        return modelType, classes
+
 def find_inputs_by_output(dictionary, value):
     """
     Find the input columns for a given output column
@@ -248,12 +357,14 @@ def get_user():
             " Cloud Jupyter is currently unsupported")
 
 
-def insert_model(splice_context, run_id, byte_array):
+def insert_model(splice_context, run_id, byte_array, library, version):
     """
     Insert a serialized model into the Mlmanager models table
     :param splice_context: pysplicectx
     :param run_id: mlflow run id
     :param byte_array: byte array
+    :param library: The library of the model (mleap, h2omojo etc)
+    :param version: The version of the library
     """
     db_connection = splice_context.getConnection()
     file_size = getsizeof(byte_array)
@@ -263,9 +374,8 @@ def insert_model(splice_context, run_id, byte_array):
     prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
     prepared_statement.setString(1, run_id)
     prepared_statement.setBinaryStream(2, binary_input_stream)
-    # FIXME: Dynamically set this per model type (only mleap for now)
-    prepared_statement.setString(3, 'MLEAP')
-    prepared_statement.setString(4, '0.15.0')
+    prepared_statement.setString(3, library)
+    prepared_statement.setString(4, version)
 
     prepared_statement.execute()
     prepared_statement.close()
@@ -359,7 +469,7 @@ def insert_mleap_model(splice_context, run_id, model):
         oos.flush()
         oos.close()
         byte_array = baos.toByteArray()
-        insert_model(splice_context, run_id, byte_array)
+        insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
 
 
 def validate_primary_key(primary_key):

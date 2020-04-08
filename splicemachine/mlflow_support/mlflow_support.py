@@ -15,6 +15,7 @@ from mleap.pyspark import spark_support
 import h2o
 import pyspark
 
+from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
 from splicemachine.spark.context import PySpliceContext
 from splicemachine.spark.constants import CONVERSIONS
@@ -67,7 +68,7 @@ def _check_for_splice_ctx():
     spark operations to take place
     """
 
-    if not getattr(mlflow, '_splice_context'):
+    if not hasattr(mlflow, '_splice_context'):
         raise SpliceMachineException(
             "You must run `mlflow.register_splice_context(py_splice_context) before "
             "you can run this mlflow operation!"
@@ -117,8 +118,8 @@ def _lm(key, value):
 @_mlflow_patch('log_model')
 def _log_model(model, name='model'):
     """
-    Log a fitted spark pipeline or model
-    :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline to store
+    Log a fitted spark pipeline/model or H2O model
+    :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline or H2O model to store
         with the current run
     :param name: (str) the run relative name to store the model under
     """
@@ -361,7 +362,7 @@ def _initiate_job(payload, endpoint):
     :param endpoint: (str) REST endpoint to target
     :return: (str) Response text from request
     """
-    if not getattr(mlflow, '_basic_auth'):
+    if not hasattr(mlflow, '_basic_auth'):
         raise Exception(
             "You have not logged into MLManager director."
             " Please run mlflow.login_director(username, password)"
@@ -473,6 +474,14 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
     }
     return _initiate_job(request_payload, '/api/rest/initiate')
 
+# def get_model_library(run_id):
+#     library = mlflow._splice_context.df(f"select name from mlmanager.artifacts where run_uuid=\'{run_id}\' and name "
+#                                         f"in {tuple(DBLibraries.SUPPORTED_LIBRARIES)}")
+#     if not library:
+#         raise SpliceMachineException("You haven't registered a model yet Or the model you've registered doesn't support"
+#                                      "in database deployment (yet)! Current supported model types are MLeap and H2O MOJO."
+#                                      "Please run mlflow.register_db_model before deploying to the database.")
+#     return library[0][0]
 
 @_mlflow_patch('deploy_database')
 def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
@@ -511,6 +520,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'
     schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
+    assert type(df) is pyspark.sql.dataframe.DataFrame, "Dataframe must be a PySpark dataframe!"
 
     feature_columns = df.columns
     # Get the datatype of each column in the dataframe
@@ -519,32 +529,20 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     # Make sure primary_key is valid format
     validate_primary_key(primary_key)
 
-    # Get model type
-    modelType = SparkUtils.get_model_type(fittedPipe)
+
+    # library = get_model_library(run_id)
+    typ = str(type(fittedPipe))
+    library = 'mleap' if 'pyspark' in typ else 'h2omojo' if 'h2o' in typ else None
+    if library == DBLibraries.MLeap:
+        modelType, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, df, classes, run_id)
+    elif library == DBLibraries.H2OMOJO:
+        modelType, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
+    else:
+        raise SpliceMachineException('Model type is not supported for in DB Deployment!. '
+                                     'Currently, model must be H2O or Spark.')
+
 
     print(f'Deploying model {run_id} to table {schema_table_name}')
-
-    if classes:
-        if modelType not in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
-            print('Prediction labels found but model is not type Classification. Removing labels')
-            classes = None
-        else:
-            # handling spaces in class names
-            classes = [c.replace(' ', '_') for c in classes]
-            print(
-                f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
-    else:
-        if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
-            # Add a column for each class of the prediction to output the probability of the prediction
-            classes = [f'C{i}' for i in range(SparkUtils.get_num_classes(fittedPipe))]
-
-    # See if the df passed in has already been transformed.
-    # If not, transform it
-    if 'prediction' not in df.columns:
-        df = fittedPipe.transform(df)
-    # Get the Mleap model and insert it into the MODELS table
-    mleap_model = get_mleap_model(mlflow._splice_context, fittedPipe, df, run_id)
-    insert_mleap_model(mlflow._splice_context, run_id, mleap_model)
 
     # Create the schema of the table (we use this a few times)
     schema_str = ''
