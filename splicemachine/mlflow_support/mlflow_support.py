@@ -535,8 +535,9 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     library = 'mleap' if 'pyspark' in typ else 'h2omojo' if 'h2o' in typ else None
     if library == DBLibraries.MLeap:
         modelType, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, df, classes, run_id)
+        # FIXME: Decide what to do about model_category because
     elif library == DBLibraries.H2OMOJO:
-        modelType, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
+        modelType, model_category, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
     else:
         raise SpliceMachineException('Model type is not supported for in DB Deployment!. '
                                      'Currently, model must be H2O or Spark.')

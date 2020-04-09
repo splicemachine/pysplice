@@ -75,8 +75,7 @@ class H2OUtils:
                 elif model_category == 'AnomalyDetection':
                     classes = ['score', 'normalizedScore']
 
-
-        return modelType, classes
+        return modelType, model_category, classes
 
     @staticmethod
     def get_model_type(h2omojo):
