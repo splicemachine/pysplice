@@ -61,13 +61,19 @@ class H2OUtils:
                 # These types have defined outputs, and we can preformat the column names
                 if model_category == 'AutoEncoder': # The input columns are the output columns (reconstruction)
                     classes = [f'{i}_reconstr' for i in list(rawmojo.getNames())]
+                    if 'DeeplearningMojoModel' in rawmojo.getClass().toString(): # This class of autoencoder returns an MSE as well
+                        classes.append('MSE')
                 elif model_category == 'TargetEncoder':
-                    pass
+                    classes = list(rawmojo.getNames())
+                    classes.remove(rawmojo.getResponseName()) # This is the label we are training on
+                    classes = [f'{i}_te' for i in classes]
                 elif model_category == 'DimReduction':
-                    pass
-                elif model_category == 'WordEmbedding':
-                    pass
+                    classes = [f'PC{i}' for i in range(model.k)]
+                elif model_category == 'WordEmbedding': # We create a nXm columns
+                                                        # n = vector dimension, m = number of word inputs
+                    classes = [f'{j}_C{i}' for i in range(model.getVecSize()) for j in model.getNames()]
                 elif model_category == 'AnomalyDetection':
+                    classes = ['score', 'normalizedScore']
 
 
         return modelType, classes
