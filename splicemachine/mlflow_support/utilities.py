@@ -118,8 +118,7 @@ class H2OUtils:
             oos.flush()
             oos.close()
             byte_array = baos.toByteArray()
-
-        insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
+            insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
 
 
 
