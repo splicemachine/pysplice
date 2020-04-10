@@ -70,7 +70,7 @@ class H2OUtils:
                     classes = [f'PC{i}' for i in range(model.k)]
                 elif model_category == 'WordEmbedding': # We create a nXm columns
                                                         # n = vector dimension, m = number of word inputs
-                    classes = [f'{j}_C{i}' for i in range(model.getVecSize()) for j in model.getNames()]
+                    classes = [f'{j}_C{i}' for i in range(rawmojo.getVecSize()) for j in rawmojo.getNames()]
                 elif model_category == 'AnomalyDetection':
                     classes = ['score', 'normalizedScore']
 
