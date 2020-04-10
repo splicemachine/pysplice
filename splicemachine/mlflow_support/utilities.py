@@ -42,8 +42,7 @@ class H2OUtils:
         H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
 
         # Get model type
-        model_category = h2omojo.getModelCategory.toString()
-        modelType = H2OUtils.get_model_type(h2omojo)
+        modelType, model_category = H2OUtils.get_model_type(h2omojo)
         if classes:
             if modelType not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.CLASSIFICATION):
                 print('Prediction labels found but model is not type Classification. Removing labels')
@@ -90,6 +89,7 @@ class H2OUtils:
             modelType = H2OModelType.KEY_VALUE_RETURN
         else:
             raise SpliceMachineException("H2O model is not supported! Only models with MOJOs are currently supported.")
+        return modelType, cat
 
 
     @staticmethod
