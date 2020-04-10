@@ -535,9 +535,8 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     library = 'mleap' if 'pyspark' in typ else 'h2omojo' if 'h2o' in typ else None
     if library == DBLibraries.MLeap:
         modelType, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, df, classes, run_id)
-        # FIXME: Decide what to do about model_category because
     elif library == DBLibraries.H2OMOJO:
-        modelType, model_category, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
+        modelType, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
     else:
         raise SpliceMachineException('Model type is not supported for in DB Deployment!. '
                                      'Currently, model must be H2O or Spark.')
@@ -561,17 +560,17 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
         create_data_preds_table(mlflow._splice_context, run_id, schema_table_name, classes, primary_key, modelType, verbose)
         print('Done.')
 
-        # Create Trigger 1: (model prediction)
+        # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
         create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
-                                  schema_str,
-                                  primary_key, modelType, verbose)
+                                  schema_str, primary_key, modelType, verbose)
         print('Done.')
 
-        if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
+        if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
+                         H2OModelType.CLASSIFICATION, H2OModelType.KEY_VALUE_RETURN):
             # Create Trigger 2: model parsing
             print('Creating parsing trigger ...', end=' ')
-            create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, verbose)
+            create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, modelType, verbose)
             print('Done.')
     except Exception as e:
         import traceback

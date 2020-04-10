@@ -45,7 +45,7 @@ class H2OUtils:
         model_category = h2omojo.getModelCategory.toString()
         modelType = H2OUtils.get_model_type(h2omojo)
         if classes:
-            if modelType not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.KNOWN_OUTPUTS):
+            if modelType not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.CLASSIFICATION):
                 print('Prediction labels found but model is not type Classification. Removing labels')
                 classes = None
             else:
@@ -54,10 +54,10 @@ class H2OUtils:
                 print(
                     f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
         else:
-            if modelType == H2OModelType.KEY_VALUE_RETURN:
+            if modelType == H2OModelType.CLASSIFICATION:
                 # Add a column for each class of the prediction to output the probability of the prediction
                 classes = [f'C{i}' for i in range(rawmojo.getNumResponseClasses())]
-            elif modelType == H2OModelType.KNOWN_OUTPUTS:
+            elif modelType == H2OModelType.KEY_VALUE_RETURN:
                 # These types have defined outputs, and we can preformat the column names
                 if model_category == 'AutoEncoder': # The input columns are the output columns (reconstruction)
                     classes = [f'{i}_reconstr' for i in list(rawmojo.getNames())]
@@ -75,17 +75,19 @@ class H2OUtils:
                 elif model_category == 'AnomalyDetection':
                     classes = ['score', 'normalizedScore']
 
-        return modelType, model_category, classes
+        return modelType, classes
 
     @staticmethod
     def get_model_type(h2omojo):
         cat = h2omojo.getModelCategory().toString()
-        if cat in ('Regression', 'HGLMRegression', 'Clustering'):
+        if cat == 'Regression':
+            modelType = H2OModelType.REGRESSION
+        elif cat in ('HGLMRegression', 'Clustering'):
             modelType = H2OModelType.SINGULAR
         elif cat in ('Binomial', 'Multinomial', 'Ordinal'):
-            modelType = H2OModelType.KEY_VALUE_RETURN
+            modelType = H2OModelType.CLASSIFICATION
         elif cat in ('AutoEncoder', 'TargetEncoder', 'DimReduction', 'WordEmbedding', 'AnomalyDetection'):
-            modelType = H2OModelType.KNOWN_OUTPUTS
+            modelType = H2OModelType.KEY_VALUE_RETURN
         else:
             raise SpliceMachineException("H2O model is not supported! Only models with MOJOs are currently supported.")
 
@@ -103,7 +105,23 @@ class H2OUtils:
         return java_mojo, raw_mojo
 
     @staticmethod
-    def insert_h2omojo_model():
+    def insert_h2omojo_model(splice_context, run_id, model):
+        model_exists = splice_context.df(
+        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
+        if model_exists:
+            print(
+            'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
+        else:
+            baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+            oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+            oos.writeObject(model)
+            oos.flush()
+            oos.close()
+            byte_array = baos.toByteArray()
+
+        insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
+
+
 
 
 class SparkUtils:
@@ -501,7 +519,7 @@ def create_data_table(splice_context, schema_table_name, schema_str, primary_key
     :param verbose: (bool) whether to print the SQL query
     """
     if splice_context.tableExists(schema_table_name):
-        raise NotImplementedError(
+        raise SpliceMachineException(
             f'A model has already been deployed to table {schema_table_name}. We currently only support deploying 1 model per table')
     SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n' + schema_str
 
@@ -544,15 +562,16 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
         SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
         pk_cols += f'{i[0]},'
 
-    if modelType == SparkModelType.REGRESSION:
+    if modelType in (SparkModelType.REGRESSION, H2OModelType.REGRESSION):
         SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
 
-    elif modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
+    elif modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
+                       H2OModelType.CLASSIFICATION):
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
             SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
 
-    elif modelType == SparkModelType.CLUSTERING_WO_PROB:
+    elif modelType in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR):
         SQL_PRED_TABLE += '\tPREDICTION INT,\n'
 
     SQL_PRED_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
@@ -580,14 +599,17 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
     :param verbose: (bool) whether to print the SQL query
     """
 
-    if modelType == SparkModelType.CLASSIFICATION:
+    if modelType in (SparkModelType.CLASSIFICATION, H2OModelType.CLASSIFICATION):
         prediction_call = 'MLMANAGER.PREDICT_CLASSIFICATION'
-    elif modelType == SparkModelType.REGRESSION:
+    elif modelType in (SparkModelType.REGRESSION, H2OModelType.REGRESSION):
         prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
     elif modelType == SparkModelType.CLUSTERING_WITH_PROB:
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
-    else:
+    elif modelType in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR):
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
+    elif modelType == H2OModelType.KEY_VALUE_RETURN:
+        prediction_call = 'MLMANAGER.PREDICT_KEY_VALUE'
+
 
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
@@ -616,7 +638,7 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
 
 
 def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_id,
-                             classes, verbose):
+                             classes, modelType, verbose):
     """
     Creates the secondary trigger that parses the results of the first trigger and updates the prediction row populating the relevant columns
     :param splice_context: splice context specified in mlflow
@@ -624,17 +646,21 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
     :param run_id: (str) the run_id to deploy the model under
     :param classes: (List[str]) the labels of the model (if they exist)
+    :param modelType: (Enum) the model type (H2OModelType or SparkModelType)
     :param verbose: (bool) whether to print the SQL query
     """
     SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
                         f'\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
                         f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
-    case_str = 'PREDICTION=\n\t\tCASE\n'
+    set_prediction_case_str = 'PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
         SQL_PARSE_TRIGGER += f'{c}=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
-        case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
-    case_str += '\t\tEND'
-    SQL_PARSE_TRIGGER += case_str + ' WHERE'
+        set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
+    set_prediction_case_str += '\t\tEND'
+    if modelType == H2OModelType.KEY_VALUE_RETURN: # These models don't have an actual prediction
+        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + ' WHERE'
+    else:
+        SQL_PARSE_TRIGGER += set_prediction_case_str + ' WHERE'
 
     for i in primary_key:
         SQL_PARSE_TRIGGER += f' {i[0]}=NEWROW.{i[0]} AND'
