@@ -55,7 +55,7 @@ class H2OUtils:
         else:
             if modelType == H2OModelType.CLASSIFICATION:
                 # Add a column for each class of the prediction to output the probability of the prediction
-                classes = [f'C{i}' for i in range(rawmojo.getNumResponseClasses())]
+                classes = [f'p{i}' for i in list(rawmojo.getDomainValues(rawmojo.getResponseIdx()))]
             elif modelType == H2OModelType.KEY_VALUE_RETURN:
                 # These types have defined outputs, and we can preformat the column names
                 if model_category == 'AutoEncoder': # The input columns are the output columns (reconstruction)

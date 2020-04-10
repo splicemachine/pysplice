@@ -579,6 +579,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
         if not verbose:
             print('For more insight into the SQL statement that generated this error, rerun with verbose=True')
         traceback.print_exc()
+        raise SpliceMachineException('Model deployment failed.')
 
     print('Model Deployed.')
 
