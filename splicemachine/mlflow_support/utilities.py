@@ -570,7 +570,7 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
         for i in classes:
             SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
 
-    elif modelType in (H2OModelType.KEY_VALUE_RETURN):
+    elif modelType == H2OModelType.KEY_VALUE_RETURN:
         for i in classes:
             SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
 
