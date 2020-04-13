@@ -585,7 +585,9 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
     splice_context.execute(SQL_PRED_TABLE)
 
 def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, classes, verbose):
-    prediction_call = f'new com.splicemachine.mlrunner.MLRunner(key_value, {run_id}, {feature_columns}, {schema_str})'
+
+
+    prediction_call = 'new com.splicemachine.mlrunner.MLRunner(key_value, {run_id}, {raw_data}, {schema_str})'
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
                        f'{schema_table_name}_PREDS('
@@ -606,19 +608,22 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
         output_cols_VTI_reference += f'b.{i},'
         output_cols_schema += f'{i} DOUBLE,'
 
-    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals}, {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
+    raw_data = ''
+    for i, col in enumerate(feature_columns):
+        raw_data += '||' if i != 0 else ''
+        inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
+                                                                                           'DecimalType'} else f'NEWROW.{col}'
+        raw_data += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
+
+    # Cleanup + schema for PREDICT call
+    raw_data = raw_data[:-5].lstrip('||')
+    prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str)
+
+    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
                         f'as b ({output_cols_schema[:-1]})'
 
-    # for i, col in enumerate(feature_columns):
-    #     SQL_PRED_TRIGGER += '||' if i != 0 else ''
-    #     inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
-    #                                                                                        'DecimalType'} else f'NEWROW.{col}'
-    #     SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
-    #
-    # # Cleanup + schema for PREDICT call
-    # SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t', '').replace('\n',
-    #                                                                                                        '').rstrip(
-    #     ',') + '\'))'
+
+
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
