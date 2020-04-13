@@ -587,7 +587,7 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
 def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, classes, verbose):
 
 
-    prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, {schema_str})"
+    prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, '{schema_str}')"
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
                        f'{schema_table_name}_PREDS('
