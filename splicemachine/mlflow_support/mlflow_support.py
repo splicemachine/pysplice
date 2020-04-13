@@ -562,12 +562,15 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
-        create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
-                                  schema_str, primary_key, modelType, verbose)
+        if modelType == H2OModelType.KEY_VALUE_RETURN:
+            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, classes, verbose)
+        else:
+            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+                                    schema_str, primary_key, modelType, verbose)
         print('Done.')
 
         if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
-                         H2OModelType.CLASSIFICATION, H2OModelType.KEY_VALUE_RETURN):
+                         H2OModelType.CLASSIFICATION):
             # Create Trigger 2: model parsing
             print('Creating parsing trigger ...', end=' ')
             create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, modelType, verbose)
