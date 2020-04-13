@@ -587,7 +587,7 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
 def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, classes, verbose):
 
 
-    prediction_call = 'new com.splicemachine.mlrunner.MLRunner(key_value, {run_id}, {raw_data}, {schema_str})'
+    prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, {schema_str})"
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
                        f'{schema_table_name}_PREDS('
@@ -596,10 +596,6 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
         SQL_PRED_TRIGGER += f'{i[0]},'
         pk_vals += f'\tNEWROW.{i[0]},'
 
-        """
-        INSERT INTO PREDS (COLS) SELECT PKVALS, {classes} FROM new com.splicemachine.mlrunner.MLRunner(modelCategory,modelID,rawData,schema) as 
-        b (classes[] values + datatypes); 
-        """
     output_column_names = '' # Names of the output columns from the model
     output_cols_VTI_reference = '' # Names references from the VTI (ie b.COL_NAME)
     output_cols_schema = ''  # Names with their datatypes (always DOUBLE)
@@ -620,7 +616,7 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
     prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str)
 
     SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
-                        f'as b ({output_cols_schema[:-1]})'
+                        f' as b ({output_cols_schema[:-1]})'
 
 
 
