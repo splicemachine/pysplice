@@ -613,7 +613,8 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
 
     # Cleanup + schema for PREDICT call
     raw_data = raw_data[:-5].lstrip('||')
-    prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str)
+    schema_str_pred_call = schema_str.replace('\t', '').replace('\n','').rstrip(', ') + '\'))'
+    prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
 
     SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
                         f' as b ({output_cols_schema[:-1]})'
@@ -672,8 +673,7 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
 
     # Cleanup + schema for PREDICT call
     SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t', '').replace('\n',
-                                                                                                           '').rstrip(
-        ',') + '\'))'
+                                                                                                    '').rstrip(',') + '\'))'
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
