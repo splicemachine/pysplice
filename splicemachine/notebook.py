@@ -1,5 +1,5 @@
 import random
-
+from IPython.core.display import HTML
 
 def hide_toggle(toggle_next=False):
     """
