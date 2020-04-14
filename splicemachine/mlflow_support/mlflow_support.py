@@ -547,7 +547,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     # Create the schema of the table (we use this a few times)
     schema_str = ''
     for i in feature_columns:
-        schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},\n'
+        schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},'
 
     try:
         # Create table 1: DATA
