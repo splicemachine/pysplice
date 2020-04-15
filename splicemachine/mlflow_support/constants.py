@@ -19,7 +19,7 @@ class SparkModelType(Enum):
     """
     Model types for MLeap Deployment to DB
     """
-    CLASSIFICATION = 4
-    REGRESSION = 5
-    CLUSTERING_WITH_PROB = 6
-    CLUSTERING_WO_PROB = 7
+    CLASSIFICATION = 0
+    REGRESSION = 1
+    CLUSTERING_WITH_PROB = 2
+    CLUSTERING_WO_PROB = 3
