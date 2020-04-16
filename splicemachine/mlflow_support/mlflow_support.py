@@ -474,15 +474,6 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
     }
     return _initiate_job(request_payload, '/api/rest/initiate')
 
-# def get_model_library(run_id):
-#     library = mlflow._splice_context.df(f"select name from mlmanager.artifacts where run_uuid=\'{run_id}\' and name "
-#                                         f"in {tuple(DBLibraries.SUPPORTED_LIBRARIES)}")
-#     if not library:
-#         raise SpliceMachineException("You haven't registered a model yet Or the model you've registered doesn't support"
-#                                      "in database deployment (yet)! Current supported model types are MLeap and H2O MOJO."
-#                                      "Please run mlflow.register_db_model before deploying to the database.")
-#     return library[0][0]
-
 @_mlflow_patch('deploy_database')
 def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
                run_id=None, classes=None, verbose=False, replace=False) -> None:
