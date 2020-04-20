@@ -309,47 +309,47 @@ class PySpliceContext:
         """
         Generate the schema for create table
         """
-        #convert keys and values to uppercase in the types dictionary
-        types = dict((key.upper(), val) for key,val in types.items())
+        # convert keys and values to uppercase in the types dictionary
+        types = dict((key.upper(), val) for key, val in types.items())
         db_schema = []
-        #convert dataframe to have all uppercase column names
+        # convert dataframe to have all uppercase column names
         dataframe = self.toUpper(dataframe)
-        #i contains the name and pyspark datatype of the column
+        # i contains the name and pyspark datatype of the column
         for i in dataframe.schema:
-            if str(i.dataType).upper() in types:
-                print('Column {} is of type {}'.format(i.name.upper(),i.dataType))
-                dt = types[str(i.dataType).upper()]
+            if i.name.upper() in types:
+                print('Column {} is of type {}'.format(i.name.upper(), i.dataType))
+                dt = types[i.name.upper()]
             else:
                 dt = CONVERSIONS[str(i.dataType)]
-            db_schema.append((i.name.upper(),dt))
-        
+            db_schema.append((i.name.upper(), dt))
+
         return db_schema
-    
+
     def _getCreateTableSchema(self, schema_table_name, new_schema=False):
         """
         Parse schema for new table; if it is needed,
         create it
         """
-        #try to get schema and table, else set schema to splice
+        # try to get schema and table, else set schema to splice
         if '.' in schema_table_name:
             schema, table = schema_table_name.upper().split('.')
         else:
             schema = self.getConnection().getCurrentSchemaName()
             table = schema_table_name.upper()
-        #check for new schema
+        # check for new schema
         if new_schema:
             print('Creating schema {}'.format(schema))
             self.execute('CREATE SCHEMA {}'.format(schema))
-        
+
         return schema, table
-    
+
     def _dropTableIfExists(self, schema, table):
         """
         Drop table if it exists
         """
-        print('Droping table {schema}.{table}'.format(schema=schema,table=table))
-        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
-    
+        print('Dropping table {schema}.{table}'.format(schema=schema, table=table))
+        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema, table=table))
+
     def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types={}):
         '''
         Creates a schema.table from a dataframe
@@ -379,11 +379,11 @@ class PySpliceContext:
         # Make sure table doesn't exists already
         if not drop_table and self.tableExists(schema_table_name):
             return ('ERROR: Table already exists. Please drop it or set drop_table option to True')
-           
-        self._dropTableIfExists(schema,table)
-        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
-        for name,typ in db_schema:
-            sql += '{} {},\n'.format(name,typ)
+
+        self._dropTableIfExists(schema, table)
+        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema, table=table)
+        for name, typ in db_schema:
+            sql += '{} {},\n'.format(name, typ)
         sql = sql[:-2] + ')'
         print(sql)
         self.execute(sql)
