@@ -19,30 +19,13 @@ import os
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
+from splicemachine.spark.constants import CONVERSIONS
 
 
 class PySpliceContext:
     """
     This class implements a SpliceMachineContext object (similar to the SparkContext object)
     """
-    CONVERSIONS = {
-        'BinaryType': 'BLOB',
-        'BooleanType': 'BOOLEAN',
-        'ByteType': 'TINYINT',
-        'DateType': 'DATE',
-        'DoubleType': 'DOUBLE',
-        'DecimalType': 'DOUBLE',
-        'IntegerType': 'INTEGER',
-        'LongType': 'BIGINT',
-        'NullType': 'VARCHAR(50)',
-        'ShortType': 'SMALLINT',
-        'StringType': 'VARCHAR(5000)',
-        'TimestampType': 'TIMESTAMP',
-        'UnknownType': 'BLOB',
-        'FloatType': 'FLOAT'
-    }
-
-    _spliceSparkPackagesName = "com.splicemachine.spark.splicemachine.*"
 
     def _splicemachineContext(self):
         return self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(self.jdbcurl)
@@ -100,10 +83,10 @@ class PySpliceContext:
         :param schema_table_name: The schema.table with the correct column cases to pull from the database
         """
         cols = self.df('select top 1 * from {}'.format(schema_table_name)).columns
-        #sort the columns case insensitive so we are replacing the right ones in the dataframe
+        # sort the columns case insensitive so we are replacing the right ones in the dataframe
         old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
         new_cols = sorted(cols, key=lambda s: s.lower())
-        for old_col,new_col in zip(old_cols,new_cols):
+        for old_col, new_col in zip(old_cols, new_cols):
             dataframe = dataframe.withColumnRenamed(old_col, new_col)
         return dataframe
 
@@ -136,9 +119,7 @@ class PySpliceContext:
         :param sql: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: A Spark DataFrame containing the results
         """
-        if self._unit_testing:
-            return self.context.df(sql)
-        return DataFrame(self.context.df(sql), self.spark_sql_context)
+        return DataFrame(self.context.df(sql), self.spark_session._wrapped)
 
     def insert(self, dataframe, schema_table_name):
         """
@@ -217,9 +198,7 @@ class PySpliceContext:
         :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: pyspark dataframe contains the result of query_string
         '''
-        if self._unit_testing:
-            return self.context.internalDf(query_string)
-        return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
+        return DataFrame(self.context.internalDf(query_string), self.spark_session._wrapped)
 
     def rdd(self, schema_table_name, column_projection=None):
         """
@@ -341,7 +320,7 @@ class PySpliceContext:
                 print('Column {} is of type {}'.format(i.name.upper(),i.dataType))
                 dt = types[str(i.dataType).upper()]
             else:
-                dt = PySpliceContext.CONVERSIONS[str(i.dataType)]
+                dt = CONVERSIONS[str(i.dataType)]
             db_schema.append((i.name.upper(),dt))
         
         return db_schema
@@ -371,7 +350,7 @@ class PySpliceContext:
         print('Droping table {schema}.{table}'.format(schema=schema,table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema,table=table))
     
-    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types = {}):
+    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types={}):
         '''
         Creates a schema.table from a dataframe
         :param schema_table_name: String full table name in the format "schema.table_name"
@@ -398,8 +377,8 @@ class PySpliceContext:
         db_schema = self._generateDBSchema(dataframe, types=types)
         schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
         # Make sure table doesn't exists already
-        if(not drop_table and self.tableExists(schema_table_name)):
-           return('ERROR: Table already exists. Please drop it or set drop_table option to True')
+        if not drop_table and self.tableExists(schema_table_name):
+            return ('ERROR: Table already exists. Please drop it or set drop_table option to True')
            
         self._dropTableIfExists(schema,table)
         sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema,table=table)
@@ -430,11 +409,3 @@ class PySpliceContext2(PySpliceContext):
         self.kafkaServers = kafkaServers
         self.kafkaPollTimeout = kafkaPollTimeout
         super().__init__(sparkSession, JDBC_URL, _unit_testing)
-
-
-class SpliceMLContext(object):
-    def __init__(self):
-        raise Exception("This class has been deprecated in favor of the PySpliceContext class. "
-                        "the JDBC URL argument in the constructor is now *optional*. Thus, if "
-                        "running on the cloud service, you could do this "
-                        "`splice=PySpliceContext(spark)` to achieve the same result")
