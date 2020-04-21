@@ -111,7 +111,7 @@ class H2OUtils:
         return java_mojo, raw_mojo
 
     @staticmethod
-    def log_h2o_model(model, splice_context, name, run_id):
+    def log_h2o_model(splice_context, model, name, run_id):
         model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
         with open(model_path, 'rb') as artifact:
             byte_stream = bytearray(bytes(artifact.read()))
@@ -145,7 +145,7 @@ class H2OUtils:
 
 class SKUtils:
     @staticmethod
-    def log_sklearn_model(model, splice_context, name, run_id):
+    def log_sklearn_model(splice_context, model, name, run_id):
         byte_stream = save_pickle_string(model)
         insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.sklearn)
 
@@ -155,7 +155,7 @@ class SKUtils:
 
 class KerasUtils:
     @staticmethod
-    def log_keras_model(model, splice_context, name, run_id):
+    def log_keras_model(splice_context, model, name, run_id):
         model.save('/tmp/model.h5')
         with open('/tmp/model.h5') as f:
             byte_stream = bytearray(bytes(f.read()))
@@ -329,8 +329,8 @@ class SparkUtils:
 
         return m_type
     @staticmethod
-    def log_spark_model(splice_ctx, model, name, run_id):
-        jvm = splice_ctx.jvm
+    def log_spark_model(splice_context, model, name, run_id):
+        jvm = splice_context.jvm
         java_import(jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
 
         if not SparkUtils.is_spark_pipeline(model):
@@ -343,7 +343,7 @@ class SparkUtils:
         oos.writeObject(model._to_java())
         oos.flush()
         oos.close()
-        insert_artifact(splice_ctx, name, baos.toByteArray(), run_id,
+        insert_artifact(splice_context, name, baos.toByteArray(), run_id,
                     file_ext='spark')  # write the byte stream to the db as a BLOB
 
     @staticmethod

@@ -134,19 +134,20 @@ def _log_model(model, name='model'):
     run_id = mlflow.active_run().info.run_uuid
     if 'h2o' in model_class.lower():
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
-        H2OUtils.log_h2o_model(model, mlflow._splice_context, name, run_id)
+        H2OUtils.log_h2o_model(mlflow._splice_context, model, name, run_id)
 
     elif 'spark' in model_class.lower():
         mlflow.set_tag('splice.spark_version', pyspark.__version__)
-        SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id=run_id)
+        SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id)
 
     elif 'sklearn' in model_class.lower():
         mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
-        SKUtils.log_sklearn_model(mlflow._splice_context, model, name, run_id=run_id)
+        SKUtils.log_sklearn_model(mlflow._splice_context, model, name, run_id)
 
     elif 'keras' in model_class.lower() and 'tensorflow' in model_class.lower(): # We can't handle keras models with a different backend
         mlflow.set_tag('splice.keras_version', keras_version)
         mlflow.set_tag('splice.tf_version', tf_version)
+        KerasUtils.log_keras_model(mlflow._splice_context, model, name, run_id)
 
 
     else:
