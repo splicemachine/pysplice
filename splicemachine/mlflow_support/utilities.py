@@ -157,7 +157,7 @@ class KerasUtils:
     @staticmethod
     def log_keras_model(splice_context, model, name, run_id):
         model.save('/tmp/model.h5')
-        with open('/tmp/model.h5') as f:
+        with open('/tmp/model.h5', 'rb') as f:
             byte_stream = bytearray(bytes(f.read()))
         insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.keras)
         remove('/tmp/model.h5')
