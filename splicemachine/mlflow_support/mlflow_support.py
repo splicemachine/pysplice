@@ -1,10 +1,7 @@
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from io import BytesIO
-from os import path, remove
-from shutil import rmtree
-from zipfile import ZipFile
+from os import path
 from sys import version as py_version
 
 import gorilla
@@ -12,8 +9,10 @@ import mlflow
 import requests
 from requests.auth import HTTPBasicAuth
 from mleap.pyspark import spark_support
-import h2o
 import pyspark
+import sklearn
+from tensorflow import __version__ as tf_version
+from tensorflow.keras import __version__ as keras_version
 
 from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
@@ -70,7 +69,7 @@ def _check_for_splice_ctx():
 
     if not hasattr(mlflow, '_splice_context'):
         raise SpliceMachineException(
-            "You must run `mlflow.register_splice_context(py_splice_context) before "
+            "You must run `mlflow.register_splice_context(pysplice_context) before "
             "you can run this mlflow operation!"
         )
 
@@ -135,17 +134,25 @@ def _log_model(model, name='model'):
     run_id = mlflow.active_run().info.run_uuid
     if 'h2o' in model_class.lower():
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
-        model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
-        with open(model_path, 'rb') as artifact:
-            byte_stream = bytearray(bytes(artifact.read()))
-        insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext='h2omodel')
-        rmtree('/tmp/model')
+        H2OUtils.log_h2o_model(model, mlflow._splice_context, name, run_id)
 
     elif 'spark' in model_class.lower():
         mlflow.set_tag('splice.spark_version', pyspark.__version__)
         SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id=run_id)
+
+    elif 'sklearn' in model_class.lower():
+        mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
+        SKUtils.log_sklearn_model(mlflow._splice_context, model, name, run_id=run_id)
+
+    elif 'keras' in model_class.lower() and 'tensorflow' in model_class.lower(): # We can't handle keras models with a different backend
+        mlflow.set_tag('splice.keras_version', keras_version)
+        mlflow.set_tag('splice.tf_version', tf_version)
+
+
     else:
-        raise SpliceMachineException('Currently we only support logging Spark and H2O models.')
+        raise SpliceMachineException('Model type not supported for logging.'
+                                     'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
+                                     'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -313,14 +320,18 @@ def _load_model(run_id=None, name='model'):
     run_id = run_id or mlflow.active_run().info.run_uuid
     model_blob, file_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
-    if file_ext == 'sparkmodel':
+    if file_ext == FileExtensions.spark:
         model = SparkUtils.load_spark_model(mlflow._splice_context, model_blob)
+    elif file_ext == FileExtensions.h2o:
+        model = H2OUtils.load_h2o_model(model_blob)
+    elif file_ext == FileExtensions.sklearn:
+        model = SKUtils.load_sklearn_model(model_blob)
+    elif file_ext == FileExtensions.keras:
+        model = KerasUtils.load_keras_model(model_blob)
+    else:
+        raise SpliceMachineException(f'Model extension {file_ext} was not a supported model type. '
+                                     f'Supported model extensions are {FileExtensions.get_valid()}')
 
-    elif file_ext == 'h2omodel':
-        with open('/tmp/model', 'wb') as file:
-            file.write(model_blob)
-        model = h2o.load_model('/tmp/model')
-        remove('/tmp/model')
     return model
 
 

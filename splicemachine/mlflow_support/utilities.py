@@ -1,14 +1,19 @@
 from os import environ as env_vars, popen as rbash, system as bash, remove
 from sys import getsizeof
+from shutil import rmtree
+from pickle import dumps as save_pickle_string, loads as load_pickle_string
+from io import BytesIO
+from h5py import File as h5_file
 import re
 
-from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.base import Model as SparkModel
+from tensorflow.keras.models import load_model as load_kr_model
 from py4j.java_gateway import java_import
 
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import *
 from mleap.pyspark.spark_support import SimpleSparkSerializer
+
 import h2o
 
 from pyspark.ml.pipeline import PipelineModel
@@ -102,7 +107,24 @@ class H2OUtils:
         raw_mojo = jvm.MojoModel.load(model_path)
         java_mojo_c = jvm.EasyPredictModelWrapper.Config().setModel(raw_mojo)
         java_mojo = jvm.EasyPredictModelWrapper(java_mojo_c)
+        remove('/tmp/model.zip')
         return java_mojo, raw_mojo
+
+    @staticmethod
+    def log_h2o_model(model, splice_context, name, run_id):
+        model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
+        with open(model_path, 'rb') as artifact:
+            byte_stream = bytearray(bytes(artifact.read()))
+        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.h2o)
+        rmtree('/tmp/model')
+
+    @staticmethod
+    def load_h2o_model(model_blob):
+        with open('/tmp/model', 'wb') as file:
+            file.write(model_blob)
+        model = h2o.load_model('/tmp/model')
+        remove('/tmp/model')
+        return model
 
     @staticmethod
     def insert_h2omojo_model(splice_context, run_id, model):
@@ -121,7 +143,29 @@ class H2OUtils:
             insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
 
 
+class SKUtils:
+    @staticmethod
+    def log_sklearn_model(model, splice_context, name, run_id):
+        byte_stream = save_pickle_string(model)
+        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.sklearn)
 
+    @staticmethod
+    def load_sklearn_model(model_blob):
+        return load_pickle_string(model_blob)
+
+class KerasUtils:
+    @staticmethod
+    def log_keras_model(model, splice_context, name, run_id):
+        model.save('/tmp/model.h5')
+        with open('/tmp/model.h5') as f:
+            byte_stream = bytearray(bytes(f.read()))
+        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.keras)
+        remove('/tmp/model.h5')
+
+    @staticmethod
+    def load_keras_model(model_blob):
+        hfile = h5_file(BytesIO(model_blob), 'r')
+        return load_kr_model(hfile)
 
 class SparkUtils:
     @staticmethod
@@ -300,7 +344,7 @@ class SparkUtils:
         oos.flush()
         oos.close()
         insert_artifact(splice_ctx, name, baos.toByteArray(), run_id,
-                    file_ext='sparkmodel')  # write the byte stream to the db as a BLOB
+                    file_ext='spark')  # write the byte stream to the db as a BLOB
 
     @staticmethod
     def load_spark_model(splice_ctx, spark_pipeline_blob):
@@ -456,13 +500,13 @@ def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
         bash('mkdir /tmp')
     # Serialize the Spark model into Mleap format
     if f'{run_id}.zip' in rbash('ls /tmp').read():
-        bash(f'rm /tmp/{run_id}.zip')
+        remove(f'/tmp/{run_id}.zip')
     fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
 
     jvm = splice_context.jvm
     java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
     obj = jvm.FileRetriever.loadBundle(f'jar:file:///tmp/{run_id}.zip')
-    bash(f'rm /tmp/{run_id}.zip"')
+    remove(f'/tmp/{run_id}.zip"')
     return obj
 
 
@@ -522,7 +566,6 @@ def create_data_table(splice_context, schema_table_name, schema_str, primary_key
             f'A model has already been deployed to table {schema_table_name}. We currently only support deploying 1 model per table')
     SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n' + schema_str
 
-    # FIXME: Add the run_id as a column with constant default value to always be the run_id
     pk_cols = ''
     for i in primary_key:
         # If pk is already in the schema_string, don't add another column. PK may be an existing value
