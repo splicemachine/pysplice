@@ -23,3 +23,24 @@ class SparkModelType(Enum):
     REGRESSION = 1
     CLUSTERING_WITH_PROB = 2
     CLUSTERING_WO_PROB = 3
+
+class FileExtensions():
+    """
+    Class containing names for
+    valid File Extensions
+    """
+    spark: str = "spark"
+    keras: str = "h5"
+    h2o: str = "h2o"
+    sklearn: str = "pkl"
+
+    @staticmethod
+    def get_valid() -> tuple:
+        """
+        Return a tuple of the valid file extensions
+        in Database
+        :return: (tuple) valid statuses
+        """
+        return (
+            FileExtensions.spark, FileExtensions.keras, FileExtensions.h2o, FileExtensions.sklearn
+        )
