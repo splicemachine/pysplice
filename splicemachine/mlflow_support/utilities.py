@@ -506,7 +506,7 @@ def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
     jvm = splice_context.jvm
     java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
     obj = jvm.FileRetriever.loadBundle(f'jar:file:///tmp/{run_id}.zip')
-    remove(f'/tmp/{run_id}.zip"')
+    remove(f'/tmp/{run_id}.zip')
     return obj
 
 
