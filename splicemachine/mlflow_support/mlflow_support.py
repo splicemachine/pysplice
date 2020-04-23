@@ -10,9 +10,12 @@ import requests
 from requests.auth import HTTPBasicAuth
 from mleap.pyspark import spark_support
 import pyspark
+from pyspark.ml.base import Estimator as SparkModel
 import sklearn
+from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
 from tensorflow.keras import __version__ as keras_version
+from tensorflow.keras import Model as KerasModel
 
 from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
@@ -23,6 +26,7 @@ _TESTING = env_vars.get("TESTING", False)
 _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 
 _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
+mlflow.client = _CLIENT
 
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
@@ -47,6 +51,23 @@ def _get_current_run_data():
     :return: active run data object
     """
     return _CLIENT.get_run(mlflow.active_run().info.run_id).data
+
+
+@_mlflow_patch('get_run_ids_by_name')
+def _get_run_ids_by_name(run_name, experiment_id=None):
+    """
+    Gets a run id from the run name. If there are multiple runs with the same name, all run IDs are returned
+    :param run_name: The name of the run
+    :param experiment_id: The experiment to search in. If None, all experiments are searched
+    :return: List of run ids
+    """
+    exps = [experiment_id] if experiment_id else _CLIENT.list_experiments()
+    run_ids = []
+    for exp in exps:
+        for run in _CLIENT.search_runs(exp.experiment_id):
+            if run_name == run.data.tags['mlflow.runName']:
+                run_ids.append(run.data.tags['Run ID'])
+    return run_ids
 
 
 @_mlflow_patch('register_splice_context')
@@ -136,15 +157,15 @@ def _log_model(model, name='model'):
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
         H2OUtils.log_h2o_model(mlflow._splice_context, model, name, run_id)
 
-    elif 'spark' in model_class.lower():
+    elif isinstance(model, SparkModel):
         mlflow.set_tag('splice.spark_version', pyspark.__version__)
         SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id)
 
-    elif 'sklearn' in model_class.lower():
+    elif isinstance(model, ScikitModel):
         mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
         SKUtils.log_sklearn_model(mlflow._splice_context, model, name, run_id)
 
-    elif 'keras' in model_class.lower() and 'tensorflow' in model_class.lower(): # We can't handle keras models with a different backend
+    elif isinstance(model, KerasModel): # We can't handle keras models with a different backend
         mlflow.set_tag('splice.keras_version', keras_version)
         mlflow.set_tag('splice.tf_version', tf_version)
         KerasUtils.log_keras_model(mlflow._splice_context, model, name, run_id)
@@ -597,7 +618,8 @@ def apply_patches():
     """
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
-               _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director]
+               _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
+               _get_run_ids_by_name]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
