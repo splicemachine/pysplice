@@ -244,7 +244,7 @@ class SparkUtils:
         Gets the Model stage of a FIT PipelineModel
         """
         for i in SparkUtils.get_stages(pipeline):
-            if isinstance(i, SparkModel) and not isinstance(i, JavaModel):
+            if isinstance(i, SparkModel) and isinstance(i, JavaModel):
                 return i
         raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
 
