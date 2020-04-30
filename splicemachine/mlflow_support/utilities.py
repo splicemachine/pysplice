@@ -244,7 +244,9 @@ class SparkUtils:
         Gets the Model stage of a FIT PipelineModel
         """
         for i in SparkUtils.get_stages(pipeline):
-            if isinstance(i, SparkModel) and isinstance(i, JavaModel):
+            # StandardScaler is also implemented as a base Model and JavaModel for some reason but that's not a model
+            # So we need to make sure the stage isn't a feature
+            if isinstance(i, SparkModel) and isinstance(i, JavaModel) and 'feature' not in i.__module__:
                 return i
         raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
 
