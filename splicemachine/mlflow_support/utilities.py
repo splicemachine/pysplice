@@ -631,11 +631,11 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
                        H2OModelType.CLASSIFICATION):
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
-            SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
+            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
     elif modelType == H2OModelType.KEY_VALUE_RETURN:
         for i in classes:
-            SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
+            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
     elif modelType in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR):
         SQL_PRED_TABLE += '\tPREDICTION INT,\n'
@@ -663,9 +663,9 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
     output_cols_VTI_reference = '' # Names references from the VTI (ie b.COL_NAME)
     output_cols_schema = ''  # Names with their datatypes (always DOUBLE)
     for i in classes:
-        output_column_names += f'{i},'
-        output_cols_VTI_reference += f'b.{i},'
-        output_cols_schema += f'{i} DOUBLE,'
+        output_column_names += f'"{i}",'
+        output_cols_VTI_reference += f'b."{i}",'
+        output_cols_schema += f'"{i}" DOUBLE,'
 
     raw_data = ''
     for i, col in enumerate(feature_columns):
