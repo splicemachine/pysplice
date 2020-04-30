@@ -760,8 +760,8 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
                         f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
     set_prediction_case_str = 'PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
-        SQL_PARSE_TRIGGER += f'{c}=MLMANAGER.PARSEPROBS(NEWROW.prediction,"{i}"),'
-        set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)="{i}" then \'{c}\'\n'
+        SQL_PARSE_TRIGGER += f'"{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+        set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
     set_prediction_case_str += '\t\tEND'
     if modelType == H2OModelType.KEY_VALUE_RETURN: # These models don't have an actual prediction
         SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + ' WHERE'
