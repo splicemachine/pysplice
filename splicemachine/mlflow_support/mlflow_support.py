@@ -10,7 +10,6 @@ import requests
 from requests.auth import HTTPBasicAuth
 from mleap.pyspark import spark_support
 import pyspark
-from pyspark.ml.base import Estimator as SparkModel
 import sklearn
 from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
@@ -292,12 +291,14 @@ def _timer(timer_name, param=True):
     :return:
     """
     try:
+        print(f'Starting Code Block {timer_name}...', end=' ')
         t0 = time.time()
         yield
     finally:
         t1 = time.time() - t0
         # Syntactic Sugar
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
+        print('Done.')
         print(
             f"Code Block {timer_name}:\nRan in {round(t1, 3)} secs\nRan in {round(t1 / 60, 3)} mins"
         )
@@ -540,7 +541,10 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
 
     """
     _check_for_splice_ctx()
-    classes = classes if classes else []
+    # See if the labels are in an IndexToString stage. Will either return List[str] or empty []
+    potential_clases = SparkUtils.try_get_class_labels(fittedPipe)
+    classes = classes if classes else potential_clases
+
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'
     schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
