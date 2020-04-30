@@ -541,9 +541,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
 
     """
     _check_for_splice_ctx()
-    # See if the labels are in an IndexToString stage. Will either return List[str] or empty []
-    potential_clases = SparkUtils.try_get_class_labels(fittedPipe)
-    classes = classes if classes else potential_clases
+    classes = classes if classes else []
 
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'

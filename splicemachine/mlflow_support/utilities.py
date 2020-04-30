@@ -391,6 +391,9 @@ class SparkUtils:
         """
         # Get model type
         modelType = SparkUtils.get_model_type(fittedPipe)
+        # See if the labels are in an IndexToString stage. Will either return List[str] or empty []
+        potential_clases = SparkUtils.try_get_class_labels(fittedPipe)
+        classes = classes if classes else potential_clases
         if classes:
             if modelType not in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
                 print('Prediction labels found but model is not type Classification. Removing labels')
