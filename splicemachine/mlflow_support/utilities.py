@@ -10,6 +10,7 @@ from tensorflow.keras.models import load_model as load_kr_model
 from py4j.java_gateway import java_import
 from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.feature import IndexToString
+from pyspark.ml.wrapper import JavaModel
 
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import *
@@ -243,7 +244,7 @@ class SparkUtils:
         Gets the Model stage of a FIT PipelineModel
         """
         for i in SparkUtils.get_stages(pipeline):
-            if isinstance(i, SparkModel):
+            if isinstance(i, SparkModel) and not isinstance(i, JavaModel):
                 return i
         raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
 
