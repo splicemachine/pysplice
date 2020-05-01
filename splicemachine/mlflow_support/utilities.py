@@ -6,9 +6,11 @@ from io import BytesIO
 from h5py import File as h5_file
 import re
 
-from pyspark.ml.base import Model as SparkModel
 from tensorflow.keras.models import load_model as load_kr_model
 from py4j.java_gateway import java_import
+from pyspark.ml.base import Model as SparkModel
+from pyspark.ml.feature import IndexToString
+from pyspark.ml.wrapper import JavaModel
 
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import *
@@ -176,8 +178,8 @@ class SparkUtils:
         :return: stages list
         """
         if hasattr(pipeline, 'getStages'):
-            return pipeline.getStages()  # fit pipeline
-        return pipeline.stages  # unfit pipeline
+            return pipeline.getStages()  # unfit pipeline
+        return pipeline.stages  # fit pipeline
 
     @staticmethod
     def get_cols(transformer, get_input=True):
@@ -242,11 +244,29 @@ class SparkUtils:
         Gets the Model stage of a FIT PipelineModel
         """
         for i in SparkUtils.get_stages(pipeline):
-            # FIXME: We need a better way to determine if a stage is a model
-            if 'Model' in str(i.__class__) and i.__module__.split('.')[-1] in ['clustering', 'classification',
-                                                                               'regression']:
+            # StandardScaler is also implemented as a base Model and JavaModel for some reason but that's not a model
+            # So we need to make sure the stage isn't a feature
+            if isinstance(i, SparkModel) and isinstance(i, JavaModel) and 'feature' not in i.__module__:
                 return i
         raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
+
+    @staticmethod
+    def try_get_class_labels(pipeline):
+        """
+        Tries to get the class labels for a Spark Model. This will only work if the Pipeline has a Model and an IndexToString
+        where the inputCol of the IndexToString is the same as the predictionCol of the Model
+        :param pipeline: The fitted spark PipelineModel
+        :return: List[str] the class labels in order of numeric value (0,1,2 etc)
+        """
+        labels = []
+        if hasattr(pipeline, 'getStages'):
+            raise SpliceMachineException('The passed in pipeline has not been fit. Please pass in a fit pipeline')
+        model = SparkUtils.get_model_stage(pipeline)
+        for stage in SparkUtils.get_stages(pipeline):
+            if isinstance(stage, IndexToString): # It's an IndexToString
+                if stage.getOrDefault('inputCol') == model.getOrDefault('predictionCol'): #It's the correct IndexToString
+                    labels = stage.getOrDefault('labels')
+        return labels
 
     @staticmethod
     def parse_string_parameters(string_parameters):
@@ -371,6 +391,9 @@ class SparkUtils:
         """
         # Get model type
         modelType = SparkUtils.get_model_type(fittedPipe)
+        # See if the labels are in an IndexToString stage. Will either return List[str] or empty []
+        potential_clases = SparkUtils.try_get_class_labels(fittedPipe)
+        classes = classes if classes else potential_clases
         if classes:
             if modelType not in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB):
                 print('Prediction labels found but model is not type Classification. Removing labels')
@@ -611,11 +634,11 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
                        H2OModelType.CLASSIFICATION):
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
-            SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
+            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
     elif modelType == H2OModelType.KEY_VALUE_RETURN:
         for i in classes:
-            SQL_PRED_TABLE += f'\t{i} DOUBLE,\n'
+            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
     elif modelType in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR):
         SQL_PRED_TABLE += '\tPREDICTION INT,\n'
@@ -643,9 +666,9 @@ def create_vti_prediction_trigger(splice_context, schema_table_name, run_id, fea
     output_cols_VTI_reference = '' # Names references from the VTI (ie b.COL_NAME)
     output_cols_schema = ''  # Names with their datatypes (always DOUBLE)
     for i in classes:
-        output_column_names += f'{i},'
-        output_cols_VTI_reference += f'b.{i},'
-        output_cols_schema += f'{i} DOUBLE,'
+        output_column_names += f'"{i}",'
+        output_cols_VTI_reference += f'b."{i}",'
+        output_cols_schema += f'"{i}" DOUBLE,'
 
     raw_data = ''
     for i, col in enumerate(feature_columns):
@@ -740,7 +763,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
                         f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
     set_prediction_case_str = 'PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
-        SQL_PARSE_TRIGGER += f'{c}=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+        SQL_PARSE_TRIGGER += f'"{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
         set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
     set_prediction_case_str += '\t\tEND'
     if modelType == H2OModelType.KEY_VALUE_RETURN: # These models don't have an actual prediction
