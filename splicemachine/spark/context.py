@@ -52,6 +52,7 @@ class PySpliceContext:
                     "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
         java_import(self.jvm, "scala.collection.JavaConverters._")
         java_import(self.jvm, "com.splicemachine.derby.impl.*")
+        java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
         self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
             self.spark_session._wrapped._jsc)
         self.context = self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(
@@ -287,12 +288,18 @@ class PySpliceContext:
             print(f'Droping table {schema_table_name}')
             self.dropTable(schema_table_name)
 
-    def createTable(self, schema_table_name, dataframe, keys=None, create_table_options=None):
+    def createTable(self, schema_table_name, dataframe, keys=None, create_table_options=None, to_upper=False):
         """
         Creates a schema.table from a dataframe
         :param schema_table_name: str The schema.table to create
         :param dataframe: The Spark DataFrame to base the table off
         :param keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
+                            If False, the table will be created with lower case columns. Default False
         """
-        self.context.createTable(schema_table_name, dataframe._jdf.schema(), keys, create_table_options)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
+        # Need to convert List (keys) to scala seq
+        keys_seq = self.jvm.PythonUtils.toSeq(keys)
+        self.context.createTable(schema_table_name, dataframe._jdf.schema(), keys_seq, create_table_options)
