@@ -26,6 +26,7 @@ class PySpliceContext:
     """
     This class implements a SpliceMachineContext object (similar to the SparkContext object)
     """
+    _spliceSparkPackagesName = "com.splicemachine.spark.splicemachine.*"
 
     def _splicemachineContext(self):
         return self.jvm.com.splicemachine.spark.splicemachine.SplicemachineContext(self.jdbcurl)
@@ -51,6 +52,7 @@ class PySpliceContext:
 
         if not _unit_testing:  # Private Internal Argument to Override Using JVM
             self.spark_sql_context = sparkSession._wrapped
+            self.spark_session = sparkSession
             self.jvm = self.spark_sql_context._sc._jvm
             java_import(self.jvm, self._spliceSparkPackagesName)
             java_import(self.jvm,
@@ -64,6 +66,7 @@ class PySpliceContext:
         else:
             from .tests.mocked import MockedScalaContext
             self.spark_sql_context = sparkSession._wrapped
+            self.spark_session = sparkSession
             self.jvm = ''
             self.context = MockedScalaContext(self.jdbcurl)
 
@@ -82,7 +85,7 @@ class PySpliceContext:
         :param dataframe: A dataframe with column names to convert
         :param schema_table_name: The schema.table with the correct column cases to pull from the database
         """
-        cols = self.df('select top 1 * from {}'.format(schema_table_name)).columns
+        cols = self.df('select * from {} where 1=0'.format(schema_table_name)).columns
         # sort the columns case insensitive so we are replacing the right ones in the dataframe
         old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
         new_cols = sorted(cols, key=lambda s: s.lower())
@@ -104,6 +107,15 @@ class PySpliceContext:
         """
         return self.context.tableExists(schema_table_name)
 
+    def tableExists2(self, schema_name, table_name):
+        """
+        Check whether or not a table exists
+
+        :param schema_name: (string) Schema Name
+        :param table_name: (string) Table Name
+        """
+        return self.context.tableExists(schema_name, table_name)
+
     def dropTable(self, schema_table_name):  # works
         """
         Drop a specified table.
@@ -112,6 +124,15 @@ class PySpliceContext:
         """
         return self.context.dropTable(schema_table_name)
 
+    def dropTable2(self, schema_name, table_name):
+        """
+        Drop a specified table.
+
+        :param schema_name: (string) Schema Name
+        :param table_name: (string) Table Name
+        """
+        return self.context.dropTable(schema_name, table_name)
+
     def df(self, sql):
         """
         Return a Spark Dataframe from the results of a Splice Machine SQL Query
@@ -119,18 +140,66 @@ class PySpliceContext:
         :param sql: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: A Spark DataFrame containing the results
         """
-        return DataFrame(self.context.df(sql), self.spark_session._wrapped)
+        return DataFrame(self.context.df(sql), self.spark_sql_context)
 
     def insert(self, dataframe, schema_table_name):
         """
         Insert a dataframe into a table (schema.table).
 
         :param dataframe: (DF) The dataframe you would like to insert
-        :param schema_table_name: (string) The table in which you would like to insert the RDD
+        :param schema_table_name: (string) The table in which you would like to insert the dataframe
         """
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
+
+    def insertWithStatus(self, dataframe, schema_table_name, statusDirectory, badRecordsAllowed):
+        """
+        Insert a dataframe into a table (schema.table) while tracking and limiting records that fail to insert.
+        The status directory and number of badRecordsAllowed allow for duplicate primary keys to be
+        written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written
+        to the status directory.
+
+        :param dataframe: (DF) The dataframe you would like to insert
+        :param schema_table_name: (string) The table in which you would like to insert the dataframe
+        :param statusDirectory The status directory where bad records file will be created
+        :param badRecordsAllowed The number of bad records are allowed. -1 for unlimited
+        """
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        return self.context.insert(dataframe._jdf, schema_table_name, statusDirectory, badRecordsAllowed)
+
+    def insertRdd(self, rdd, schema, schema_table_name):
+        """
+        Insert an rdd into a table (schema.table).
+
+        :param rdd: (RDD) The RDD you would like to insert
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (string) The table in which you would like to insert the RDD
+        """
+        return self.insert(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
+
+    def insertRddWithStatus(self, rdd, schema, schema_table_name, statusDirectory, badRecordsAllowed):
+        """
+        Insert an rdd into a table (schema.table) while tracking and limiting records that fail to insert.
+        The status directory and number of badRecordsAllowed allow for duplicate primary keys to be
+        written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written
+        to the status directory.
+
+        :param rdd: (RDD) The RDD you would like to insert
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (string) The table in which you would like to insert the dataframe
+        :param statusDirectory The status directory where bad records file will be created
+        :param badRecordsAllowed The number of bad records are allowed. -1 for unlimited
+        """
+        return self.insertWithStatus(
+            self.createDataFrame(rdd, schema),
+            schema_table_name,
+            statusDirectory,
+            badRecordsAllowed
+        )
 
     def upsert(self, dataframe, schema_table_name):
         """
@@ -143,6 +212,19 @@ class PySpliceContext:
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.upsert(dataframe._jdf, schema_table_name)
 
+    def upsertWithRdd(self, rdd, schema, schema_table_name):
+        """
+        Upsert the data from an RDD into a table (schema.table).
+
+        :param rdd: (RDD) The RDD you would like to upsert
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (string) The table in which you would like to upsert the RDD
+        """
+        return self.upsert(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
+
     def delete(self, dataframe, schema_table_name):
         """
         Delete records in a dataframe based on joining by primary keys from the data frame.
@@ -152,6 +234,20 @@ class PySpliceContext:
         :param schema_table_name: (string) Splice Machine Table
         """
         return self.context.delete(dataframe._jdf, schema_table_name)
+
+    def deleteWithRdd(self, rdd, schema, schema_table_name):
+        """
+        Delete records using an rdd based on joining by primary keys from the rdd.
+        Be careful with column naming and case sensitivity.
+
+        :param rdd: (RDD) The RDD containing the primary keys you would like to delete from the table
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (string) Splice Machine Table
+        """
+        return self.delete(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
 
     def update(self, dataframe, schema_table_name):
         """
@@ -165,6 +261,21 @@ class PySpliceContext:
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.update(dataframe._jdf, schema_table_name)
+
+    def updateWithRdd(self, rdd, schema, schema_table_name):
+        """
+        Update data from an rdd for a specified schema_table_name (schema.table).
+        The keys are required for the update and any other columns provided will be updated
+        in the rows.
+
+        :param rdd: (RDD) The RDD you would like to use for updating the table
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (string) Splice Machine Table
+        """
+        return self.update(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
 
     def getSchema(self, schema_table_name):
         """
@@ -198,7 +309,7 @@ class PySpliceContext:
         :param query_string: (string) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
         :return: pyspark dataframe contains the result of query_string
         '''
-        return DataFrame(self.context.internalDf(query_string), self.spark_session._wrapped)
+        return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
 
     def rdd(self, schema_table_name, column_projection=None):
         """
@@ -293,6 +404,20 @@ class PySpliceContext:
             optionsMap.put(k, v)
         return self.context.bulkImportHFile(dataframe._jdf, schema_table_name, optionsMap)
 
+    def bulkImportHFileWithRdd(self, rdd, schema, schema_table_name, options):
+        """
+        Bulk Import HFile from an rdd into a schema.table
+        :param rdd: Input data
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: Full table name in the format of "schema.table"
+        :param options: Dictionary of options to be passed to --splice-properties; bulkImportDirectory is required
+        """
+        return self.bulkImportHFile(
+            self.createDataFrame(rdd, schema),
+            schema_table_name,
+            options
+        )
+
     def splitAndInsert(self, dataframe, schema_table_name, sample_fraction):
         """
         Sample the dataframe, split the table, and insert a dataFrame into a schema.table.
@@ -304,6 +429,15 @@ class PySpliceContext:
             For example, specify 0.005 if you want 0.5% of the data sampled.
         """
         return self.context.splitAndInsert(dataframe._jdf, schema_table_name, float(sample_fraction))
+
+    def createDataFrame(self, rdd, schema):
+        """
+        Creates a dataframe from a given rdd and schema.
+
+        :param rdd: Input data
+        :param schema: (StructType) The schema of the rows in the RDD
+        """
+        return self.spark_session.createDataFrame(rdd, schema)
 
     def _generateDBSchema(self, dataframe, types={}):
         """
@@ -350,44 +484,30 @@ class PySpliceContext:
         print('Dropping table {schema}.{table}'.format(schema=schema, table=table))
         self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema, table=table))
 
-    def createTable(self, dataframe, schema_table_name, new_schema=False, drop_table=False, types={}):
-        '''
-        Creates a schema.table from a dataframe
-        :param schema_table_name: String full table name in the format "schema.table_name"
-                                  If only a table name is provided (ie no '.' in the string) schema SPLICE will be assumed
-                                  If this table exists in the database already, it will be DROPPED and a new one will be created
-        :param dataframe: The dataframe that the table will be created for
-        :param new_schema: A boolean to create a new schema. If True, the function will create a new schema before creating the table. If the schema already exists, set to False [DEFAULT True]
-        :param drop_table: An optinal boolean to drop the table if it exists. [DEFAULT False]
-        :param types: An optional dictionary of type {string: string} containing column names and their respective SQL types. The values of the dictionary MUST be valid SQL types. See https://doc.splicemachine.com/sqlref_datatypes_intro.html
-            If None or if any types are missing, types will be assumed automatically from the dataframe schema as follows:
-                    BooleanType: BOOLEAN
-                    ByteType: TINYINT
-                    DateType: DATE
-                    DoubleType: DOUBLE
-                    DecimalType: DOUBLE
-                    IntegerType: INTEGER
-                    LongType: BIGINT
-                    NullType: VARCHAR(50)
-                    ShortType: SMALLINT
-                    StringType: VARCHAR(150)
-                    TimestampType: TIMESTAMP
-                    UnknownType: BLOB
-        '''
-        db_schema = self._generateDBSchema(dataframe, types=types)
-        schema, table = self._getCreateTableSchema(schema_table_name, new_schema=new_schema)
-        # Make sure table doesn't exists already
-        if not drop_table and self.tableExists(schema_table_name):
-            return ('ERROR: Table already exists. Please drop it or set drop_table option to True')
+    def _jstructtype(self, schema):
+        """
+        Convert python StructType to java StructType
+        """
+        return self.spark_session._jsparkSession.parseDataType(schema.json())
 
-        self._dropTableIfExists(schema, table)
-        sql = 'CREATE TABLE {schema}.{table}(\n'.format(schema=schema, table=table)
-        for name, typ in db_schema:
-            sql += '{} {},\n'.format(name, typ)
-        sql = sql[:-2] + ')'
-        print(sql)
-        self.execute(sql)
-
+    def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
+        """
+        Creates a schema.table from a schema
+        :param schema_table_name: str The schema.table to create
+        :param schema: (StructType) The schema that describes the columns of the table
+        :param keys: List[str] The primary keys. Default None
+        :param create_table_options: str The additional table-level SQL options. Default None
+        """
+        if keys:
+            keys_seq = self.jvm.PythonUtils.toSeq(keys)
+        else:
+            keys_seq = self.jvm.PythonUtils.toSeq([])
+        self.context.createTable(
+            schema_table_name,
+            self._jstructtype(schema),
+            keys_seq,
+            create_table_options
+        )
 
 class PySpliceContext2(PySpliceContext):
     """
