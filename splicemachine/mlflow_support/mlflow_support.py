@@ -20,6 +20,8 @@ from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
 from splicemachine.spark.context import PySpliceContext
 from splicemachine.spark.constants import CONVERSIONS
+from pyspark.sql.dataframe import DataFrame as SparkDF
+from pandas.core.frame import DataFrame as PandasDF
 
 _TESTING = env_vars.get("TESTING", False)
 _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
@@ -565,7 +567,10 @@ def _deploy_db(fittedModel,
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'
     schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
-    assert type(df) is pyspark.sql.dataframe.DataFrame, "Dataframe must be a PySpark dataframe!"
+    assert type(df) in (SparkDF, PandasDF), "Dataframe must be a PySpark or Pandas dataframe!"
+
+    if type(df) == PandasDF:
+        df = mlflow._splice_context.spark_session.createDataFrame(df)
 
     feature_columns = df.columns
     # Get the datatype of each column in the dataframe
