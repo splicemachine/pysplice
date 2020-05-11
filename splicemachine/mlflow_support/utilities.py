@@ -738,7 +738,7 @@ def validate_primary_key(primary_key):
         sql_datatype = regex.sub('', i[1]).upper()
         if sql_datatype not in SQL_TYPES:
             raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
-                             f'Value {primary_key[i][1]} should be a SQL type but isn\'t')
+                             f'Value {i[1]} should be a SQL type but isn\'t')
 
 
 def create_data_table(splice_context, schema_table_name, schema_str, primary_key,
