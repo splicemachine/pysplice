@@ -29,7 +29,7 @@ from tensorflow.keras.models import load_model as load_kr_model
 import h2o
 from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pyspark.ml.pipeline import PipelineModel
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 class SpliceMachineException(Exception):
@@ -824,7 +824,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
                                   feature_columns: List[str],
                                   schema_types: StructType,
                                   schema_str: str,
-                                  primary_key: List[(str, str)],
+                                  primary_key: List[Tuple[str, str]],
                                   classes: List[str],
                                   model_type: Enum,
                                   sklearn_args: Dict[str, str],
