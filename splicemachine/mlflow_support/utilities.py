@@ -236,8 +236,7 @@ class SKUtils:
 
         elif model_type == SklearnModelType.KEY_VALUE:
             # For models that have both predict and transform functions (like LDA)
-            if sklearn_args.get('predict_call') == 'transform' and hasattr(model, 'transform') \
-                    and hasattr(model, 'predict'):
+            if sklearn_args.get('predict_call') == 'transform' and hasattr(model, 'transform'):
                 params = model.get_params()
                 nclasses = params.get('n_clusters') or params.get('n_components')
                 classes = [f'C{i}' for i in range(nclasses)]
@@ -861,7 +860,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     for i in classes:
         output_column_names += f'"{i}",'
         output_cols_VTI_reference += f'b."{i}",'
-        output_cols_schema += f'"{i}" DOUBLE,'
+        output_cols_schema += f'"{i}" DOUBLE,' if i != 'prediction' else f'"{i}" INT,' #for sklearn predict_proba
 
     raw_data = ''
     for i, col in enumerate(feature_columns):
