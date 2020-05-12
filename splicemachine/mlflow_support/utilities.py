@@ -838,7 +838,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
 
     #predict_call = sklearn_args.get('predict_call', )
     if model_type == SklearnModelType.KEY_VALUE:
-        prediction_call += '{predict_call}, {predict_args})'
+        prediction_call += ", '{predict_call}', '{predict_args}')"
         if not sklearn_args: # This must be a .transform call
             predict_call, predict_args = 'transform', None
         elif 'predict_call' in sklearn_args and 'predict_args' in sklearn_args:
