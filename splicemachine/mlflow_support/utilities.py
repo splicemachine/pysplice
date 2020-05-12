@@ -244,7 +244,7 @@ class SKUtils:
                 classes = [f'C{i}' for i in range(nclasses)]
             elif 'predict_args' in sklearn_args:
                 classes = ['prediction', sklearn_args.get('predict_args').lstrip('return_')]
-            elif hasattr(model, 'classes_') and model.classes_:
+            elif hasattr(model, 'classes_') and model.classes_.size != 0:
                 classes = [f'C{i}' for i in model.classes_]
             elif hasattr(model, 'get_params'):
                 params = model.get_params()
