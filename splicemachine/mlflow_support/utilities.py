@@ -197,7 +197,7 @@ class SKUtils:
         """
         exc = ''
         keys = set(sklearn_args.keys())
-        if len(keys - set('predict_call', 'predict_args')) != 0:
+        if keys - {'predict_call', 'predict_args'} != set():
             exc = "You've passed in an sklearn_args key that is not valid. Valid keys are ('predict_call', 'predict_args')"
         if len(sklearn_args) > 2:
             exc ='Only predict_call and predict_args are allowed in sklearn_args!'
