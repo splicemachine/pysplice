@@ -240,7 +240,7 @@ class SKUtils:
             # For models that have both predict and transform functions (like LDA)
             if sklearn_args.get('predict_call') == 'transform' and hasattr(model, 'transform'):
                 params = model.get_params()
-                nclasses = params.get('n_clusters') or params.get('n_components')
+                nclasses = params.get('n_clusters') or params.get('n_components') or 2
                 classes = [f'C{i}' for i in range(nclasses)]
             elif 'predict_args' in sklearn_args:
                 classes = ['prediction', sklearn_args.get('predict_args').lstrip('return_')]
