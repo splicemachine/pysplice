@@ -198,13 +198,13 @@ class SKUtils:
         exc = ''
         if len(sklearn_args) > 2:
             exc ='Only predict_call and predict_args are allowed in sklearn_args!'
-        elif 'predict_call' in sklearn_args:
+        if 'predict_call' in sklearn_args:
             p = sklearn_args['predict_call']
             if not hasattr(model, p):
                 exc = f'predict_call set to {p} but function call not available in model {model}'
             if p != 'predict' and 'predict_args' in sklearn_args:
                 exc = f'predict_args passed in but predict_call is {p}. This combination is not allowed'
-        elif 'predict_args' in sklearn_args:
+        if 'predict_args' in sklearn_args:
             p = sklearn_args['predict_args']
             if p not in ('return_std', 'return_cov') and not isinstance(model, SKPipeline): # Pipelines have difference rules for params
                 t = ('return_std', 'return_cov')
