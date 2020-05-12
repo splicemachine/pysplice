@@ -768,8 +768,13 @@ def create_data_table(splice_context, schema_table_name, schema_str, primary_key
     splice_context.execute(SQL_TABLE)
 
 
-def create_data_preds_table(splice_context, run_id, schema_table_name, classes, primary_key,
-                            model_type, verbose):
+def create_data_preds_table(splice_context: PySpliceContext,
+                            run_id: str,
+                            schema_table_name: str,
+                            classes: List[str],
+                            primary_key: List[Tuple[str,str]],
+                            model_type: Enum,
+                            verbose: bool) -> None:
     """
     Creates the data prediction table that holds the prediction for the rows of the data table
     :param splice_context: pysplicectx
@@ -802,8 +807,7 @@ def create_data_preds_table(splice_context, run_id, schema_table_name, classes, 
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-
-    elif model_type == H2OModelType.KEY_VALUE_RETURN:
+    elif model_type in (H2OModelType.KEY_VALUE_RETURN, SklearnModelType.KEY_VALUE):
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
