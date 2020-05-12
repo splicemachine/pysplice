@@ -542,7 +542,7 @@ def _deploy_db(fittedModel,
                                                                        - Determines the function call for the model
                                                                        If blank, predict will be used
                                                                        (or transform if model doesn't have predict)
-                        'predict_params': 'return_std' or 'return_cov' - For Bayesian and Gaussian models
+                        'predict_args': 'return_std' or 'return_cov' - For Bayesian and Gaussian models
                                                                          Only one can be specified
                         If the model does not have the option specified, it will be ignored.
     :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging

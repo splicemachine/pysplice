@@ -188,31 +188,31 @@ class SKUtils:
     def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> None:
         """
         Make sure sklearn args contains valid values. sklearn_args can only contain 2 keys.
-        predict_call and predict_params.
+        predict_call and predict_args.
         predict_call: 'predict'/'predict_proba'/'transform'
-        predict_params: 'return_std'/'return_cov'
+        predict_args: 'return_std'/'return_cov'
         :param model: ScikitModel
         :param sklearn_args: Dict[str, str]
         :return: None
         """
         exc = ''
         if len(sklearn_args) > 2:
-            exc ='Only predict_call and predict_params are allowed in sklearn_args!'
+            exc ='Only predict_call and predict_args are allowed in sklearn_args!'
         elif 'predict_call' in sklearn_args:
             p = sklearn_args['predict_call']
             if not hasattr(model, p):
                 exc = f'predict_call set to {p} but function call not available in model {model}'
-            if p != 'predict' and 'predict_params' in sklearn_args:
-                exc = f'predict_params passed in but predict_call is {p}. This combination is not allowed'
-        elif 'predict_params' in sklearn_args:
-            p = sklearn_args['predict_params']
+            if p != 'predict' and 'predict_args' in sklearn_args:
+                exc = f'predict_args passed in but predict_call is {p}. This combination is not allowed'
+        elif 'predict_args' in sklearn_args:
+            p = sklearn_args['predict_args']
             if p not in ('return_std', 'return_cov') and not isinstance(model, SKPipeline): # Pipelines have difference rules for params
                 t = ('return_std', 'return_cov')
-                exc = f'predict_params value is invalid. Available options are {t}'
+                exc = f'predict_args value is invalid. Available options are {t}'
             else:
                 model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
                 if p not in model_params.parameters:
-                    exc = f'predict_params set to {p} but that parameter is not available for this model!'
+                    exc = f'predict_args set to {p} but that parameter is not available for this model!'
         if exc:
             raise SpliceMachineException(exc)
 
