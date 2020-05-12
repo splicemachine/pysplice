@@ -180,9 +180,9 @@ class SKUtils:
                 'WARN: A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.'
                 '\nTo replace, use a new run_id'
             )
-        byte_stream = save_pickle_string(model)
-
-        insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
+        else:
+            byte_stream = save_pickle_string(model)
+            insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
     @staticmethod
     def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> None:
