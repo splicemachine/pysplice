@@ -221,6 +221,7 @@ class SKUtils:
         if exc:
             raise SpliceMachineException(exc)
         if sklearn_args.get('predict_call') == 'predict' and 'predict_args' not in sklearn_args:
+            # If the user only passed in predict, then sklearn args is effectively empty
             sklearn_args = None
         return sklearn_args
 
@@ -274,15 +275,18 @@ class SKUtils:
         :param pipeline: The Sklearn Pipeline
         :return: SKlearnModelType
         """
-        for _, step in pipeline.steps:
+        model_type = None
+        for _, step in pipeline.steps[::-1]: # Go through steps backwards because model likely last step
             if isinstance(step, (sklearn.base.ClusterMixin, sklearn.base.ClassifierMixin)):
                 model_type = SklearnModelType.POINT_PREDICTION_CLF
+                break
             elif isinstance(step, sklearn.base.RegressorMixin):
                 model_type = SklearnModelType.POINT_PREDICTION_REG
-            else:
-                raise SpliceMachineException('Could not determine the type of Pipeline! Model stage is not of '
+                break
+        if not model_type:
+            raise SpliceMachineException('Could not determine the type of Pipeline! Model stage is not of '
                                              'classification, regression or clustering.')
-            return model_type
+        return model_type
             
 
     @staticmethod
