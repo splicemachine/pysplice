@@ -185,7 +185,7 @@ class SKUtils:
             insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
     @staticmethod
-    def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> None:
+    def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> Dict[str, str]:
         """
         Make sure sklearn args contains valid values. sklearn_args can only contain 2 keys.
         predict_call and predict_args.
@@ -193,15 +193,15 @@ class SKUtils:
         predict_args: 'return_std'/'return_cov'
         :param model: ScikitModel
         :param sklearn_args: Dict[str, str]
-        :return: None
+        :return: sklearn_args
         """
         exc = ''
         keys = set(sklearn_args.keys())
         if keys - {'predict_call', 'predict_args'} != set():
             exc = "You've passed in an sklearn_args key that is not valid. Valid keys are ('predict_call', 'predict_args')"
-        if len(sklearn_args) > 2:
+        elif len(sklearn_args) > 2:
             exc ='Only predict_call and predict_args are allowed in sklearn_args!'
-        if 'predict_call' in sklearn_args:
+        elif 'predict_call' in sklearn_args:
             p = sklearn_args['predict_call']
             if not hasattr(model, p):
                 exc = f'predict_call set to {p} but function call not available in model {model}'
@@ -220,6 +220,9 @@ class SKUtils:
                 exc = f"predict_args contains invalid arguments. Valid arguments are 'predict_call' and 'predict_args'"
         if exc:
             raise SpliceMachineException(exc)
+        if sklearn_args.get('predict_call') == 'predict' and 'predict_args' not in sklearn_args:
+            sklearn_args = None
+        return sklearn_args
 
     @staticmethod
     def prep_model_for_deployment(splice_context: PySpliceContext,
@@ -228,7 +231,7 @@ class SKUtils:
                                   run_id: str,
                                   sklearn_args: Dict[str, str]) -> (str, List[str]):
 
-        SKUtils.validate_sklearn_args(model, sklearn_args)
+        sklearn_args = SKUtils.validate_sklearn_args(model, sklearn_args)
 
         model_type = SKUtils.get_model_type(model, sklearn_args)
         SKUtils.insert_sklearn_model(splice_context, run_id, model)
