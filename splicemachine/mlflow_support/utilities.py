@@ -213,6 +213,8 @@ class SKUtils:
                 model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
                 if p not in model_params.parameters:
                     exc = f'predict_args set to {p} but that parameter is not available for this model!'
+        elif sklearn_args and 'predict_args' not in sklearn_args and 'predict_call' not in sklearn_args:
+                exc = f"predict_args contains invalid arguments. Valid arguments are 'predict_call' and 'predict_args'"
         if exc:
             raise SpliceMachineException(exc)
 
