@@ -211,7 +211,7 @@ class SKUtils:
                 exc = f'predict_params value is invalid. Available options are {t}'
             else:
                 model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
-                if p not in model_params:
+                if p not in model_params.parameters:
                     exc = f'predict_params set to {p} but that parameter is not available for this model!'
         if exc:
             raise SpliceMachineException(exc)
