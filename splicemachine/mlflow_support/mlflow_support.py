@@ -323,7 +323,7 @@ def _download_artifact(name, local_path, run_id=None):
     file_ext = path.splitext(local_path)[1]
 
     run_id = run_id or mlflow.active_run().info.run_uuid
-    blob_data, f_etx = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+    blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
     if not file_ext: # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
         local_path += f'/{name}.{f_etx}'
