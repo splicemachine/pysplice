@@ -1,10 +1,7 @@
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from io import BytesIO
-from os import path, remove
-from shutil import rmtree
-from zipfile import ZipFile
+from os import path
 from sys import version as py_version
 
 import gorilla
@@ -12,18 +9,25 @@ import mlflow
 import requests
 from requests.auth import HTTPBasicAuth
 from mleap.pyspark import spark_support
-import h2o
 import pyspark
+import sklearn
+from sklearn.base import BaseEstimator as ScikitModel
+from tensorflow import __version__ as tf_version
+from tensorflow.keras import __version__ as keras_version
+from tensorflow.keras import Model as KerasModel
 
 from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
 from splicemachine.spark.context import PySpliceContext
 from splicemachine.spark.constants import CONVERSIONS
+from pyspark.sql.dataframe import DataFrame as SparkDF
+from pandas.core.frame import DataFrame as PandasDF
 
 _TESTING = env_vars.get("TESTING", False)
 _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 
 _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
+mlflow.client = _CLIENT
 
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
@@ -50,6 +54,23 @@ def _get_current_run_data():
     return _CLIENT.get_run(mlflow.active_run().info.run_id).data
 
 
+@_mlflow_patch('get_run_ids_by_name')
+def _get_run_ids_by_name(run_name, experiment_id=None):
+    """
+    Gets a run id from the run name. If there are multiple runs with the same name, all run IDs are returned
+    :param run_name: The name of the run
+    :param experiment_id: The experiment to search in. If None, all experiments are searched
+    :return: List of run ids
+    """
+    exps = [experiment_id] if experiment_id else _CLIENT.list_experiments()
+    run_ids = []
+    for exp in exps:
+        for run in _CLIENT.search_runs(exp.experiment_id):
+            if run_name == run.data.tags['mlflow.runName']:
+                run_ids.append(run.data.tags['Run ID'])
+    return run_ids
+
+
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
@@ -70,7 +91,7 @@ def _check_for_splice_ctx():
 
     if not hasattr(mlflow, '_splice_context'):
         raise SpliceMachineException(
-            "You must run `mlflow.register_splice_context(py_splice_context) before "
+            "You must run `mlflow.register_splice_context(pysplice_context) before "
             "you can run this mlflow operation!"
         )
 
@@ -135,17 +156,26 @@ def _log_model(model, name='model'):
     run_id = mlflow.active_run().info.run_uuid
     if 'h2o' in model_class.lower():
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
-        model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
-        with open(model_path, 'rb') as artifact:
-            byte_stream = bytearray(bytes(artifact.read()))
-        insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext='h2omodel')
-        rmtree('/tmp/model')
+        H2OUtils.log_h2o_model(mlflow._splice_context, model, name, run_id)
 
-    elif 'spark' in model_class.lower():
+    elif isinstance(model, SparkModel):
         mlflow.set_tag('splice.spark_version', pyspark.__version__)
-        SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id=run_id)
+        SparkUtils.log_spark_model(mlflow._splice_context, model, name, run_id)
+
+    elif isinstance(model, ScikitModel):
+        mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
+        SKUtils.log_sklearn_model(mlflow._splice_context, model, name, run_id)
+
+    elif isinstance(model, KerasModel): # We can't handle keras models with a different backend
+        mlflow.set_tag('splice.keras_version', keras_version)
+        mlflow.set_tag('splice.tf_version', tf_version)
+        KerasUtils.log_keras_model(mlflow._splice_context, model, name, run_id)
+
+
     else:
-        raise SpliceMachineException('Currently we only support logging Spark and H2O models.')
+        raise SpliceMachineException('Model type not supported for logging.'
+                                     'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
+                                     'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -248,9 +278,9 @@ def _log_model_params(pipeline_or_model):
     for param in verbose_parameters:
         try:
             value = float(verbose_parameters[param])
-            mlflow.log_param('Hyperparameter- ' + param.split('-')[0], value)
+            mlflow.log_param(param.split('-')[0], value)
         except:
-            mlflow.log_param('Hyperparameter- ' + param.split('-')[0], verbose_parameters[param])
+            mlflow.log_param(param.split('-')[0], verbose_parameters[param])
 
 
 @_mlflow_patch('timer')
@@ -263,12 +293,14 @@ def _timer(timer_name, param=True):
     :return:
     """
     try:
+        print(f'Starting Code Block {timer_name}...', end=' ')
         t0 = time.time()
         yield
     finally:
         t1 = time.time() - t0
         # Syntactic Sugar
         (mlflow.log_param if param else mlflow.log_metric)(timer_name, t1)
+        print('Done.')
         print(
             f"Code Block {timer_name}:\nRan in {round(t1, 3)} secs\nRan in {round(t1 / 60, 3)} mins"
         )
@@ -291,7 +323,7 @@ def _download_artifact(name, local_path, run_id=None):
     file_ext = path.splitext(local_path)[1]
 
     run_id = run_id or mlflow.active_run().info.run_uuid
-    blob_data, f_etx = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+    blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
     if not file_ext: # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
         local_path += f'/{name}.{f_etx}'
@@ -313,14 +345,18 @@ def _load_model(run_id=None, name='model'):
     run_id = run_id or mlflow.active_run().info.run_uuid
     model_blob, file_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
-    if file_ext == 'sparkmodel':
+    if file_ext == FileExtensions.spark:
         model = SparkUtils.load_spark_model(mlflow._splice_context, model_blob)
+    elif file_ext == FileExtensions.h2o:
+        model = H2OUtils.load_h2o_model(model_blob)
+    elif file_ext == FileExtensions.sklearn:
+        model = SKUtils.load_sklearn_model(model_blob)
+    elif file_ext == FileExtensions.keras:
+        model = KerasUtils.load_keras_model(model_blob)
+    else:
+        raise SpliceMachineException(f'Model extension {file_ext} was not a supported model type. '
+                                     f'Supported model extensions are {FileExtensions.get_valid()}')
 
-    elif file_ext == 'h2omodel':
-        with open('/tmp/model', 'wb') as file:
-            file.write(model_blob)
-        model = h2o.load_model('/tmp/model')
-        remove('/tmp/model')
     return model
 
 
@@ -475,13 +511,22 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
     return _initiate_job(request_payload, '/api/rest/initiate')
 
 @_mlflow_patch('deploy_database')
-def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
-               run_id=None, classes=None, verbose=False, replace=False) -> None:
+def _deploy_db(fittedModel,
+               df,
+               db_schema_name,
+               db_table_name,
+               primary_key,
+               run_id: str=None,
+               classes=None,
+               sklearn_args={},
+               verbose=False,
+               replace=False) -> None:
     """
-    Function to deploy a trained (Spark for now) model to the Database. This creates 2 tables: One with the features of the model, and one with the prediction and metadata.
+    Function to deploy a trained (currently Spark, Sklearn or H2O) model to the Database.
+    This creates 2 tables: One with the features of the model, and one with the prediction and metadata.
     They are linked with a column called MOMENT_ID
 
-    :param fittedPipe: (spark pipeline or model) The fitted pipeline to deploy
+    :param fittedModel: (ML pipeline or model) The fitted pipeline to deploy
     :param df: (Spark DF) The dataframe used to train the model
                 NOTE: this dataframe should NOT be transformed by the model. The columns in this df are the ones
                 that will be used to create the table.
@@ -489,9 +534,19 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     :param db_table_name: (str) the table name to deploy to. If none, the run_id will be used for the table name(s)
     :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key
     :param run_id: (str) The active run_id
-    :param classes: List[str] The classes (prediction values) for the model being deployed.
-                    NOTE: If not supplied, the table will have column named c0,c1,c2 etc for each class
-    :param verbose: bool Whether or not to print out the queries being created. Helpful for debugging
+    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
+                    NOTE: If not supplied, the table will have default column names for each class
+    :param sklearn_args: (dict{str: str}) Prediction options for sklearn models
+                        Available key value options:
+                        'predict_call': 'predict', 'predict_proba', or 'transform'
+                                                                       - Determines the function call for the model
+                                                                       If blank, predict will be used
+                                                                       (or transform if model doesn't have predict)
+                        'predict_args': 'return_std' or 'return_cov' - For Bayesian and Gaussian models
+                                                                         Only one can be specified
+                        If the model does not have the option specified, it will be ignored.
+    :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging
+    :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
 
     This function creates the following:
     * Table (default called DATA_{run_id}) where run_id is the run_id of the mlflow run associated to that model. This will have a column for each feature in the feature vector as well as a MOMENT_ID as primary key
@@ -499,7 +554,7 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
         USER which is the current user who made the request
         EVAL_TIME which is the CURRENT_TIMESTAMP
         MOMENT_ID same as the DATA table to link predictions to rows in the table
-        PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be c0,c1,c2 etc for classification models
+        PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
         A column for each class of the predictor with the value being the probability/confidence of the model if applicable
     * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table,
         calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run
@@ -508,10 +563,14 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     """
     _check_for_splice_ctx()
     classes = classes if classes else []
+
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     db_table_name = db_table_name if db_table_name else f'data_{run_id}'
     schema_table_name = f'{db_schema_name}.{db_table_name}' if db_schema_name else db_table_name
-    assert type(df) is pyspark.sql.dataframe.DataFrame, "Dataframe must be a PySpark dataframe!"
+    assert type(df) in (SparkDF, PandasDF), "Dataframe must be a PySpark or Pandas dataframe!"
+
+    if type(df) == PandasDF:
+        df = mlflow._splice_context.spark_session.createDataFrame(df)
 
     feature_columns = df.columns
     # Get the datatype of each column in the dataframe
@@ -520,14 +579,13 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
     # Make sure primary_key is valid format
     validate_primary_key(primary_key)
 
-
-    # library = get_model_library(run_id)
-    typ = str(type(fittedPipe))
-    library = 'mleap' if 'pyspark' in typ else 'h2omojo' if 'h2o' in typ else None
+    library = get_model_library(fittedModel)
     if library == DBLibraries.MLeap:
-        modelType, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, df, classes, run_id)
+        model_type, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, df, classes, run_id)
     elif library == DBLibraries.H2OMOJO:
-        modelType, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedPipe, classes, run_id)
+        model_type, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id)
+    elif library == DBLibraries.SKLearn:
+        model_type, classes = SKUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id, sklearn_args)
     else:
         raise SpliceMachineException('Model type is not supported for in DB Deployment!. '
                                      'Currently, model must be H2O or Spark.')
@@ -548,23 +606,24 @@ def _deploy_db(fittedPipe, df, db_schema_name, db_table_name, primary_key,
 
         # Create table 2: DATA_PREDS
         print('Creating prediction table ...', end=' ')
-        create_data_preds_table(mlflow._splice_context, run_id, schema_table_name, classes, primary_key, modelType, verbose)
+        create_data_preds_table(mlflow._splice_context, run_id, schema_table_name, classes, primary_key, model_type, verbose)
         print('Done.')
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
-        if modelType == H2OModelType.KEY_VALUE_RETURN:
-            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types, schema_str, primary_key, classes, verbose)
+        if model_type in (H2OModelType.KEY_VALUE_RETURN, SklearnModelType.KEY_VALUE):
+            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns,
+                                          schema_types, schema_str, primary_key, classes, model_type, sklearn_args, verbose)
         else:
             create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
-                                    schema_str, primary_key, modelType, verbose)
+                                    schema_str, primary_key, model_type, verbose)
         print('Done.')
 
-        if modelType in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
+        if model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
                          H2OModelType.CLASSIFICATION):
             # Create Trigger 2: model parsing
             print('Creating parsing trigger ...', end=' ')
-            create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, modelType, verbose)
+            create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, model_type, verbose)
             print('Done.')
     except Exception as e:
         import traceback
@@ -585,7 +644,8 @@ def apply_patches():
     """
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
-               _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director]
+               _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
+               _get_run_ids_by_name]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))

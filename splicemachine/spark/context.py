@@ -19,6 +19,7 @@ import os
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
+from pyspark.sql.types import _parse_datatype_json_string
 from splicemachine.spark.constants import CONVERSIONS
 
 
@@ -59,6 +60,7 @@ class PySpliceContext:
                         "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
             java_import(self.jvm, "scala.collection.JavaConverters._")
             java_import(self.jvm, "com.splicemachine.derby.impl.*")
+            java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
             self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
                 self.spark_sql_context._jsc)
             self.context = self._splicemachineContext()
@@ -75,9 +77,10 @@ class PySpliceContext:
         Returns a dataframe with all of the columns in uppercase
         :param dataframe: The dataframe to convert to uppercase
         """
-        for col in dataframe.columns:
-            dataframe = dataframe.withColumnRenamed(col, col.upper())
+        for s in dataframe.schema:
+            s.name = s.name.upper() # Modifying the schema automatically modifies the Dataframe (passed by reference)
         return dataframe
+
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
         """
@@ -85,12 +88,8 @@ class PySpliceContext:
         :param dataframe: A dataframe with column names to convert
         :param schema_table_name: The schema.table with the correct column cases to pull from the database
         """
-        cols = self.df('select * from {} where 1=0'.format(schema_table_name)).columns
-        # sort the columns case insensitive so we are replacing the right ones in the dataframe
-        old_cols = sorted(dataframe.columns, key=lambda s: s.lower())
-        new_cols = sorted(cols, key=lambda s: s.lower())
-        for old_col, new_col in zip(old_cols, new_cols):
-            dataframe = dataframe.withColumnRenamed(old_col, new_col)
+        schema = self.getSchema(schema_table_name)
+        dataframe = dataframe.rdd.toDF(schema) #Fastest way to replace the column case if changed
         return dataframe
 
     def getConnection(self):
@@ -283,7 +282,6 @@ class PySpliceContext:
 
         :param schema_table_name: (DF) Table name
         """
-        from pyspark.sql.types import _parse_datatype_json_string
         return _parse_datatype_json_string(self.context.getSchema(schema_table_name).json())
 
     def execute(self, query_string):
@@ -477,7 +475,7 @@ class PySpliceContext:
 
         return schema, table
 
-    def _dropTableIfExists(self, schema, table):
+    def _dropTableIfExists(self, schema_table_name):
         """
         Drop table if it exists
         """
@@ -490,6 +488,20 @@ class PySpliceContext:
         """
         return self.spark_session._jsparkSession.parseDataType(schema.json())
 
+    def createTable(self, schema_table_name, dataframe, keys=None, create_table_options=None, to_upper=False):
+        """
+        Creates a schema.table from a dataframe
+        :param schema_table_name: str The schema.table to create
+        :param dataframe: The Spark DataFrame to base the table off
+        :param keys: List[str] the primary keys. Default None
+        :param create_table_options: str The additional table-level SQL options default None
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
+                            If False, the table will be created with lower case columns. Default False
+        """
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
+        self.context.createTableWithSchema(schema_table_name, df.schema, keys=keys, create_table_options=create_table_options)
+        
     def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
         """
         Creates a schema.table from a schema
@@ -529,3 +541,4 @@ class PySpliceContext2(PySpliceContext):
         self.kafkaServers = kafkaServers
         self.kafkaPollTimeout = kafkaPollTimeout
         super().__init__(sparkSession, JDBC_URL, _unit_testing)
+

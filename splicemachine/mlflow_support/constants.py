@@ -6,6 +6,7 @@ MLEAP_VERSION = '0.15.0'
 class DBLibraries():
     MLeap = 'mleap'
     H2OMOJO = 'h2omojo'
+    SKLearn = 'sklearn'
     SUPPORTED_LIBRARIES = [MLeap, H2OMOJO]
 
 class H2OModelType(Enum): # Based off https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/ModelCategory.java
@@ -23,3 +24,34 @@ class SparkModelType(Enum):
     REGRESSION = 1
     CLUSTERING_WITH_PROB = 2
     CLUSTERING_WO_PROB = 3
+
+class SklearnModelType(Enum):
+    """
+    Model Types for SKLearn models
+    Sklearn isn't as well defined in their model categories, so we are going to classify them by their return values
+    """
+    POINT_PREDICTION_REG = 0
+    POINT_PREDICTION_CLF = 1
+    KEY_VALUE = 2
+
+
+class FileExtensions():
+    """
+    Class containing names for
+    valid File Extensions
+    """
+    spark: str = "spark"
+    keras: str = "h5"
+    h2o: str = "h2o"
+    sklearn: str = "pkl"
+
+    @staticmethod
+    def get_valid() -> tuple:
+        """
+        Return a tuple of the valid file extensions
+        in Database
+        :return: (tuple) valid statuses
+        """
+        return (
+            FileExtensions.spark, FileExtensions.keras, FileExtensions.h2o, FileExtensions.sklearn
+        )
