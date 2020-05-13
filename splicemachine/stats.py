@@ -268,9 +268,7 @@ class DecisionTreeVisualizer(object):
         DecisionTreeVisualizer.add_node(dot, '', '', json_d,
                                         realroot=True)
         dot.render(tree_name)
-        print(f'Generated pdf file of tree. You can view it in your Jupyter directory under {dot.filepath}.pdf\n' \
-              'If you want your tree visualized in your Jupyter notebook, simply enter the returned value from this function ' \
-              '(ie `dot`) in a new cell and run that cell')
+        print(f'Generated pdf file of tree. You can view it in your Jupyter directory under {dot.filepath}.pdf\n')
         dot.view()
         return (dot)
 
