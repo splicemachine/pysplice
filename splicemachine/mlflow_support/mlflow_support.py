@@ -198,7 +198,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
     x = prepared_statement.executeQuery()
     x.next()
-    timestamp = x.getInt(1)
+    timestamp = x.getLong(1)
     prepared_statement.close()
 
     tags = tags if tags else {}
