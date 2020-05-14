@@ -1,2 +1,2 @@
 from .context import PySpliceContext
-from .context import PySpliceContext2
+from .context import ExtPySpliceContext

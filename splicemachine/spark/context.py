@@ -521,7 +521,7 @@ class PySpliceContext:
             create_table_options
         )
 
-class PySpliceContext2(PySpliceContext):
+class ExtPySpliceContext(PySpliceContext):
     """
     This class implements a SplicemachineContext object from com.splicemachine.spark2
     """
