@@ -98,39 +98,41 @@ class PySpliceContext:
         """
         return self.context.getConnection()
 
-    def tableExists(self, schema_table_name):
+    def tableExists(self, schema_and_or_table_name, table_name=None):
         """
         Check whether or not a table exists
 
-        :param schema_table_name: (string) Table Name
-        """
-        return self.context.tableExists(schema_table_name)
+        Call it like:
+            tableExists('schemaName.tableName')
+        Or:
+            tableExists('schemaName', 'tableName')
 
-    def tableExists2(self, schema_name, table_name):
+        :param schema_and_or_table_name: (string) Pass the schema name in this param when passing the table_name param,
+          or pass schemaName.tableName in this param without passing the table_name param
+        :param table_name: (optional) (string) Table Name, used when schema_and_or_table_name contains only the schema name
         """
-        Check whether or not a table exists
+        if table_name:
+            return self.context.tableExists(schema_and_or_table_name, table_name)
+        else:
+            return self.context.tableExists(schema_and_or_table_name)
 
-        :param schema_name: (string) Schema Name
-        :param table_name: (string) Table Name
-        """
-        return self.context.tableExists(schema_name, table_name)
-
-    def dropTable(self, schema_table_name):  # works
+    def dropTable(self, schema_and_or_table_name, table_name=None):
         """
         Drop a specified table.
 
-        :param schema_table_name: (optional) (string) schemaName.tableName
-        """
-        return self.context.dropTable(schema_table_name)
+        Call it like:
+            dropTable('schemaName.tableName')
+        Or:
+            dropTable('schemaName', 'tableName')
 
-    def dropTable2(self, schema_name, table_name):
+        :param schema_and_or_table_name: (string) Pass the schema name in this param when passing the table_name param,
+          or pass schemaName.tableName in this param without passing the table_name param
+        :param table_name: (optional) (string) Table Name, used when schema_and_or_table_name contains only the schema name
         """
-        Drop a specified table.
-
-        :param schema_name: (string) Schema Name
-        :param table_name: (string) Table Name
-        """
-        return self.context.dropTable(schema_name, table_name)
+        if table_name:
+            return self.context.dropTable(schema_and_or_table_name, table_name)
+        else:
+            return self.context.dropTable(schema_and_or_table_name)
 
     def df(self, sql):
         """
