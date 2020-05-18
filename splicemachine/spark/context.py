@@ -288,18 +288,22 @@ class PySpliceContext:
             print(f'Droping table {schema_table_name}')
             self.dropTable(schema_table_name)
 
-    def createTable(self, schema_table_name, dataframe, keys=None, create_table_options=None, to_upper=False):
+    def createTable(self, schema_table_name, dataframe, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
         """
         Creates a schema.table from a dataframe
         :param schema_table_name: str The schema.table to create
         :param dataframe: The Spark DataFrame to base the table off
-        :param keys: List[str] the primary keys. Default None
+        :param primary_keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
         :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
                             If False, the table will be created with lower case columns. Default False
+        :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists,
+                           the function will throw an exception.
         """
         if to_upper:
             dataframe = self.toUpper(dataframe)
+        if drop_table:
+            self._dropTableIfExists(schema_table_name)
         # Need to convert List (keys) to scala seq
-        keys_seq = self.jvm.PythonUtils.toSeq(keys)
+        keys_seq = self.jvm.PythonUtils.toSeq(primary_keys)
         self.context.createTable(schema_table_name, dataframe._jdf.schema(), keys_seq, create_table_options)
