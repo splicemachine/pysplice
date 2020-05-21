@@ -909,7 +909,7 @@ def create_data_preds_table(splice_context: PySpliceContext,
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-    elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE):
+    elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
