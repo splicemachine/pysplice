@@ -15,16 +15,20 @@ from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.feature import IndexToString
 from pyspark.ml.wrapper import JavaModel
 from pyspark.sql.types import StructType
+from pyspark.sql.dataframe import DataFrame as SparkDF
 
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import *
 from mleap.pyspark.spark_support import SimpleSparkSerializer
+from mleap.version import __version__ as MLEAP_VERSION
 
 import sklearn.base
 from sklearn import __version__ as sklearn_version
 from sklearn.pipeline import Pipeline as SKPipeline
 from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow.keras.models import load_model as load_kr_model
+from tensorflow.keras import Model as KerasModel
+from tensorflow.keras import __version__ as KERAS_VERSION
 
 import h2o
 from h2o.estimators.estimator_base import ModelBase as H2OModel
@@ -52,11 +56,16 @@ class H2OUtils:
                                   classes: List[str],
                                   run_id: str) -> (H2OModelType, List[str]):
         """
-        All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
-        :param fittedPipe:
-        :param df:
+        Gets the H2O mojo model
+        Gets the model type
+        Inserts the raw model into the MODELS table
+        gets the classes (if applicable)
+        returns the model type and classes
+        :param splice_context:
+        :param model:
         :param classes:
-        :return:  model (mleap), model_type (Enum), classes (List(str))
+        :param run_id:
+        :return:
         """
 
         # Get the H2O MOJO model and insert it into the MODELS table
@@ -66,7 +75,7 @@ class H2OUtils:
         # Get model type
         model_type, model_category = H2OUtils.get_model_type(h2omojo)
         if classes:
-            if model_type not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.CLASSIFICATION):
+            if model_type not in (H2OModelType.KEY_VALUE, H2OModelType.CLASSIFICATION):
                 print('Prediction labels found but model type does not support classes. Removing labels')
                 classes = None
             else:
@@ -80,7 +89,7 @@ class H2OUtils:
             if model_type == H2OModelType.CLASSIFICATION:
                 # Add a column for each class of the prediction to output the probability of the prediction
                 classes = [f'p{i}' for i in list(rawmojo.getDomainValues(rawmojo.getResponseIdx()))]
-            elif model_type == H2OModelType.KEY_VALUE_RETURN:
+            elif model_type == H2OModelType.KEY_VALUE:
                 # These types have defined outputs, and we can preformat the column names
                 if model_category == 'AutoEncoder':  # The input columns are the output columns (reconstruction)
                     classes = [f'{i}_reconstr' for i in list(rawmojo.getNames())]
@@ -110,7 +119,7 @@ class H2OUtils:
         elif cat in ('Binomial', 'Multinomial', 'Ordinal'):
             model_type = H2OModelType.CLASSIFICATION
         elif cat in ('AutoEncoder', 'TargetEncoder', 'DimReduction', 'WordEmbedding', 'AnomalyDetection'):
-            model_type = H2OModelType.KEY_VALUE_RETURN
+            model_type = H2OModelType.KEY_VALUE
         else:
             raise SpliceMachineException(f"H2O model {cat} is not supported! Only models with MOJOs are currently supported.")
         return model_type, cat
@@ -230,7 +239,7 @@ class SKUtils:
                                   model: ScikitModel,
                                   classes: List[str],
                                   run_id: str,
-                                  sklearn_args: Dict[str, str]) -> (str, List[str]):
+                                  sklearn_args: Dict[str, str]) -> (SklearnModelType, List[str]):
 
         sklearn_args = SKUtils.validate_sklearn_args(model, sklearn_args)
 
@@ -326,6 +335,81 @@ class KerasUtils:
     def load_keras_model(model_blob):
         hfile = h5_file(BytesIO(model_blob), 'r')
         return load_kr_model(hfile)
+
+    @staticmethod
+    def insert_keras_model(splice_context: PySpliceContext, run_id: str, model: KerasModel) -> None:
+        model.save('/tmp/model.h5')
+        with open('/tmp/model.h5', 'rb') as f:
+            byte_stream = bytearray(bytes(f.read()))
+        insert_model(splice_context, run_id, byte_stream, 'keras', KERAS_VERSION)
+        remove('/tmp/model.h5')
+
+    @staticmethod
+    def get_keras_model_type(model: KerasModel, pred_threshold: float) -> KerasModelType:
+        """
+        Keras models are either Key value returns or "regression" (single value)
+        If the output layer has multiple nodes, or there is a threshold (for binary classification), it will
+           be a key value return because n values will be returned (n = # output nodes + 1)
+        :param model:
+        :param pred_threshold:
+        :return:
+        """
+        if model.layers[-1].output_shape[-1] > 1 or pred_threshold:
+            model_type = KerasModelType.KEY_VALUE
+        else:
+            model_type = KerasModelType.REGRESSION
+
+    @staticmethod
+    def validate_keras_model(model: KerasModel) -> None:
+        """
+        Right now, we only support feed forward models. Vector inputs and Vector outputs only
+        When we move to LSTMs we will need to change that
+        :param model:
+        :return:
+        """
+        input_shape = model.layers[0].input_shape
+        output_shape = model.layes[-1].output_shape
+        if len(input_shape) != 2 or input_shape[0] or len(output_shape) != 2 or output_shape[0]:
+            raise SpliceMachineException("We currently only support feed-forward models. The input and output shapes"
+                                         "of the models must be (None, #). Please raise an issue here: https://github.com/splicemachine/pysplice/issues")
+
+    @staticmethod
+    def prep_model_for_deployment(splice_context: PySpliceContext,
+                                  model: KerasModel,
+                                  classes: List[str],
+                                  run_id: str,
+                                  pred_threshold: float) -> (KerasModelType, List[str]):
+        """
+        Inserts the model into the MODELS table for deployment
+        Gets the Keras model type
+        Gets the classes (if applicable)
+        :param splice_context: PySpliceContext
+        :param model: KerasModel
+        :param classes: List[str] the class labels
+        :param run_id: str
+        :param pred_threshold: double
+        :return: (KerasModelType, List[str]) the modelType and the classes
+        """
+        KerasUtils.validate_keras_model(model)
+        KerasUtils.insert_keras_model(splice_context, run_id, model)
+        model_type: KerasModelType = KerasUtils.get_keras_model_type(model, pred_threshold)
+        if model_type == KerasModelType.KEY_VALUE:
+            output_shape = model.layes[-1].output_shape
+            if classes and len(classes) != output_shape[-1]:
+                raise SpliceMachineException(f'The number of classes, {len(classes)}, does not match '
+                                             f'the output shape of your model, {output_shape}')
+            elif not classes:
+                classes = ['prediction'] + [f'output{i+1}' for i in range(output_shape[-1])]
+            else:
+                classes = ['prediction'] + classes
+            if len(classes) > 2 and pred_threshold:
+                print(f"Found multiclass model with pred_threshold {pred_threshold}. Ignoring threshold.")
+            return model_type, classes
+
+
+
+
+
 
 
 class SparkUtils:
@@ -542,13 +626,17 @@ class SparkUtils:
         return pipeline
 
     @staticmethod
-    def prep_model_for_deployment(splice_context, fittedPipe, df, classes, run_id):
+    def prep_model_for_deployment(splice_context: PySpliceContext,
+                                  fittedPipe: PipelineModel,
+                                  df: SparkDF,
+                                  classes: List[str],
+                                  run_id: str) -> (SparkModelType, List[str]):
         """
         All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
         :param fittedPipe:
         :param df:
         :param classes:
-        :return:  model (mleap), model_type (Enum), classes (List(str))
+        :return:
         """
         # Get model type
         model_type = SparkUtils.get_model_type(fittedPipe)
@@ -593,6 +681,10 @@ def get_model_library(model) -> DBLibraries:
         lib = DBLibraries.MLeap
     elif isinstance(model, ScikitModel):
         lib = DBLibraries.SKLearn
+    elif isinstance(model, KerasModel):
+        lib = DBLibraries.Keras
+    else:
+        raise SpliceMachineException(f"Submitted Model is not valid for database deployment! Valid models are {DBLibraries.SUPPORTED_LIBRARIES}")
     return lib
 
 
@@ -625,7 +717,7 @@ def get_user():
             " Cloud Jupyter is currently unsupported")
 
 
-def insert_model(splice_context, run_id, byte_array, library, version):
+def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str, version: str) -> None:
     """
     Insert a serialized model into the Mlmanager models table
     :param splice_context: pysplicectx
@@ -811,7 +903,8 @@ def create_data_preds_table(splice_context: PySpliceContext,
         SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
         pk_cols += f'{i[0]},'
 
-    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG):
+    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG,
+                      KerasModelType.REGRESSION):
         SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
 
     elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
@@ -819,7 +912,7 @@ def create_data_preds_table(splice_context: PySpliceContext,
         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-    elif model_type in (H2OModelType.KEY_VALUE_RETURN, SklearnModelType.KEY_VALUE):
+    elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE):
         for i in classes:
             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
 
@@ -844,13 +937,13 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
                                   classes: List[str],
                                   model_type: Enum,
                                   sklearn_args: Dict[str, str],
+                                  pred_threshold: float,
                                   verbose: bool) -> None:
 
     prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, '{schema_str}'"
 
     #predict_call = sklearn_args.get('predict_call', )
     if model_type == SklearnModelType.KEY_VALUE:
-        prediction_call += ", '{predict_call}', '{predict_args}')"
         if not sklearn_args: # This must be a .transform call
             predict_call, predict_args = 'transform', None
         elif 'predict_call' in sklearn_args and 'predict_args' in sklearn_args:
@@ -859,8 +952,13 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
             predict_call, predict_args = 'predict', sklearn_args['predict_args']
         elif 'predict_call' in sklearn_args:
             predict_call, predict_args = sklearn_args['predict_call'], None
-    else:
-        prediction_call += ')'
+
+        prediction_call += f", '{predict_call}', '{predict_args}'"
+
+    elif model_type == KerasModelType.KEY_VALUE and len(classes) == 2 and pred_threshold:
+        prediction_call +=  f', {pred_threshold}'
+
+    prediction_call += ')'
 
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
@@ -889,11 +987,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     raw_data = raw_data[:-5].lstrip('||')
     schema_str_pred_call = schema_str.replace('\t', '').replace('\n', '').rstrip(',')
 
-    if model_type == SklearnModelType.KEY_VALUE:
-        prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call,
-                                                 predict_call=predict_call, predict_args=predict_args)
-    else:
-        prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
+    prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
 
 
     SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
@@ -930,7 +1024,7 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
     elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
-    elif model_type == H2OModelType.KEY_VALUE_RETURN:
+    elif model_type == H2OModelType.KEY_VALUE:
         prediction_call = 'MLMANAGER.PREDICT_KEY_VALUE'
 
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
@@ -979,7 +1073,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
         SQL_PARSE_TRIGGER += f'"{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
         set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
     set_prediction_case_str += '\t\tEND'
-    if model_type == H2OModelType.KEY_VALUE_RETURN:  # These models don't have an actual prediction
+    if model_type == H2OModelType.KEY_VALUE:  # These models don't have an actual prediction
         SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + ' WHERE'
     else:
         SQL_PARSE_TRIGGER += set_prediction_case_str + ' WHERE'
