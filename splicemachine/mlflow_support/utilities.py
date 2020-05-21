@@ -368,7 +368,7 @@ class KerasUtils:
         :return:
         """
         input_shape = model.layers[0].input_shape
-        output_shape = model.layes[-1].output_shape
+        output_shape = model.layers[-1].output_shape
         if len(input_shape) != 2 or input_shape[0] or len(output_shape) != 2 or output_shape[0]:
             raise SpliceMachineException("We currently only support feed-forward models. The input and output shapes"
                                          "of the models must be (None, #). Please raise an issue here: https://github.com/splicemachine/pysplice/issues")
@@ -394,7 +394,7 @@ class KerasUtils:
         KerasUtils.insert_keras_model(splice_context, run_id, model)
         model_type: KerasModelType = KerasUtils.get_keras_model_type(model, pred_threshold)
         if model_type == KerasModelType.KEY_VALUE:
-            output_shape = model.layes[-1].output_shape
+            output_shape = model.layers[-1].output_shape
             if classes and len(classes) != output_shape[-1]:
                 raise SpliceMachineException(f'The number of classes, {len(classes)}, does not match '
                                              f'the output shape of your model, {output_shape}')
