@@ -955,7 +955,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
         prediction_call += f", '{predict_call}', '{predict_args}'"
 
     elif model_type == KerasModelType.KEY_VALUE and len(classes) == 2 and pred_threshold:
-        prediction_call +=  f', {double(pred_threshold)}'
+        prediction_call +=  f", '{pred_threshold}'"
 
     prediction_call += ')'
 
