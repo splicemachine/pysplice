@@ -116,8 +116,6 @@ class PySpliceContext:
         :param dataframe: (DF) The dataframe you would like to insert
         :param schema_table_name: (string) The table in which you would like to insert the RDD
         """
-        # make sure column names are in the correct case
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
     def upsert(self, dataframe, schema_table_name):
