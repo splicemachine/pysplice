@@ -404,11 +404,7 @@ class KerasUtils:
                 classes = ['prediction'] + classes
             if len(classes) > 2 and pred_threshold:
                 print(f"Found multiclass model with pred_threshold {pred_threshold}. Ignoring threshold.")
-            return model_type, classes
-
-
-
-
+        return model_type, classes
 
 
 
