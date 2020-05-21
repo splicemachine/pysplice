@@ -36,7 +36,7 @@ class SklearnModelType(Enum):
     Model Types for SKLearn models
     Sklearn isn't as well defined in their model categories, so we are going to classify them by their return values
     """
-    POINT_PREDICTION_REG = 0
+    REGRESSION = 0
     POINT_PREDICTION_CLF = 1
     KEY_VALUE = 2
 

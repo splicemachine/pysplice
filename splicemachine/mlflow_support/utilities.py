@@ -290,7 +290,7 @@ class SKUtils:
                 model_type = SklearnModelType.POINT_PREDICTION_CLF
                 break
             elif isinstance(step, sklearn.base.RegressorMixin):
-                model_type = SklearnModelType.POINT_PREDICTION_REG
+                model_type = SklearnModelType.REGRESSION
                 break
         if not model_type:
             raise SpliceMachineException('Could not determine the type of Pipeline! Model stage is not of '
@@ -308,7 +308,7 @@ class SKUtils:
                 if isinstance(model, SKPipeline):
                     model_type = SKUtils.get_pipeline_model_type(model)
                 elif isinstance(model, sklearn.base.RegressorMixin):
-                    model_type = SklearnModelType.POINT_PREDICTION_REG
+                    model_type = SklearnModelType.REGRESSION
                 elif isinstance(model, (sklearn.base.ClusterMixin, sklearn.base.ClassifierMixin)):
                     model_type = SklearnModelType.POINT_PREDICTION_CLF
                 else:
@@ -899,7 +899,7 @@ def create_data_preds_table(splice_context: PySpliceContext,
         SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
         pk_cols += f'{i[0]},'
 
-    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG,
+    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.REGRESSION,
                       KerasModelType.REGRESSION):
         SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
 
@@ -1014,7 +1014,8 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
 
     if model_type in (SparkModelType.CLASSIFICATION, H2OModelType.CLASSIFICATION):
         prediction_call = 'MLMANAGER.PREDICT_CLASSIFICATION'
-    elif model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG):
+    elif model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION,
+                        SklearnModelType.REGRESSION, KerasModelType.REGRESSION):
         prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
     elif model_type == SparkModelType.CLUSTERING_WITH_PROB:
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
