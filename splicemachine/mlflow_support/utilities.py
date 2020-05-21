@@ -358,6 +358,7 @@ class KerasUtils:
             model_type = KerasModelType.KEY_VALUE
         else:
             model_type = KerasModelType.REGRESSION
+        return model_type
 
     @staticmethod
     def validate_keras_model(model: KerasModel) -> None:
