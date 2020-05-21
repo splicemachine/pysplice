@@ -598,7 +598,7 @@ def _deploy_db(fittedModel,
         model_type, classes = SKUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id, sklearn_args)
     elif library == DBLibraries.Keras:
         # TODO: finish me tomorrow
-        model_type, classes = KerasUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id. pred_threshold)
+        model_type, classes = KerasUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id, pred_threshold)
 
 
     print(f'Deploying model {run_id} to table {schema_table_name}')
