@@ -118,10 +118,8 @@ class PySpliceContext:
         :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
                             If False, the table will be created with lower case columns. Default False
         """
-        # make sure column names are in the correct case
         if to_upper:
             dataframe = self.toUpper(dataframe)
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
     def upsert(self, dataframe, schema_table_name):
