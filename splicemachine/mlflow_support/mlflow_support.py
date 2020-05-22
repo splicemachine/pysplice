@@ -154,7 +154,7 @@ def _log_model(model, name='model'):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-    if 'h2o' in model_class.lower():
+    if isinstance(model, H2OModel):
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
         H2OUtils.log_h2o_model(mlflow._splice_context, model, name, run_id)
 

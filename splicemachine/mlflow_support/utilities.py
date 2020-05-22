@@ -674,7 +674,7 @@ def get_model_library(model) -> DBLibraries:
     """
     lib = None
     model_class = str(model.__class__)
-    if 'h2o' in model_class.lower():
+    if isinstance(model, H2OModel):
         lib = DBLibraries.H2OMOJO
     elif isinstance(model, SparkModel):
         lib = DBLibraries.MLeap
