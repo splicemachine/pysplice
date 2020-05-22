@@ -402,7 +402,7 @@ class KerasUtils:
                 raise SpliceMachineException(f'The number of classes, {len(classes)}, does not match '
                                              f'the output shape of your model, {output_shape}')
             elif not classes:
-                classes = ['prediction'] + [f'output{i+1}' for i in range(output_shape[-1])]
+                classes = ['prediction'] + [f'output{i}' for i in range(output_shape[-1])]
             else:
                 classes = ['prediction'] + classes
             if len(classes) > 2 and pred_threshold:
@@ -672,8 +672,6 @@ def get_model_library(model) -> DBLibraries:
     :param model: The trained model
     :return: DBLibraries
     """
-    lib = None
-    model_class = str(model.__class__)
     if isinstance(model, H2OModel):
         lib = DBLibraries.H2OMOJO
     elif isinstance(model, SparkModel):
