@@ -35,8 +35,6 @@ from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pyspark.ml.pipeline import PipelineModel
 from typing import List, Dict, Tuple
 
-from numpy import double
-
 
 class SpliceMachineException(Exception):
     pass
