@@ -109,14 +109,18 @@ class PySpliceContext:
         """
         return DataFrame(self.context.df(sql), self.spark_session._wrapped)
 
-    def insert(self, dataframe, schema_table_name):
+    def insert(self, dataframe, schema_table_name, to_upper=False):
         """
         Insert a dataframe into a table (schema.table).
 
         :param dataframe: (DF) The dataframe you would like to insert
-        :param schema_table_name: (string) The table in which you would like to insert the RDD
+        :param schema_table_name: (string) The table in which you would like to insert the DF
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
+                            If False, the table will be created with lower case columns. Default False
         """
         # make sure column names are in the correct case
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
@@ -288,11 +292,11 @@ class PySpliceContext:
             print(f'Droping table {schema_table_name}')
             self.dropTable(schema_table_name)
 
-    def createTable(self, schema_table_name, dataframe, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
+    def createTable(self, dataframe, schema_table_name, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
         """
         Creates a schema.table from a dataframe
-        :param schema_table_name: str The schema.table to create
         :param dataframe: The Spark DataFrame to base the table off
+        :param schema_table_name: str The schema.table to create
         :param primary_keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
         :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
