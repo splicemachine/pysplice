@@ -64,8 +64,8 @@ class PySpliceContext:
         :param dataframe: The dataframe to convert to uppercase
         """
         for s in dataframe.schema:
-            s.name = s.name.upper() # Modifying the schema automatically modifies the Dataframe (passed by reference)
-        return dataframe
+            s.name = s.name.upper()
+        return dataframe.rdd.toDF(dataframe.schema) # You need to re-generate the dataframe for the capital letters to take effect
 
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
