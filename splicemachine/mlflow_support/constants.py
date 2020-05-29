@@ -1,19 +1,18 @@
 from enum import Enum
 
-# The MLeap package does not include a __version__ so we'll store it here
-MLEAP_VERSION = '0.15.0'
 # When storing models for in-DB deployment, we save the model with a name.
 class DBLibraries():
     MLeap = 'mleap'
     H2OMOJO = 'h2omojo'
     SKLearn = 'sklearn'
-    SUPPORTED_LIBRARIES = [MLeap, H2OMOJO]
+    Keras = 'keras'
+    SUPPORTED_LIBRARIES = [MLeap, H2OMOJO, SKLearn, Keras]
 
 class H2OModelType(Enum): # Based off https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/ModelCategory.java
     REGRESSION = 0 # Models that return a single Double value (Regression, HGLMRegression)
     SINGULAR = 1 # Models that return a single Int value (Clustering)
     CLASSIFICATION = 2 # Models that only return N classes with values associated (Binomial, Multinomial, Ordinal)
-    KEY_VALUE_RETURN = 3 # Models whose output labels are known (AutoEncoder, TargetEncoder, DimReduction, WordEmbedding, AnomalyDetection)
+    KEY_VALUE = 3 # Models whose output labels are known (AutoEncoder, TargetEncoder, DimReduction, WordEmbedding, AnomalyDetection)
 
 
 class SparkModelType(Enum):
@@ -30,9 +29,17 @@ class SklearnModelType(Enum):
     Model Types for SKLearn models
     Sklearn isn't as well defined in their model categories, so we are going to classify them by their return values
     """
-    POINT_PREDICTION_REG = 0
+    REGRESSION = 0
     POINT_PREDICTION_CLF = 1
     KEY_VALUE = 2
+
+class KerasModelType(Enum):
+    """
+    Model Types for SKLearn models
+    Sklearn isn't as well defined in their model categories, so we are going to classify them by their return values
+    """
+    REGRESSION = 0
+    KEY_VALUE = 1
 
 
 class FileExtensions():

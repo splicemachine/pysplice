@@ -154,7 +154,7 @@ def _log_model(model, name='model'):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-    if 'h2o' in model_class.lower():
+    if isinstance(model, H2OModel):
         mlflow.set_tag('splice.h2o_version', h2o.__version__)
         H2OUtils.log_h2o_model(mlflow._splice_context, model, name, run_id)
 
@@ -520,6 +520,7 @@ def _deploy_db(fittedModel,
                classes=None,
                sklearn_args={},
                verbose=False,
+               pred_threshold = None,
                replace=False) -> None:
     """
     Function to deploy a trained (currently Spark, Sklearn or H2O) model to the Database.
@@ -546,10 +547,18 @@ def _deploy_db(fittedModel,
                                                                          Only one can be specified
                         If the model does not have the option specified, it will be ignored.
     :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging
+    :param pred_threshold: (double) A prediction threshold for *Keras* binary classification models
+                            If the model type isn't Keras, this parameter will be ignored
+                            NOTE: If the model type is Keras, the output layer has 1 node, and pred_threshold is None,
+                                  you will NOT receive a class prediction, only the output of the final layer (like model.predict()).
+                                  If you want a class prediction
+                                  for your binary classification problem, you MUST pass in a threshold.
     :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
 
+
     This function creates the following:
-    * Table (default called DATA_{run_id}) where run_id is the run_id of the mlflow run associated to that model. This will have a column for each feature in the feature vector as well as a MOMENT_ID as primary key
+    * Table (default called DATA_{run_id}) where run_id is the run_id of the mlflow run associated to that model.
+        This will have a column for each feature in the feature vector as well as a MOMENT_ID as primary key
     * Table (default called DATA_{run_id}_PREDS) That will have the columns:
         USER which is the current user who made the request
         EVAL_TIME which is the CURRENT_TIMESTAMP
@@ -558,7 +567,8 @@ def _deploy_db(fittedModel,
         A column for each class of the predictor with the value being the probability/confidence of the model if applicable
     * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table,
         calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run
-    * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, parsing the prediction probabilities and filling in proper column values
+    * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted,
+        parsing the prediction probabilities and filling in proper column values
 
     """
     _check_for_splice_ctx()
@@ -586,9 +596,8 @@ def _deploy_db(fittedModel,
         model_type, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id)
     elif library == DBLibraries.SKLearn:
         model_type, classes = SKUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id, sklearn_args)
-    else:
-        raise SpliceMachineException('Model type is not supported for in DB Deployment!. '
-                                     'Currently, model must be H2O or Spark.')
+    elif library == DBLibraries.Keras:
+        model_type, classes = KerasUtils.prep_model_for_deployment(mlflow._splice_context, fittedModel, classes, run_id, pred_threshold)
 
 
     print(f'Deploying model {run_id} to table {schema_table_name}')
@@ -611,9 +620,9 @@ def _deploy_db(fittedModel,
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
-        if model_type in (H2OModelType.KEY_VALUE_RETURN, SklearnModelType.KEY_VALUE):
-            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns,
-                                          schema_types, schema_str, primary_key, classes, model_type, sklearn_args, verbose)
+        if model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
+            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+                                          schema_str, primary_key, classes, model_type, sklearn_args, pred_threshold, verbose)
         else:
             create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
                                     schema_str, primary_key, model_type, verbose)
