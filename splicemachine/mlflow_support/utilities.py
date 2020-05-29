@@ -1,7 +1,7 @@
 from os import environ as env_vars, popen as rbash, system as bash, remove
 from sys import getsizeof
 from shutil import rmtree
-from pickle import dumps as save_pickle_string, loads as load_pickle_string
+from cloudpickle import dumps as save_pickle_string, loads as load_pickle_string
 from io import BytesIO
 from functools import partial
 from h5py import File as h5_file
