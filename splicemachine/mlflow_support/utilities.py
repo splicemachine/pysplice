@@ -1,5 +1,5 @@
 from os import environ as env_vars, popen as rbash, system as bash, remove
-from sys import getsizeof
+from sys import getsizeof, setrecursionlimit
 from shutil import rmtree
 from cloudpickle import dumps as save_pickle_string, loads as load_pickle_string
 from io import BytesIO
@@ -34,7 +34,6 @@ import h2o
 from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pyspark.ml.pipeline import PipelineModel
 from typing import List, Dict, Tuple
-
 
 class SpliceMachineException(Exception):
     pass
@@ -173,6 +172,7 @@ class H2OUtils:
 class SKUtils:
     @staticmethod
     def log_sklearn_model(splice_context: PySpliceContext, model: ScikitModel, name: str, run_id: str):
+        setrecursionlimit(50000) # So we can pickle very large, recursive models (dependencies)
         byte_stream = save_pickle_string(model)
         insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.sklearn)
 
@@ -190,6 +190,7 @@ class SKUtils:
                 '\nTo replace, use a new run_id'
             )
         else:
+            setrecursionlimit(50000) # So we can pickle very large, recursive models (dependencies)
             byte_stream = save_pickle_string(model)
             insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
