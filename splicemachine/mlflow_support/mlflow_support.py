@@ -148,7 +148,6 @@ def _log_model(model, name='model'):
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise SpliceMachineException("Only one model is permitted per run.")
 
-    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
     model_class = str(model.__class__)
     mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
@@ -171,11 +170,12 @@ def _log_model(model, name='model'):
         mlflow.set_tag('splice.tf_version', tf_version)
         KerasUtils.log_keras_model(mlflow._splice_context, model, name, run_id)
 
-
     else:
         raise SpliceMachineException('Model type not supported for logging.'
                                      'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
                                      'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
+
+    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
