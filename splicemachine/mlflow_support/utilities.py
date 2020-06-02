@@ -175,7 +175,7 @@ class SKUtils:
     def log_sklearn_model(splice_context: PySpliceContext, model: ScikitModel, name: str, run_id: str):
         # byte_stream = save_pickle_string(model)
         cloudpickle.dump(model, open('/tmp/model.pkl','wb'))
-        byte_stream = bytearray(bytes(open('/tmp/model.pkl').read()))
+        byte_stream = bytearray(bytes(open('/tmp/model.pkl', 'rb').read()))
         remove('/tmp/model.pkl')
         insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.sklearn)
 
@@ -195,7 +195,7 @@ class SKUtils:
         else:
             # byte_stream = save_pickle_string(model)
             cloudpickle.dump(model, open('/tmp/model.pkl','wb'))
-            byte_stream = bytearray(bytes(open('/tmp/model.pkl').read()))
+            byte_stream = bytearray(bytes(open('/tmp/model.pkl', 'rb').read()))
             remove('/tmp/model.pkl')
             insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
