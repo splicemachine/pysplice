@@ -525,11 +525,11 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
 @_mlflow_patch('deploy_database')
 def _deploy_db(db_schema_name,
                db_table_name,
+               run_id,
                primary_key=None,
                df = None,
                create_model_table = False,
                model_cols = None,
-               run_id=None,
                classes=None,
                sklearn_args={},
                verbose=False,
@@ -542,11 +542,13 @@ def _deploy_db(db_schema_name,
 
     :param db_schema_name: (str) the schema name to deploy to. If None, the currently set schema will be used.
     :param db_table_name: (str) the table name to deploy to. If none, the run_id will be used for the table name(s)
-    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key.
-                        If you are deploying to a table that already exists, this primary/composite key must exist in the table
+    :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
+
 
     OPTIONAL PARAMETERS:
-
+    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key.
+                        If you are deploying to a table that already exists, this primary/composite key must exist in the table
+                        If you are creating the table in this function, you MUST pass in a primary key
     :param df: (Spark or Pandas DF) The dataframe used to train the model
                 NOTE: this dataframe should NOT be transformed by the model. The columns in this df are the ones
                 that will be used to create the table.
@@ -555,7 +557,6 @@ def _deploy_db(db_schema_name,
     :param predictor_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
                                         IN THAT ORDER. The columns passed here must exist in the table.
-    :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
     :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
                     NOTE: If not supplied, the table will have default column names for each class
     :param sklearn_args: (dict{str: str}) Prediction options for sklearn models
