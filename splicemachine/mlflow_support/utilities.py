@@ -1188,7 +1188,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param verbose: (bool) whether to print the SQL query
     """
     SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
-                        f'\n \tBEFORE INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
+                        f'\n \tBEFORE INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n' \
                         f' \tFOR EACH ROW\n \t\tBEGIN ATOMIC\n\t set '
     set_prediction_case_str = 'NEWROW.PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
