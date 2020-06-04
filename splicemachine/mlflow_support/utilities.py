@@ -1107,14 +1107,14 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
 
 
-    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) --splice-properties insertMode=UPSERT'
-    SQL_PRED_TRIGGER += f'\nSELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
+    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) --splice-properties insertMode=UPSERT\n'
+    SQL_PRED_TRIGGER += f'SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
                         f' as b ({output_cols_schema[:-1]})'
 
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
-    splice_context.execute(SQL_PRED_TRIGGER.replace('\n', ' ').replace('\t', ' '))
+    splice_context.execute(SQL_PRED_TRIGGER.replace('\t', ' '))
 
 
 def create_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns,
