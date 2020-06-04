@@ -647,7 +647,7 @@ def _deploy_db(db_schema_name,
         # Create/Alter table 1: DATA
         if create_model_table:
             print('Creating model table ...', end=' ')
-            create_model_pred_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, primary_key, model_type, verbose)
+            create_model_deployment_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, primary_key, model_type, verbose)
             print('Done.')
         else:
             print('Altering provided table for deployment')

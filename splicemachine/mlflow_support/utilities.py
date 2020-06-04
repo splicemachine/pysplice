@@ -853,14 +853,14 @@ def validate_primary_key(splice_ctx: PySpliceContext,
         return pks
 
 
-def create_model_pred_table(splice_context: PySpliceContext,
-                      run_id: str,
-                      schema_table_name: str,
-                      schema_str: str,
-                      classes: List[str],
-                      primary_key: List[Tuple[str,str]],
-                      model_type: Enum,
-                      verbose: bool) -> None:
+def create_model_deployment_table(splice_context: PySpliceContext,
+                                  run_id: str,
+                                  schema_table_name: str,
+                                  schema_str: str,
+                                  classes: List[str],
+                                  primary_key: List[Tuple[str,str]],
+                                  model_type: Enum,
+                                  verbose: bool) -> None:
     """
     Creates the table that holds the columns of the feature vector as well as a unique MOMENT_ID
     :param splice_context: pysplicectx
@@ -876,12 +876,12 @@ def create_model_pred_table(splice_context: PySpliceContext,
         raise SpliceMachineException(
             f'The table {schema_table_name} already exists. To deploy to an existing table, do not pass in a dataframe or '
             f'The create_model_table parameter')
-    SQL_TABLE = f'''CREATE TABLE {schema_table_name} (' \
+    SQL_TABLE = f"""CREATE TABLE {schema_table_name} (\
                 \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
                 \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                \tRUN_ID VARCHAR(50) DEFAULT \'{run_id}\',
-                \n + {schema_str}
-                '''
+                \tRUN_ID VARCHAR(50) DEFAULT '{run_id}',
+                \n {schema_str}
+                """
 
     pk_cols = ''
     for i in primary_key:
