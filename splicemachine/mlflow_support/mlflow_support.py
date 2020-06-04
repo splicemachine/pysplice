@@ -18,6 +18,7 @@ from tensorflow.keras import Model as KerasModel
 
 from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
+from splicemachine.mlflow_support.utilities import _get_feature_columns_and_types, _get_df_for_mleap
 from splicemachine.spark.context import PySpliceContext
 from splicemachine.spark.constants import CONVERSIONS
 from pyspark.sql.dataframe import DataFrame as SparkDF
