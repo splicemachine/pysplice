@@ -651,7 +651,7 @@ def _deploy_db(db_schema_name,
             print('Done.')
         else:
             print('Altering provided table for deployment')
-            alter_model_table
+            alter_model_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, model_type, verbose)
 
         # # Create table 2: DATA_PREDS
         # print('Creating prediction table ...', end=' ')
@@ -674,7 +674,7 @@ def _deploy_db(db_schema_name,
             print('Creating parsing trigger ...', end=' ')
             create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, model_type, verbose)
             print('Done.')
-        mlflow._splice_context.execute('commit')
+
     except Exception as e:
         import traceback
         print('Model deployment failed. Rolling back transactions')
