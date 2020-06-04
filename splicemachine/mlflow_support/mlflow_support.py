@@ -603,8 +603,8 @@ def _deploy_db(db_schema_name,
     fitted_model = _load_model(run_id)
 
     # So we can rollback on failure
-    mlflow._splice_context.execute('AUTOCOMMIT OFF')
-    mlflow._splice_context.execute('SAVEPOINT predeploy')
+    # mlflow._splice_context.execute('AUTOCOMMIT OFF')
+    # mlflow._splice_context.execute('SAVEPOINT predeploy')
     classes = classes if classes else []
 
     schema_table_name = f'{db_schema_name}.{db_table_name}'
@@ -678,7 +678,7 @@ def _deploy_db(db_schema_name,
     except Exception as e:
         import traceback
         print('Model deployment failed. Rolling back transactions')
-        mlflow._splice_context.execute('ROLLBACK TO SAVEPOINT predeploy')
+        # mlflow._splice_context.execute('ROLLBACK TO SAVEPOINT predeploy')
         # drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id)
         exc = 'Model deployment failed. Rolling back transactions.\n'
         if not verbose:
