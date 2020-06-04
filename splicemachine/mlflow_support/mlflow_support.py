@@ -612,7 +612,7 @@ def _deploy_db(db_schema_name,
     feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
                                                                    model_cols, schema_table_name)
 
-    if create_model_table and not df:
+    if create_model_table and df is None: # Need to compare to None, truth value of df is ambiguous
         raise SpliceMachineException("If you'd like to create the model table as part of this deployment, you must pass in a dataframe")
 
 
