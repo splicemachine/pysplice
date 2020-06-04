@@ -1168,7 +1168,7 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
     # Cleanup + schema for PREDICT call
     SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t', '').replace('\n',
                                                                                                            '').rstrip(
-        ',') + '\'));END'
+        ',') + '\');END'
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
