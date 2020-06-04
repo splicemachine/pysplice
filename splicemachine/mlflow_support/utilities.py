@@ -1,9 +1,8 @@
 from os import environ as env_vars, popen as rbash, system as bash, remove
 from sys import getsizeof
 from shutil import rmtree
-from pickle import dumps as save_pickle_string, loads as load_pickle_string
+from cloudpickle import dumps as save_pickle_string, loads as load_pickle_string
 from io import BytesIO
-from functools import partial
 from h5py import File as h5_file
 from py4j.java_gateway import java_import
 from inspect import signature as get_model_params
@@ -34,7 +33,6 @@ import h2o
 from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pyspark.ml.pipeline import PipelineModel
 from typing import List, Dict, Tuple
-
 
 class SpliceMachineException(Exception):
     pass
