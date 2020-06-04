@@ -1192,7 +1192,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
                         f' \tFOR EACH ROW\n \t\tBEGIN ATOMIC\n\t set '
     set_prediction_case_str = 'NEWROW.PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
-        SQL_PARSE_TRIGGER += f'"{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+        SQL_PARSE_TRIGGER += f'"NEWROW.{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
         set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
 
     set_prediction_case_str += '\t\tEND;'
