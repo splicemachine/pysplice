@@ -853,7 +853,7 @@ def validate_primary_key(splice_ctx: PySpliceContext,
         return pks
 
 
-def create_model_table(splice_context: PySpliceContext,
+def create_model_pred_table(splice_context: PySpliceContext,
                       run_id: str,
                       schema_table_name: str,
                       schema_str: str,
@@ -1210,7 +1210,7 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
         print(SQL_PARSE_TRIGGER, end='\n\n')
     splice_context.execute(SQL_PARSE_TRIGGER.replace('\n', ' ').replace('\t', ' '))
 
-def _get_feature_columns_and_types(splice_ctx: PySpliceContext,
+def get_feature_columns_and_types(splice_ctx: PySpliceContext,
                                    df: SparkDF or None,
                                    create_model_table: bool,
                                    model_cols: List[str] or None,
@@ -1249,10 +1249,9 @@ def _get_feature_columns_and_types(splice_ctx: PySpliceContext,
 
     return feature_columns, schema_types
 
-def _get_df_for_mleap(splice_ctx: PySpliceContext,
+def get_df_for_mleap(splice_ctx: PySpliceContext,
                       schema_table_name: str,
-                      df: SparkDF or PandasDF or None,
-                      create_model_table: bool):
+                      df: SparkDF or PandasDF or None) -> SparkDF or None:
     """
     MLeap needs a dataframe in order to serialize the model. If it's not passed in, we need to get it from an existing table
     :param splice_ctx: PySpliceContext
@@ -1269,7 +1268,6 @@ def _get_df_for_mleap(splice_ctx: PySpliceContext,
         raise SpliceMachineException('MLeap requires a dataframe to serialize a spark model. You must either pass in a '
                                      'dataframe to use for serialization or provide a table that already exists into this function.'
                                      'Note that the model will be deployed to that table.')
-
     else:
         df = splice_ctx.df(f'select top 1 * from {schema_table_name}')
 

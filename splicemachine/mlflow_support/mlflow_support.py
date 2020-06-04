@@ -18,7 +18,6 @@ from tensorflow.keras import Model as KerasModel
 
 from splicemachine.mlflow_support.constants import *
 from splicemachine.mlflow_support.utilities import *
-from splicemachine.mlflow_support.utilities import _get_feature_columns_and_types, _get_df_for_mleap
 from splicemachine.spark.context import PySpliceContext
 from splicemachine.spark.constants import CONVERSIONS
 from pyspark.sql.dataframe import DataFrame as SparkDF
@@ -610,7 +609,7 @@ def _deploy_db(db_schema_name,
 
     schema_table_name = f'{db_schema_name}.{db_table_name}'
 
-    feature_columns, schema_types = _get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
+    feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
                                                                    model_cols, schema_table_name)
 
     if create_model_table and not df:
@@ -627,7 +626,7 @@ def _deploy_db(db_schema_name,
     library = get_model_library(fitted_model)
     if library == DBLibraries.MLeap:
         # Mleap needs a dataframe in order to serialize the model
-        df = _get_df_for_mleap(mlflow._splice_context, schema_table_name, df, create_model_table)
+        df = get_df_for_mleap(mlflow._splice_context, schema_table_name, df)
         model_type, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, df, classes, run_id)
     elif library == DBLibraries.H2OMOJO:
         model_type, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id)
@@ -648,7 +647,7 @@ def _deploy_db(db_schema_name,
         # Create/Alter table 1: DATA
         if create_model_table:
             print('Creating model table ...', end=' ')
-            create_model_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, primary_key, model_type, verbose)
+            create_model_pred_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, primary_key, model_type, verbose)
             print('Done.')
         else:
             print('Altering provided table for deployment')
