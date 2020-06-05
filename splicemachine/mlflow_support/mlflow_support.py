@@ -602,6 +602,13 @@ def _deploy_db(db_schema_name,
     run_id = run_id if run_id else mlflow.active_run().info.run_uuid
     fitted_model = _load_model(run_id)
 
+    # Param checking. Can't create model table without a dataframe
+    if create_model_table and df is None: # Need to compare to None, truth value of df is ambiguous
+        raise SpliceMachineException("If you'd like to create the model table as part of this deployment, you must pass in a dataframe")
+    # Make sure primary_key is valid format
+    if create_model_table and not primary_key:
+        raise SpliceMachineException("If you'd like to create the model table as part of this deployment must provide the primary key(s)")
+
     # So we can rollback on failure
     # mlflow._splice_context.execute('AUTOCOMMIT OFF')
     # mlflow._splice_context.execute('SAVEPOINT predeploy')
@@ -612,13 +619,6 @@ def _deploy_db(db_schema_name,
     feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
                                                                    model_cols, schema_table_name)
 
-    if create_model_table and df is None: # Need to compare to None, truth value of df is ambiguous
-        raise SpliceMachineException("If you'd like to create the model table as part of this deployment, you must pass in a dataframe")
-
-
-    # Make sure primary_key is valid format
-    if not primary_key and create_model_table:
-        raise SpliceMachineException("If you'd like to create the model table as part of this deployment must provide the primary key(s)")
 
     # Validate primary key is correct, or that provided table has primary keys
     primary_key = validate_primary_key(mlflow._splice_context, primary_key, db_schema_name, db_table_name) or primary_key
