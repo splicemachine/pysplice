@@ -154,19 +154,13 @@ class H2OUtils:
 
     @staticmethod
     def insert_h2omojo_model(splice_context: PySpliceContext, run_id: str, model: object) -> None:
-        model_exists = splice_context.df(
-            f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-        if model_exists:
-            print(
-                'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
-        else:
-            baos = splice_context.jvm.java.io.ByteArrayOutputStream()
-            oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
-            oos.writeObject(model)
-            oos.flush()
-            oos.close()
-            byte_array = baos.toByteArray()
-            insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
+        baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+        oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model)
+        oos.flush()
+        oos.close()
+        byte_array = baos.toByteArray()
+        insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
 
 
 class SKUtils:
@@ -181,16 +175,8 @@ class SKUtils:
 
     @staticmethod
     def insert_sklearn_model(splice_context: PySpliceContext, run_id: str, model: ScikitModel) -> None:
-        model_exists = splice_context.df(
-            f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-        if model_exists:
-            print(
-                'WARN: A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.'
-                '\nTo replace, use a new run_id'
-            )
-        else:
-            byte_stream = save_pickle_string(model)
-            insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
+        byte_stream = save_pickle_string(model)
+        insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
     @staticmethod
     def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> Dict[str, str]:
@@ -720,19 +706,28 @@ def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytea
     :param library: The library of the model (mleap, h2omojo etc)
     :param version: The version of the library
     """
-    db_connection = splice_context.getConnection()
-    file_size = getsizeof(byte_array)
-    print(f"Saving model of size: {file_size / 1000.0} KB to Splice Machine DB")
-    binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+    # If a model with this run_id already exists in the table, gracefully fail
+    # May be faster to use prepared statement
+    model_exists = splice_context.df(
+        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
+    if model_exists:
+        print(
+            'A model with this run ID is already deployed. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
 
-    prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
-    prepared_statement.setString(1, run_id)
-    prepared_statement.setBinaryStream(2, binary_input_stream)
-    prepared_statement.setString(3, library)
-    prepared_statement.setString(4, version)
+    else:
+        db_connection = splice_context.getConnection()
+        file_size = getsizeof(byte_array)
+        print(f"Saving model of size: {file_size / 1000.0} KB to Splice Machine DB")
+        binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
 
-    prepared_statement.execute()
-    prepared_statement.close()
+        prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
+        prepared_statement.setString(1, run_id)
+        prepared_statement.setBinaryStream(2, binary_input_stream)
+        prepared_statement.setString(3, library)
+        prepared_statement.setString(4, version)
+
+        prepared_statement.execute()
+        prepared_statement.close()
 
 
 def insert_artifact(splice_context, name, byte_array, run_uuid, file_ext=None):
@@ -807,23 +802,14 @@ def insert_mleap_model(splice_context, run_id, model):
     :param model: (Transformer) the fitted Mleap Transformer (pipeline)
     """
 
-    # If a model with this run_id already exists in the table, gracefully fail
-    # May be faster to use prepared statement
-    model_exists = splice_context.df(
-        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-    if model_exists:
-        print(
-            'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
-
-    else:
-        # Serialize Mleap model to BLOB
-        baos = splice_context.jvm.java.io.ByteArrayOutputStream()
-        oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
-        oos.writeObject(model)
-        oos.flush()
-        oos.close()
-        byte_array = baos.toByteArray()
-        insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
+    # Serialize Mleap model to BLOB
+    baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+    oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+    oos.writeObject(model)
+    oos.flush()
+    oos.close()
+    byte_array = baos.toByteArray()
+    insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
 
 
 def validate_primary_key(splice_ctx: PySpliceContext,
