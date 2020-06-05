@@ -901,9 +901,7 @@ def create_model_deployment_table(splice_context: PySpliceContext,
 def alter_model_table(splice_context: PySpliceContext,
                       run_id: str,
                       schema_table_name: str,
-                      schema_str: str,
                       classes: List[str],
-                      #primary_key: List[Tuple[str,str]] or None,
                       model_type: Enum,
                       verbose: bool) -> None:
     """
@@ -912,7 +910,6 @@ def alter_model_table(splice_context: PySpliceContext,
     :param splice_context: pysplicectx
     :param run_id: (str) the run_id for this model
     :param schema_table_name: (str) the schema.table to create the table under
-    :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
     :param classes: (List[str]) the labels of the model (if they exist)
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
     :param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
@@ -933,10 +930,6 @@ def alter_model_table(splice_context: PySpliceContext,
             raise SpliceMachineException(f'The table {schema_table_name} looks like it already has values associated with '
                                          f'a deployed model. Only 1 model can be deployed to a table currently.'
                                          f'The table cannot have the following fields: {reserved_fields}')
-
-    # Make sure the primary keys exist in the table already
-    schema, table = schema_table_name.split('.')
-
 
     # Splice cannot currently add multiple columns in an alter statement so we need to make a bunch and execute all of them
     SQL_ALTER_TABLE = []
@@ -968,63 +961,6 @@ def alter_model_table(splice_context: PySpliceContext,
         if verbose: print(sql)
         splice_context.execute(sql)
 
-
-
-# def create_data_preds_table(splice_context: PySpliceContext,
-#                             run_id: str,
-#                             schema_table_name: str,
-#                             classes: List[str],
-#                             primary_key: List[Tuple[str,str]],
-#                             model_type: Enum,
-#                             verbose: bool) -> None:
-#     """
-#     Creates the data prediction table that holds the prediction for the rows of the data table
-#     :param splice_context: pysplicectx
-#     :param schema_table_name: (str) the schema.table to create the table under
-#     :param run_id: (str) the run_id for this model
-#     :param classes: (List[str]) the labels of the model (if they exist)
-#     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
-#     :param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
-#     :param verbose: (bool) whether to print the SQL query
-#     Regression models output a DOUBLE as the prediction field with no probabilities
-#     Classification models and Certain Clustering models have probabilities associated with them, so we need to handle the extra columns holding those probabilities
-#     Clustering models without probabilities return only an INT.
-#     The database is strongly typed so we need to specify the output type for each ModelType
-#     """
-#     SQL_PRED_TABLE = f'''CREATE TABLE {schema_table_name}_PREDS (
-#         \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
-#         \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#         \tRUN_ID VARCHAR(50) DEFAULT \'{run_id}\',
-#         '''
-#     pk_cols = ''
-#     for i in primary_key:
-#         SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
-#         pk_cols += f'{i[0]},'
-#
-#     if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.REGRESSION,
-#                       KerasModelType.REGRESSION):
-#         SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
-#
-#     elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
-#                        H2OModelType.CLASSIFICATION):
-#         SQL_PRED_TABLE += '\tPREDICTION VARCHAR(5000),\n'
-#         for i in classes:
-#             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-#     elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
-#         for i in classes:
-#             SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-#
-#     elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
-#         SQL_PRED_TABLE += '\tPREDICTION INT,\n'
-#
-#     SQL_PRED_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
-#
-#     if verbose:
-#         print()
-#         print(SQL_PRED_TABLE, end='\n\n')
-#     splice_context.execute(SQL_PRED_TABLE)
-
-
 def create_vti_prediction_trigger(splice_context: PySpliceContext,
                                   schema_table_name: str,
                                   run_id: str,
@@ -1040,7 +976,6 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
 
     prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, '{schema_str}'"
 
-    #predict_call = sklearn_args.get('predict_call', )
     if model_type == SklearnModelType.KEY_VALUE:
         if not sklearn_args: # This must be a .transform call
             predict_call, predict_args = 'transform', None
@@ -1135,10 +1070,6 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tBEFORE INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \tBEGIN ATOMIC \t\t' \
                        f'SET NEWROW.PREDICTION='
-    # pk_vals = ''
-    # for i in primary_key:
-    #     SQL_PRED_TRIGGER += f'\t{i[0]},'
-    #     pk_vals += f'\tNEWROW.{i[0]},'
 
     SQL_PRED_TRIGGER += f'{prediction_call}(\'{run_id}\','
 
@@ -1183,13 +1114,9 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
 
     set_prediction_case_str += '\t\tEND;'
     if model_type == H2OModelType.KEY_VALUE:  # These models don't have an actual prediction
-        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + 'END' #+ ' WHERE'
+        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + 'END'
     else:
-        SQL_PARSE_TRIGGER += set_prediction_case_str + 'END' #+ ' WHERE'
-
-    # for i in primary_key:
-    #     SQL_PARSE_TRIGGER += f' {i[0]}=NEWROW.{i[0]} AND'
-    # SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER.replace(' AND', '')
+        SQL_PARSE_TRIGGER += set_prediction_case_str + 'END'
 
     if verbose:
         print()

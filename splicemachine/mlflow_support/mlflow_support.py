@@ -609,9 +609,7 @@ def _deploy_db(db_schema_name,
     if create_model_table and not primary_key:
         raise SpliceMachineException("If you'd like to create the model table as part of this deployment must provide the primary key(s)")
 
-    # So we can rollback on failure
-    # mlflow._splice_context.execute('AUTOCOMMIT OFF')
-    # mlflow._splice_context.execute('SAVEPOINT predeploy')
+    # FIXME: We need to use the dbConnection so we can set a savepoint and rollback on failure
     classes = classes if classes else []
 
     schema_table_name = f'{db_schema_name}.{db_table_name}'
@@ -651,12 +649,7 @@ def _deploy_db(db_schema_name,
             print('Done.')
         else:
             print('Altering provided table for deployment')
-            alter_model_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes, model_type, verbose)
-
-        # # Create table 2: DATA_PREDS
-        # print('Creating prediction table ...', end=' ')
-        # create_data_preds_table(mlflow._splice_context, run_id, schema_table_name, classes, primary_key, model_type, verbose)
-        # print('Done.')
+            alter_model_table(mlflow._splice_context, run_id, schema_table_name, classes, model_type, verbose)
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
@@ -678,7 +671,6 @@ def _deploy_db(db_schema_name,
     except Exception as e:
         import traceback
         print('Model deployment failed. Rolling back transactions')
-        # mlflow._splice_context.execute('ROLLBACK TO SAVEPOINT predeploy')
         # drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id)
         exc = 'Model deployment failed. Rolling back transactions.\n'
         if not verbose:
