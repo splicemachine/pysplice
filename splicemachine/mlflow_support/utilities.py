@@ -996,12 +996,8 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     prediction_call += ')'
 
     SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
-                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
-                       f'{schema_table_name}('
-    pk_vals = ''
-    for i in primary_key:
-        SQL_PRED_TRIGGER += f'{i[0]},'
-        pk_vals += f'\tNEWROW.{i[0]},'
+                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE ' \
+                       f'{schema_table_name} SET ('
 
     output_column_names = ''  # Names of the output columns from the model
     output_cols_VTI_reference = ''  # Names references from the VTI (ie b.COL_NAME)
@@ -1028,9 +1024,14 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
 
 
-    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) --splice-properties insertMode=UPSERT\n'
-    SQL_PRED_TRIGGER += f'SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
-                        f' as b ({output_cols_schema[:-1]})'
+    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) = ('
+    SQL_PRED_TRIGGER += f'SELECT {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
+                        f' as b ({output_cols_schema[:-1]}) WHERE 1=1) WHERE '
+
+    for i in primary_key:
+        SQL_PRED_TRIGGER += f'{i[0]} = NEWROW.{i[0]} AND'
+    # Remove last AND
+    SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-3]
 
     if verbose:
         print()
