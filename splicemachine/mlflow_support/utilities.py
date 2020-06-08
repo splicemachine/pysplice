@@ -1153,9 +1153,9 @@ def get_feature_columns_and_types(splice_ctx: PySpliceContext,
                                          "and set create_model_table=True")
         schema_from_table = splice_ctx.getSchema(schema_table_name)
         if model_cols:
-            feature_columns = model_cols
             m = set([c.upper() for c in model_cols]) # set is O(1) lookup
             schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table if i.name.upper() in m}
+            feature_columns = [i.name for i in schema_from_table if i.name.upper() in m]
         else:
             feature_columns = [i.name for i in schema_from_table]
             schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table}
