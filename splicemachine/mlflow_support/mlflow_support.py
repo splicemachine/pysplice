@@ -625,13 +625,10 @@ def _deploy_db(db_schema_name,
     if library == DBLibraries.MLeap:
         # Mleap needs a dataframe in order to serialize the model
         df = get_df_for_mleap(mlflow._splice_context, schema_table_name, df)
-        model_type, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, df, classes, run_id)
-    elif library == DBLibraries.H2OMOJO:
-        model_type, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id)
-    elif library == DBLibraries.SKLearn:
-        model_type, classes = SKUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id, sklearn_args)
-    elif library == DBLibraries.Keras:
-        model_type, classes = KerasUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id, pred_threshold)
+
+    model_type, classes, model_already_exists = ModelUtils[library].prep_model_for_deployment(mlflow._splice_context,
+                                                                                              fitted_model, classes, run_id,
+                                                                                              df, pred_threshold, sklearn_args)
 
 
     print(f'Deploying model {run_id} to table {schema_table_name}')
@@ -668,10 +665,11 @@ def _deploy_db(db_schema_name,
             create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, model_type, verbose)
             print('Done.')
 
+
     except Exception as e:
         import traceback
         print('Model deployment failed. Rolling back transactions')
-        # drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id)
+        drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id, model_already_exists)
         exc = 'Model deployment failed. Rolling back transactions.\n'
         if not verbose:
             exc += 'For more insight into the SQL statement that generated this error, rerun with verbose=True'

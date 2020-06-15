@@ -53,7 +53,10 @@ class H2OUtils:
     def prep_model_for_deployment(splice_context: PySpliceContext,
                                   model: H2OModel,
                                   classes: List[str],
-                                  run_id: str) -> (H2OModelType, List[str]):
+                                  run_id: str,
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (H2OModelType, List[str]):
         """
         Gets the H2O mojo model
         Gets the model type
@@ -69,7 +72,7 @@ class H2OUtils:
 
         # Get the H2O MOJO model and insert it into the MODELS table
         h2omojo, rawmojo = H2OUtils.get_h2omojo_model(splice_context, model)
-        H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
+        model_already_exists = H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
 
         # Get model type
         model_type, model_category = H2OUtils.get_model_type(h2omojo)
@@ -106,7 +109,7 @@ class H2OUtils:
                 elif model_category == 'AnomalyDetection':
                     classes = ['score', 'normalizedScore']
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
     @staticmethod
     def get_model_type(h2omojo: object) -> (H2OModelType, str):
@@ -153,14 +156,14 @@ class H2OUtils:
         return model
 
     @staticmethod
-    def insert_h2omojo_model(splice_context: PySpliceContext, run_id: str, model: object) -> None:
+    def insert_h2omojo_model(splice_context: PySpliceContext, run_id: str, model: object) -> bool:
         baos = splice_context.jvm.java.io.ByteArrayOutputStream()
         oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
         oos.writeObject(model)
         oos.flush()
         oos.close()
         byte_array = baos.toByteArray()
-        insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
+        return insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
 
 
 class SKUtils:
@@ -174,9 +177,9 @@ class SKUtils:
         return load_pickle_string(model_blob)
 
     @staticmethod
-    def insert_sklearn_model(splice_context: PySpliceContext, run_id: str, model: ScikitModel) -> None:
+    def insert_sklearn_model(splice_context: PySpliceContext, run_id: str, model: ScikitModel) -> bool:
         byte_stream = save_pickle_string(model)
-        insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
+        return insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
     @staticmethod
     def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> Dict[str, str]:
@@ -224,12 +227,14 @@ class SKUtils:
                                   model: ScikitModel,
                                   classes: List[str],
                                   run_id: str,
-                                  sklearn_args: Dict[str, str]) -> (SklearnModelType, List[str]):
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (SklearnModelType, List[str]):
 
         sklearn_args = SKUtils.validate_sklearn_args(model, sklearn_args)
 
         model_type = SKUtils.get_model_type(model, sklearn_args)
-        SKUtils.insert_sklearn_model(splice_context, run_id, model)
+        model_already_exists = SKUtils.insert_sklearn_model(splice_context, run_id, model)
         if classes and model_type != SklearnModelType.KEY_VALUE:
             print('Prediction labels found but model is not type Classification. Removing labels')
             classes = None
@@ -260,7 +265,7 @@ class SKUtils:
         if classes:
             print(f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
     @staticmethod
     def get_pipeline_model_type(pipeline: SKPipeline) -> SklearnModelType:
@@ -322,12 +327,12 @@ class KerasUtils:
         return load_kr_model(hfile)
 
     @staticmethod
-    def insert_keras_model(splice_context: PySpliceContext, run_id: str, model: KerasModel) -> None:
+    def insert_keras_model(splice_context: PySpliceContext, run_id: str, model: KerasModel) -> bool:
         model.save('/tmp/model.h5')
         with open('/tmp/model.h5', 'rb') as f:
             byte_stream = bytearray(bytes(f.read()))
-        insert_model(splice_context, run_id, byte_stream, 'keras', KERAS_VERSION)
         remove('/tmp/model.h5')
+        return insert_model(splice_context, run_id, byte_stream, 'keras', KERAS_VERSION)
 
     @staticmethod
     def get_keras_model_type(model: KerasModel, pred_threshold: float) -> KerasModelType:
@@ -364,7 +369,9 @@ class KerasUtils:
                                   model: KerasModel,
                                   classes: List[str],
                                   run_id: str,
-                                  pred_threshold: float) -> (KerasModelType, List[str]):
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None)-> (KerasModelType, List[str]):
         """
         Inserts the model into the MODELS table for deployment
         Gets the Keras model type
@@ -377,7 +384,7 @@ class KerasUtils:
         :return: (KerasModelType, List[str]) the modelType and the classes
         """
         KerasUtils.validate_keras_model(model)
-        KerasUtils.insert_keras_model(splice_context, run_id, model)
+        model_already_exists = KerasUtils.insert_keras_model(splice_context, run_id, model)
         model_type: KerasModelType = KerasUtils.get_keras_model_type(model, pred_threshold)
         if model_type == KerasModelType.KEY_VALUE:
             output_shape = model.layers[-1].output_shape
@@ -390,7 +397,7 @@ class KerasUtils:
                 classes = ['prediction'] + classes
             if len(classes) > 2 and pred_threshold:
                 print(f"Found multiclass model with pred_threshold {pred_threshold}. Ignoring threshold.")
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
 
 
@@ -610,9 +617,11 @@ class SparkUtils:
     @staticmethod
     def prep_model_for_deployment(splice_context: PySpliceContext,
                                   fittedPipe: PipelineModel,
-                                  df: SparkDF,
                                   classes: List[str],
-                                  run_id: str) -> (SparkModelType, List[str]):
+                                  run_id: str,
+                                  df: SparkDF,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (SparkModelType, List[str]):
         """
         All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
         :param fittedPipe:
@@ -644,9 +653,9 @@ class SparkUtils:
             df = fittedPipe.transform(df)
         # Get the Mleap model and insert it into the MODELS table
         mleap_model = get_mleap_model(splice_context, fittedPipe, df, run_id)
-        insert_mleap_model(splice_context, run_id, mleap_model)
+        model_already_exists = insert_mleap_model(splice_context, run_id, mleap_model)
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
 
 def get_model_library(model) -> DBLibraries:
@@ -697,7 +706,7 @@ def get_user():
             " Cloud Jupyter is currently unsupported")
 
 
-def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str, version: str) -> None:
+def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str, version: str) -> bool:
     """
     Insert a serialized model into the Mlmanager models table
     :param splice_context: pysplicectx
@@ -713,6 +722,7 @@ def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytea
     if model_exists:
         print(
             'A model with this run ID is already deployed. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
+        return True
 
     else:
         db_connection = splice_context.getConnection()
@@ -728,6 +738,7 @@ def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytea
 
         prepared_statement.execute()
         prepared_statement.close()
+        return False
 
 
 def insert_artifact(splice_context, name, byte_array, run_uuid, file_ext=None):
@@ -793,7 +804,9 @@ def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
     return obj
 
 
-def insert_mleap_model(splice_context, run_id, model):
+def insert_mleap_model(splice_context: PySpliceContext,
+                       run_id: str,
+                       model: PipelineModel or SparkModel) -> bool:
     """
     Insert an MLeap Transformer model into the database as a Blob
     :param splice_context: pysplicectx
@@ -809,7 +822,7 @@ def insert_mleap_model(splice_context, run_id, model):
     oos.flush()
     oos.close()
     byte_array = baos.toByteArray()
-    insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
+    return insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
 
 
 def validate_primary_key(splice_ctx: PySpliceContext,
@@ -1187,11 +1200,37 @@ def get_df_for_mleap(splice_ctx: PySpliceContext,
 
     return df
 
+def add_model_to_metadata(splice_context, schema_table_name):
+    schema,table = schema_table_name.split('.')
+    table_id_sql = f"""
+    select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid 
+    where b.schemaname='{schema}' and a.tablename='{table}'
+    """
+    schema, table = schema_table_name.split('.')
+    ##FIXME: execute doesn't return anything
+    table_id = splice_context.execute(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid"
+                                      f"where a.tablename='{table}'")
 
-def drop_tables_on_failure(splice_context, schema_table_name, run_id) -> None:
+
+def drop_tables_on_failure(splice_context: PySpliceContext,
+                           schema_table_name: str,
+                           run_id: str,
+                           model_already_exists: bool) -> None:
     """
-    Drop the tables if the db deployment fails
+    Due to some limitations DB-7726 we can't use fully utilize a single consistent JDBC connection using NSDS
+    So we will try to rollback on failure using basic logic.
+
+    If the model was already in the models table (ie it had been deployed before, we will leave it. Otherwise, delete
+    Leave the tables.
     """
-    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
-    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}_preds')
-    splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
+
+    # splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
+    if model_already_exists:
+        splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
+
+ModelUtils = {
+    DBLibraries.MLeap: SparkUtils,
+    DBLibraries.H2OMOJO: H2OUtils,
+    DBLibraries.Keras: KerasUtils,
+    DBLibraries.SKLearn: SKUtils,
+}
