@@ -210,7 +210,11 @@ class SKUtils:
                 t = ('return_std', 'return_cov')
                 exc = f'predict_args value is invalid. Available options are {t}'
             else:
-                model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
+                if isinstance(model, SKPipeline): # If we are working with a Pipeline, we want to check the last step for arguments
+                    m = model.steps[-1][-1]
+                    model_params = get_model_params(m.predict) if hasattr(m, 'predict') else get_model_params(m.transform)
+                else:
+                    model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
                 if p not in model_params.parameters:
                     exc = f'predict_args set to {p} but that parameter is not available for this model!'
         elif sklearn_args and 'predict_args' not in sklearn_args and 'predict_call' not in sklearn_args:
@@ -1007,8 +1011,8 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
         prediction_call +=  f", '{pred_threshold}'"
 
     prediction_call += ')'
-
-    SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
+    schema = schema_table_name.split('.')[0]
+    SQL_PRED_TRIGGER = f'CREATE TRIGGER {schema}.runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE ' \
                        f'{schema_table_name} SET ('
 
@@ -1081,7 +1085,8 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
     elif model_type == H2OModelType.KEY_VALUE:
         prediction_call = 'MLMANAGER.PREDICT_KEY_VALUE'
 
-    SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tBEFORE INSERT\n ' \
+    schema = schema_table_name.split('.')[0]
+    SQL_PRED_TRIGGER = f'CREATE TRIGGER {schema}.runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tBEFORE INSERT\n ' \
                        f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \tBEGIN ATOMIC \t\t' \
                        f'SET NEWROW.PREDICTION='
 
@@ -1118,7 +1123,8 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param model_type: (Enum) the model type (H2OModelType or SparkModelType)
     :param verbose: (bool) whether to print the SQL query
     """
-    SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
+    schema = schema_table_name.split('.')[0]
+    SQL_PARSE_TRIGGER = f'CREATE TRIGGER {schema}.PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
                         f'\n \tBEFORE INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n' \
                         f' \tFOR EACH ROW\n \t\tBEGIN ATOMIC\n\t set '
     set_prediction_case_str = 'NEWROW.PREDICTION=\n\t\tCASE\n'
@@ -1200,16 +1206,31 @@ def get_df_for_mleap(splice_ctx: PySpliceContext,
 
     return df
 
-def add_model_to_metadata(splice_context, schema_table_name):
-    schema,table = schema_table_name.split('.')
-    table_id_sql = f"""
-    select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid 
-    where b.schemaname='{schema}' and a.tablename='{table}'
-    """
-    schema, table = schema_table_name.split('.')
-    ##FIXME: execute doesn't return anything
-    table_id = splice_context.execute(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid"
-                                      f"where a.tablename='{table}'")
+def add_model_to_metadata(splice_context: PySpliceContext, run_id:str, schema_table_name:str):
+
+    if splice_context.tableExists(f'{SQL.MLMANAGER_SCHEMA}.MODEL_METADATA'):
+        schema_table_name = schema_table_name.upper()
+        schema, table = schema_table_name.split('.')
+
+        table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid"
+                                          f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
+
+        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}"
+        trigger_id_1, create_ts = splice_context.df(f"select triggerid, varchar(creationtimestamp) from sys.systriggers "
+                                                    f"where triggername='{trigger_name_1}' and tableid='{table_id}'")\
+                                                    .collect()[0]
+
+        # Not all models will have a second trigger
+        trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}"
+        trigger_id_2 = splice_context.df(f"select triggerid from sys.systriggers where triggername='{trigger_name_2}'"
+                                         f"and tableid='{table_id}'").collect()
+        trigger_id_2 = f"'{trigger_id_2[0][0]}'" if trigger_id_2 else 'NULL' # Special formatting in case NULL
+
+        splice_context.execute(f"INSERT INTO {SQL.MLMANAGER_SCHEMA}.MODEL_METADATA"
+                               f"(RUN_UUID, STATUS, TABLEID, TRIGGER_TYPE TRIGGER_ID, TRIGGER_ID_2, DB_ENV, DEPLOYED_BY, DEPLOYED_DATE)"
+                               f"values ( '{run_id}', 'DEPLOYED', '{table_id}', 'INSERT' '{trigger_id_1}', {trigger_id_2}, "
+                               f"'PROD', '{get_user()}', '{create_ts}')")
+
 
 
 def drop_tables_on_failure(splice_context: PySpliceContext,
@@ -1220,12 +1241,12 @@ def drop_tables_on_failure(splice_context: PySpliceContext,
     Due to some limitations DB-7726 we can't use fully utilize a single consistent JDBC connection using NSDS
     So we will try to rollback on failure using basic logic.
 
-    If the model was already in the models table (ie it had been deployed before, we will leave it. Otherwise, delete
+    If the model was already in the models table (ie it had been deployed before), we will leave it. Otherwise, delete
     Leave the tables.
     """
 
     # splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
-    if model_already_exists:
+    if not model_already_exists:
         splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
 
 ModelUtils = {

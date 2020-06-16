@@ -62,3 +62,12 @@ class FileExtensions():
         return (
             FileExtensions.spark, FileExtensions.keras, FileExtensions.h2o, FileExtensions.sklearn
         )
+
+class ModelStatuses():
+    """
+    Class containing names
+    for In Database Model Deployments
+    """
+    deployed: str = 'DEPLOYED'
+    deleted: str = 'DELETED'
+    SUPPORTED_STATUSES = [deployed, deleted]
