@@ -1232,7 +1232,7 @@ def add_model_to_metadata(splice_context: PySpliceContext,
 
         # We don't add the quotes around trigger_id_2 here because we handle it above in the NULL case
         splice_context.execute(f"INSERT INTO {SQL.MLMANAGER_SCHEMA}.MODEL_METADATA"
-                               f"(RUN_UUID, ACTION, TABLEID, TRIGGER_TYPE, TRIGGER_ID, TRIGGER_ID_2, DB_ENV, DB_USER, ACTION_DATE)"
+                               f"(RUN_UUID, ACTION, TABLEID, TRIGGER_TYPE, TRIGGERID, TRIGGERID_2, DB_ENV, DB_USER, ACTION_DATE)"
                                f"values ('{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2},"
                                f"'PROD', '{get_user()}', '{create_ts}')")
 
