@@ -1206,7 +1206,9 @@ def get_df_for_mleap(splice_ctx: PySpliceContext,
 
     return df
 
-def add_model_to_metadata(splice_context: PySpliceContext, run_id:str, schema_table_name:str):
+def add_model_to_metadata(splice_context: PySpliceContext,
+                          run_id: str,
+                          schema_table_name: str) -> None:
 
     if splice_context.tableExists(f'{SQL.MLMANAGER_SCHEMA}.MODEL_METADATA'):
         schema_table_name = schema_table_name.upper()
