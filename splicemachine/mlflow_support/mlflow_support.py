@@ -689,9 +689,7 @@ def _get_deployed_models() -> PandasDF:
 
     return mlflow._splice_context.df(
         """
-        SELECT a.RUN_UUID, a.ACTION, a.TABLEID, b.TABLENAME, a.TRIGGER_TYPE, a.TRIGGER_ID, a.TRIGGER_ID_2,
-        a.DB_ENV, a.DB_USER, a.ACTION_DATE 
-        FROM MLMANAGER.MODEL_METADATA a JOIN SYS.SYSTABLES b ON a.TABLEID=B.TABLEID
+        SELECT * FROM MLMANAGER.LIVE_MODEL_STATUS
         """
     ).toPandas()
 
