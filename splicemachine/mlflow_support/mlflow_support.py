@@ -686,10 +686,11 @@ def _get_deployed_models() -> PandasDF:
     Get the currently deployed models in the database
     :return: Pandas df
     """
+
     return mlflow._splice_context.df(
         """
-        SELECT a.RUN_UUID, a.STATUS, a.TABLEID, b.TABLENAME, a.TRIGGER_TYPE, a.TRIGGER_ID, a.TRIGGER_ID_2,
-        a.DB_ENV, a.DEPLOYED_BY, a.DEPLOYED_DATE 
+        SELECT a.RUN_UUID, a.ACTION, a.TABLEID, b.TABLENAME, a.TRIGGER_TYPE, a.TRIGGER_ID, a.TRIGGER_ID_2,
+        a.DB_ENV, a.DB_USER, a.ACTION_DATE 
         FROM MLMANAGER.MODEL_METADATA a JOIN SYS.SYSTABLES b ON a.TABLEID=B.TABLEID
         """
     ).toPandas()

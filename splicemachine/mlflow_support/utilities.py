@@ -1223,11 +1223,14 @@ def add_model_to_metadata(splice_context: PySpliceContext,
                                                     .collect()[0]
 
         # Not all models will have a second trigger
-        trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}"
+        trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}".upper()
         trigger_id_2 = splice_context.df(f"select triggerid from sys.systriggers where triggername='{trigger_name_2}' "
                                          f"and tableid='{table_id}'").collect()
-        trigger_id_2 = f"'{trigger_id_2[0][0]}'" if trigger_id_2 else 'NULL' # Special formatting in case NULL
 
+        # Adding extra single quote to trigger_id_2  case NULL
+        trigger_id_2 = f"'{trigger_id_2[0][0]}'" if trigger_id_2 else 'NULL'
+
+        # We don't add the quotes around trigger_id_2 here because we
         splice_context.execute(f"INSERT INTO {SQL.MLMANAGER_SCHEMA}.MODEL_METADATA"
                                f"(RUN_UUID, STATUS, TABLEID, TRIGGER_TYPE, TRIGGER_ID, TRIGGER_ID_2, DB_ENV, DEPLOYED_BY, DEPLOYED_DATE)"
                                f"values ('{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2},"
