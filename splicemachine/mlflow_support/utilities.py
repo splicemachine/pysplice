@@ -1214,7 +1214,7 @@ def add_model_to_metadata(splice_context: PySpliceContext,
         schema_table_name = schema_table_name.upper()
         schema, table = schema_table_name.split('.')
 
-        table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid"
+        table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid "
                                           f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
 
         trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}"
@@ -1224,13 +1224,13 @@ def add_model_to_metadata(splice_context: PySpliceContext,
 
         # Not all models will have a second trigger
         trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}"
-        trigger_id_2 = splice_context.df(f"select triggerid from sys.systriggers where triggername='{trigger_name_2}'"
+        trigger_id_2 = splice_context.df(f"select triggerid from sys.systriggers where triggername='{trigger_name_2}' "
                                          f"and tableid='{table_id}'").collect()
         trigger_id_2 = f"'{trigger_id_2[0][0]}'" if trigger_id_2 else 'NULL' # Special formatting in case NULL
 
         splice_context.execute(f"INSERT INTO {SQL.MLMANAGER_SCHEMA}.MODEL_METADATA"
                                f"(RUN_UUID, STATUS, TABLEID, TRIGGER_TYPE TRIGGER_ID, TRIGGER_ID_2, DB_ENV, DEPLOYED_BY, DEPLOYED_DATE)"
-                               f"values ( '{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2}, "
+                               f"values ('{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2},"
                                f"'PROD', '{get_user()}', '{create_ts}')")
 
 
