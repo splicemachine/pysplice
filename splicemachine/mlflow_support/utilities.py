@@ -1217,7 +1217,7 @@ def add_model_to_metadata(splice_context: PySpliceContext,
         table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid "
                                           f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
 
-        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}"
+        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}".upper()
         trigger_id_1, create_ts = splice_context.df(f"select triggerid, varchar(creationtimestamp) from sys.systriggers "
                                                     f"where triggername='{trigger_name_1}' and tableid='{table_id}'")\
                                                     .collect()[0]
