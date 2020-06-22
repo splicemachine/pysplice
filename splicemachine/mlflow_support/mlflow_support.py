@@ -625,13 +625,10 @@ def _deploy_db(db_schema_name,
     if library == DBLibraries.MLeap:
         # Mleap needs a dataframe in order to serialize the model
         df = get_df_for_mleap(mlflow._splice_context, schema_table_name, df)
-        model_type, classes = SparkUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, df, classes, run_id)
-    elif library == DBLibraries.H2OMOJO:
-        model_type, classes = H2OUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id)
-    elif library == DBLibraries.SKLearn:
-        model_type, classes = SKUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id, sklearn_args)
-    elif library == DBLibraries.Keras:
-        model_type, classes = KerasUtils.prep_model_for_deployment(mlflow._splice_context, fitted_model, classes, run_id, pred_threshold)
+
+    model_type, classes, model_already_exists = ModelUtils[library].prep_model_for_deployment(mlflow._splice_context,
+                                                                                              fitted_model, classes, run_id,
+                                                                                              df, pred_threshold, sklearn_args)
 
 
     print(f'Deploying model {run_id} to table {schema_table_name}')
@@ -668,17 +665,33 @@ def _deploy_db(db_schema_name,
             create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, model_type, verbose)
             print('Done.')
 
+        add_model_to_metadata(mlflow._splice_context, run_id, schema_table_name)
+
+
     except Exception as e:
         import traceback
-        print('Model deployment failed. Rolling back transactions')
-        # drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id)
         exc = 'Model deployment failed. Rolling back transactions.\n'
+        print(exc)
+        drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id, model_already_exists)
         if not verbose:
             exc += 'For more insight into the SQL statement that generated this error, rerun with verbose=True'
         traceback.print_exc()
         raise SpliceMachineException(exc)
 
     print('Model Deployed.')
+
+@_mlflow_patch('get_deployed_models')
+def _get_deployed_models() -> PandasDF:
+    """
+    Get the currently deployed models in the database
+    :return: Pandas df
+    """
+
+    return mlflow._splice_context.df(
+        """
+        SELECT * FROM MLMANAGER.LIVE_MODEL_STATUS
+        """
+    ).toPandas()
 
 
 def apply_patches():
@@ -689,7 +702,7 @@ def apply_patches():
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name]
+               _get_run_ids_by_name, _get_deployed_models]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
