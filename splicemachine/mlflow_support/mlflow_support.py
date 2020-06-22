@@ -122,18 +122,24 @@ def _lp(key, value):
     :param key: key for the parameter
     :param value: value for the parameter
     """
+    if len(str(value)) > 250 or len(str(key)) > 250:
+        raise SpliceMachineException(f'It seems your parameter input is too long. The max length is 250 characters.'
+                                     f'Your key is length {len(str(key))} and your value is length {len(str(value))}.')
     mlflow.log_param(key, value)
 
 
 @_mlflow_patch('lm')
-def _lm(key, value):
+def _lm(key, value, step=None):
     """
     Add a shortcut for logging metrics in MLFlow.
     Accessible from mlflow.lm
     :param key: key for the parameter
     :param value: value for the parameter
     """
-    mlflow.log_metric(key, value)
+    if len(str(key)) > 250:
+        raise SpliceMachineException(f'It seems your metric key is too long. The max length is 250 characters,'
+                                     f'but yours is {len(str(key))}')
+    mlflow.log_metric(key, value, step=step)
 
 
 @_mlflow_patch('log_model')
