@@ -290,7 +290,7 @@ class PySpliceContext:
             print(f'Droping table {schema_table_name}')
             self.dropTable(schema_table_name)
 
-    def createTable(self, dataframe, schema_table_name, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
+    def createTable(self, dataframe, schema_table_name, primary_keys=(), create_table_options=None, to_upper=False, drop_table=False):
         """
         Creates a schema.table from a dataframe
         :param dataframe: The Spark DataFrame to base the table off
