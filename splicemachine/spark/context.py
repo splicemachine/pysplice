@@ -502,7 +502,7 @@ class PySpliceContext:
         """
         if to_upper:
             dataframe = self.toUpper(dataframe)
-        self.context.createTableWithSchema(schema_table_name, df.schema, keys=keys, create_table_options=create_table_options)
+        self.createTableWithSchema(schema_table_name, dataframe.schema, keys=keys, create_table_options=create_table_options)
         
     def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
         """
