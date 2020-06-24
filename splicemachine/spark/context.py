@@ -56,8 +56,8 @@ class PySpliceContext:
             self.spark_session = sparkSession
             self.jvm = self.spark_sql_context._sc._jvm
             java_import(self.jvm, self._spliceSparkPackagesName)
-            java_import(self.jvm,
-                        "org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}")
+            java_import(self.jvm,"org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions")
+            java_import(self.jvm,"org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils")
             java_import(self.jvm, "scala.collection.JavaConverters._")
             java_import(self.jvm, "com.splicemachine.derby.impl.*")
             java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
@@ -78,8 +78,8 @@ class PySpliceContext:
         :param dataframe: The dataframe to convert to uppercase
         """
         for s in dataframe.schema:
-            s.name = s.name.upper() # Modifying the schema automatically modifies the Dataframe (passed by reference)
-        return dataframe
+            s.name = s.name.upper()
+        return dataframe.rdd.toDF(dataframe.schema) # You need to re-generate the dataframe for the capital letters to take effect
 
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
@@ -143,15 +143,17 @@ class PySpliceContext:
         """
         return DataFrame(self.context.df(sql), self.spark_sql_context)
 
-    def insert(self, dataframe, schema_table_name):
+    def insert(self, dataframe, schema_table_name, to_upper=False):
         """
         Insert a dataframe into a table (schema.table).
 
         :param dataframe: (DF) The dataframe you would like to insert
-        :param schema_table_name: (string) The table in which you would like to insert the dataframe
+        :param schema_table_name: (string) The table in which you would like to insert the DF
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
+                            If False, the table will be created with lower case columns. Default False
         """
-        # make sure column names are in the correct case
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         return self.context.insert(dataframe._jdf, schema_table_name)
 
     def insertWithStatus(self, dataframe, schema_table_name, statusDirectory, badRecordsAllowed):
@@ -490,21 +492,26 @@ class PySpliceContext:
         """
         return self.spark_session._jsparkSession.parseDataType(schema.json())
 
-    def createTable(self, schema_table_name, dataframe, keys=None, create_table_options=None, to_upper=False):
+    def createTable(self, dataframe, schema_table_name, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
         """
         Creates a schema.table from a dataframe
-        :param schema_table_name: str The schema.table to create
         :param dataframe: The Spark DataFrame to base the table off
-        :param keys: List[str] the primary keys. Default None
+        :param schema_table_name: str The schema.table to create
+        :param primary_keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
         :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation
                             If False, the table will be created with lower case columns. Default False
+        :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists,
+                           the function will throw an exception.
         """
+        if drop_table:
+            self._dropTableIfExists(schema_table_name)
         if to_upper:
             dataframe = self.toUpper(dataframe)
-        self.createTableWithSchema(schema_table_name, dataframe.schema, keys=keys, create_table_options=create_table_options)
+        primary_keys = primary_keys if primary_keys else ()
+        self.createTableWithSchema(schema_table_name, dataframe.schema, primary_keys=primary_keys, create_table_options=create_table_options)
         
-    def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
+    def createTableWithSchema(self, schema_table_name, schema, primary_keys=None, create_table_options=None):
         """
         Creates a schema.table from a schema
         :param schema_table_name: str The schema.table to create
@@ -512,10 +519,9 @@ class PySpliceContext:
         :param keys: List[str] The primary keys. Default None
         :param create_table_options: str The additional table-level SQL options. Default None
         """
-        if keys:
-            keys_seq = self.jvm.PythonUtils.toSeq(keys)
-        else:
-            keys_seq = self.jvm.PythonUtils.toSeq([])
+        primary_keys = primary_keys if primary_keys else ()
+        keys_seq = self.jvm.PythonUtils.toSeq(primary_keys)
+
         self.context.createTable(
             schema_table_name,
             self._jstructtype(schema),
@@ -543,4 +549,3 @@ class ExtPySpliceContext(PySpliceContext):
         self.kafkaServers = kafkaServers
         self.kafkaPollTimeout = kafkaPollTimeout
         super().__init__(sparkSession, JDBC_URL, _unit_testing)
-

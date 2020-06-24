@@ -1,9 +1,8 @@
 from os import environ as env_vars, popen as rbash, system as bash, remove
 from sys import getsizeof
 from shutil import rmtree
-from pickle import dumps as save_pickle_string, loads as load_pickle_string
+from cloudpickle import dumps as save_pickle_string, loads as load_pickle_string
 from io import BytesIO
-from functools import partial
 from h5py import File as h5_file
 from py4j.java_gateway import java_import
 from inspect import signature as get_model_params
@@ -15,22 +14,26 @@ from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.feature import IndexToString
 from pyspark.ml.wrapper import JavaModel
 from pyspark.sql.types import StructType
+from pyspark.sql.dataframe import DataFrame as SparkDF
+from pandas.core.frame import DataFrame as PandasDF
 
 from splicemachine.spark.constants import SQL_TYPES
 from splicemachine.mlflow_support.constants import *
 from mleap.pyspark.spark_support import SimpleSparkSerializer
+from mleap.version import __version__ as MLEAP_VERSION
 
 import sklearn.base
 from sklearn import __version__ as sklearn_version
 from sklearn.pipeline import Pipeline as SKPipeline
 from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow.keras.models import load_model as load_kr_model
+from tensorflow.keras import Model as KerasModel
+from tensorflow.keras import __version__ as KERAS_VERSION
 
 import h2o
 from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pyspark.ml.pipeline import PipelineModel
 from typing import List, Dict, Tuple
-
 
 class SpliceMachineException(Exception):
     pass
@@ -50,23 +53,31 @@ class H2OUtils:
     def prep_model_for_deployment(splice_context: PySpliceContext,
                                   model: H2OModel,
                                   classes: List[str],
-                                  run_id: str) -> (H2OModelType, List[str]):
+                                  run_id: str,
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (H2OModelType, List[str]):
         """
-        All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
-        :param fittedPipe:
-        :param df:
+        Gets the H2O mojo model
+        Gets the model type
+        Inserts the raw model into the MODELS table
+        gets the classes (if applicable)
+        returns the model type and classes
+        :param splice_context:
+        :param model:
         :param classes:
-        :return:  model (mleap), model_type (Enum), classes (List(str))
+        :param run_id:
+        :return:
         """
 
         # Get the H2O MOJO model and insert it into the MODELS table
         h2omojo, rawmojo = H2OUtils.get_h2omojo_model(splice_context, model)
-        H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
+        model_already_exists = H2OUtils.insert_h2omojo_model(splice_context, run_id, h2omojo)
 
         # Get model type
         model_type, model_category = H2OUtils.get_model_type(h2omojo)
         if classes:
-            if model_type not in (H2OModelType.KEY_VALUE_RETURN, H2OModelType.CLASSIFICATION):
+            if model_type not in (H2OModelType.KEY_VALUE, H2OModelType.CLASSIFICATION):
                 print('Prediction labels found but model type does not support classes. Removing labels')
                 classes = None
             else:
@@ -80,7 +91,7 @@ class H2OUtils:
             if model_type == H2OModelType.CLASSIFICATION:
                 # Add a column for each class of the prediction to output the probability of the prediction
                 classes = [f'p{i}' for i in list(rawmojo.getDomainValues(rawmojo.getResponseIdx()))]
-            elif model_type == H2OModelType.KEY_VALUE_RETURN:
+            elif model_type == H2OModelType.KEY_VALUE:
                 # These types have defined outputs, and we can preformat the column names
                 if model_category == 'AutoEncoder':  # The input columns are the output columns (reconstruction)
                     classes = [f'{i}_reconstr' for i in list(rawmojo.getNames())]
@@ -98,7 +109,7 @@ class H2OUtils:
                 elif model_category == 'AnomalyDetection':
                     classes = ['score', 'normalizedScore']
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
     @staticmethod
     def get_model_type(h2omojo: object) -> (H2OModelType, str):
@@ -110,7 +121,7 @@ class H2OUtils:
         elif cat in ('Binomial', 'Multinomial', 'Ordinal'):
             model_type = H2OModelType.CLASSIFICATION
         elif cat in ('AutoEncoder', 'TargetEncoder', 'DimReduction', 'WordEmbedding', 'AnomalyDetection'):
-            model_type = H2OModelType.KEY_VALUE_RETURN
+            model_type = H2OModelType.KEY_VALUE
         else:
             raise SpliceMachineException(f"H2O model {cat} is not supported! Only models with MOJOs are currently supported.")
         return model_type, cat
@@ -145,20 +156,14 @@ class H2OUtils:
         return model
 
     @staticmethod
-    def insert_h2omojo_model(splice_context: PySpliceContext, run_id: str, model: object) -> None:
-        model_exists = splice_context.df(
-            f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-        if model_exists:
-            print(
-                'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
-        else:
-            baos = splice_context.jvm.java.io.ByteArrayOutputStream()
-            oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
-            oos.writeObject(model)
-            oos.flush()
-            oos.close()
-            byte_array = baos.toByteArray()
-            insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
+    def insert_h2omojo_model(splice_context: PySpliceContext, run_id: str, model: object) -> bool:
+        baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+        oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+        oos.writeObject(model)
+        oos.flush()
+        oos.close()
+        byte_array = baos.toByteArray()
+        return insert_model(splice_context, run_id, byte_array, 'h2omojo', h2o.__version__)
 
 
 class SKUtils:
@@ -172,17 +177,9 @@ class SKUtils:
         return load_pickle_string(model_blob)
 
     @staticmethod
-    def insert_sklearn_model(splice_context: PySpliceContext, run_id: str, model: ScikitModel) -> None:
-        model_exists = splice_context.df(
-            f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-        if model_exists:
-            print(
-                'WARN: A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.'
-                '\nTo replace, use a new run_id'
-            )
-        else:
-            byte_stream = save_pickle_string(model)
-            insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
+    def insert_sklearn_model(splice_context: PySpliceContext, run_id: str, model: ScikitModel) -> bool:
+        byte_stream = save_pickle_string(model)
+        return insert_model(splice_context, run_id, byte_stream, 'sklearn', sklearn_version)
 
     @staticmethod
     def validate_sklearn_args(model: ScikitModel, sklearn_args: Dict[str, str]) -> Dict[str, str]:
@@ -213,7 +210,11 @@ class SKUtils:
                 t = ('return_std', 'return_cov')
                 exc = f'predict_args value is invalid. Available options are {t}'
             else:
-                model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
+                if isinstance(model, SKPipeline): # If we are working with a Pipeline, we want to check the last step for arguments
+                    m = model.steps[-1][-1]
+                    model_params = get_model_params(m.predict) if hasattr(m, 'predict') else get_model_params(m.transform)
+                else:
+                    model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
                 if p not in model_params.parameters:
                     exc = f'predict_args set to {p} but that parameter is not available for this model!'
         elif sklearn_args and 'predict_args' not in sklearn_args and 'predict_call' not in sklearn_args:
@@ -230,12 +231,14 @@ class SKUtils:
                                   model: ScikitModel,
                                   classes: List[str],
                                   run_id: str,
-                                  sklearn_args: Dict[str, str]) -> (str, List[str]):
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (SklearnModelType, List[str]):
 
         sklearn_args = SKUtils.validate_sklearn_args(model, sklearn_args)
 
         model_type = SKUtils.get_model_type(model, sklearn_args)
-        SKUtils.insert_sklearn_model(splice_context, run_id, model)
+        model_already_exists = SKUtils.insert_sklearn_model(splice_context, run_id, model)
         if classes and model_type != SklearnModelType.KEY_VALUE:
             print('Prediction labels found but model is not type Classification. Removing labels')
             classes = None
@@ -253,7 +256,7 @@ class SKUtils:
                 classes = ['prediction', sklearn_args.get('predict_args').lstrip('return_')]
             elif hasattr(model, 'classes_') and model.classes_.size != 0:
                 classes = [f'C{i}' for i in model.classes_]
-            elif hasattr(model, 'get_params'):
+            elif hasattr(model, 'get_params') and ( hasattr(model,'n_components') or hasattr(model,'n_components') ):
                 params = model.get_params()
                 nclasses = params.get('n_clusters') or params.get('n_components')
                 classes = [f'C{i}' for i in range(nclasses)]
@@ -266,7 +269,7 @@ class SKUtils:
         if classes:
             print(f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
     @staticmethod
     def get_pipeline_model_type(pipeline: SKPipeline) -> SklearnModelType:
@@ -281,7 +284,7 @@ class SKUtils:
                 model_type = SklearnModelType.POINT_PREDICTION_CLF
                 break
             elif isinstance(step, sklearn.base.RegressorMixin):
-                model_type = SklearnModelType.POINT_PREDICTION_REG
+                model_type = SklearnModelType.REGRESSION
                 break
         if not model_type:
             raise SpliceMachineException('Could not determine the type of Pipeline! Model stage is not of '
@@ -299,7 +302,7 @@ class SKUtils:
                 if isinstance(model, SKPipeline):
                     model_type = SKUtils.get_pipeline_model_type(model)
                 elif isinstance(model, sklearn.base.RegressorMixin):
-                    model_type = SklearnModelType.POINT_PREDICTION_REG
+                    model_type = SklearnModelType.REGRESSION
                 elif isinstance(model, (sklearn.base.ClusterMixin, sklearn.base.ClassifierMixin)):
                     model_type = SklearnModelType.POINT_PREDICTION_CLF
                 else:
@@ -326,6 +329,80 @@ class KerasUtils:
     def load_keras_model(model_blob):
         hfile = h5_file(BytesIO(model_blob), 'r')
         return load_kr_model(hfile)
+
+    @staticmethod
+    def insert_keras_model(splice_context: PySpliceContext, run_id: str, model: KerasModel) -> bool:
+        model.save('/tmp/model.h5')
+        with open('/tmp/model.h5', 'rb') as f:
+            byte_stream = bytearray(bytes(f.read()))
+        remove('/tmp/model.h5')
+        return insert_model(splice_context, run_id, byte_stream, 'keras', KERAS_VERSION)
+
+    @staticmethod
+    def get_keras_model_type(model: KerasModel, pred_threshold: float) -> KerasModelType:
+        """
+        Keras models are either Key value returns or "regression" (single value)
+        If the output layer has multiple nodes, or there is a threshold (for binary classification), it will
+           be a key value return because n values will be returned (n = # output nodes + 1)
+        :param model:
+        :param pred_threshold:
+        :return:
+        """
+        if model.layers[-1].output_shape[-1] > 1 or pred_threshold:
+            model_type = KerasModelType.KEY_VALUE
+        else:
+            model_type = KerasModelType.REGRESSION
+        return model_type
+
+    @staticmethod
+    def validate_keras_model(model: KerasModel) -> None:
+        """
+        Right now, we only support feed forward models. Vector inputs and Vector outputs only
+        When we move to LSTMs we will need to change that
+        :param model:
+        :return:
+        """
+        input_shape = model.layers[0].input_shape
+        output_shape = model.layers[-1].output_shape
+        if len(input_shape) != 2 or input_shape[0] or len(output_shape) != 2 or output_shape[0]:
+            raise SpliceMachineException("We currently only support feed-forward models. The input and output shapes"
+                                         "of the models must be (None, #). Please raise an issue here: https://github.com/splicemachine/pysplice/issues")
+
+    @staticmethod
+    def prep_model_for_deployment(splice_context: PySpliceContext,
+                                  model: KerasModel,
+                                  classes: List[str],
+                                  run_id: str,
+                                  df: SparkDF or None,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None)-> (KerasModelType, List[str]):
+        """
+        Inserts the model into the MODELS table for deployment
+        Gets the Keras model type
+        Gets the classes (if applicable)
+        :param splice_context: PySpliceContext
+        :param model: KerasModel
+        :param classes: List[str] the class labels
+        :param run_id: str
+        :param pred_threshold: double
+        :return: (KerasModelType, List[str]) the modelType and the classes
+        """
+        KerasUtils.validate_keras_model(model)
+        model_already_exists = KerasUtils.insert_keras_model(splice_context, run_id, model)
+        model_type: KerasModelType = KerasUtils.get_keras_model_type(model, pred_threshold)
+        if model_type == KerasModelType.KEY_VALUE:
+            output_shape = model.layers[-1].output_shape
+            if classes and len(classes) != output_shape[-1]:
+                raise SpliceMachineException(f'The number of classes, {len(classes)}, does not match '
+                                             f'the output shape of your model, {output_shape}')
+            elif not classes:
+                classes = ['prediction'] + [f'output{i}' for i in range(output_shape[-1])]
+            else:
+                classes = ['prediction'] + classes
+            if len(classes) > 2 and pred_threshold:
+                print(f"Found multiclass model with pred_threshold {pred_threshold}. Ignoring threshold.")
+        return model_type, classes, model_already_exists
+
 
 
 class SparkUtils:
@@ -533,7 +610,7 @@ class SparkUtils:
         bis = jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
         ois = jvm.java.io.ObjectInputStream(bis)
         pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
-        # PipelineModel to Python PipelineModel
+                                                               # PipelineModel to Python PipelineModel
         ois.close()
 
         if len(pipeline.stages) == 1 and not SparkUtils.is_spark_pipeline(pipeline.stages[0]):
@@ -542,13 +619,19 @@ class SparkUtils:
         return pipeline
 
     @staticmethod
-    def prep_model_for_deployment(splice_context, fittedPipe, df, classes, run_id):
+    def prep_model_for_deployment(splice_context: PySpliceContext,
+                                  fittedPipe: PipelineModel,
+                                  classes: List[str],
+                                  run_id: str,
+                                  df: SparkDF,
+                                  pred_threshold: float or None,
+                                  sklearn_args: Dict[str,str] or None) -> (SparkModelType, List[str]):
         """
         All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
         :param fittedPipe:
         :param df:
         :param classes:
-        :return:  model (mleap), model_type (Enum), classes (List(str))
+        :return:
         """
         # Get model type
         model_type = SparkUtils.get_model_type(fittedPipe)
@@ -574,9 +657,9 @@ class SparkUtils:
             df = fittedPipe.transform(df)
         # Get the Mleap model and insert it into the MODELS table
         mleap_model = get_mleap_model(splice_context, fittedPipe, df, run_id)
-        insert_mleap_model(splice_context, run_id, mleap_model)
+        model_already_exists = insert_mleap_model(splice_context, run_id, mleap_model)
 
-        return model_type, classes
+        return model_type, classes, model_already_exists
 
 
 def get_model_library(model) -> DBLibraries:
@@ -585,14 +668,16 @@ def get_model_library(model) -> DBLibraries:
     :param model: The trained model
     :return: DBLibraries
     """
-    lib = None
-    model_class = str(model.__class__)
-    if 'h2o' in model_class.lower():
+    if isinstance(model, H2OModel):
         lib = DBLibraries.H2OMOJO
     elif isinstance(model, SparkModel):
         lib = DBLibraries.MLeap
     elif isinstance(model, ScikitModel):
         lib = DBLibraries.SKLearn
+    elif isinstance(model, KerasModel):
+        lib = DBLibraries.Keras
+    else:
+        raise SpliceMachineException(f"Submitted Model is not valid for database deployment! Valid models are {DBLibraries.SUPPORTED_LIBRARIES}")
     return lib
 
 
@@ -625,7 +710,7 @@ def get_user():
             " Cloud Jupyter is currently unsupported")
 
 
-def insert_model(splice_context, run_id, byte_array, library, version):
+def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str, version: str) -> bool:
     """
     Insert a serialized model into the Mlmanager models table
     :param splice_context: pysplicectx
@@ -634,19 +719,30 @@ def insert_model(splice_context, run_id, byte_array, library, version):
     :param library: The library of the model (mleap, h2omojo etc)
     :param version: The version of the library
     """
-    db_connection = splice_context.getConnection()
-    file_size = getsizeof(byte_array)
-    print(f"Saving model of size: {file_size / 1000.0} KB to Splice Machine DB")
-    binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+    # If a model with this run_id already exists in the table, gracefully fail
+    # May be faster to use prepared statement
+    model_exists = splice_context.df(
+        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
+    if model_exists:
+        print(
+            'A model with this run ID is already deployed. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
+        return True
 
-    prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
-    prepared_statement.setString(1, run_id)
-    prepared_statement.setBinaryStream(2, binary_input_stream)
-    prepared_statement.setString(3, library)
-    prepared_statement.setString(4, version)
+    else:
+        db_connection = splice_context.getConnection()
+        file_size = getsizeof(byte_array)
+        print(f"Saving model of size: {file_size / 1000.0} KB to Splice Machine DB")
+        binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
 
-    prepared_statement.execute()
-    prepared_statement.close()
+        prepared_statement = db_connection.prepareStatement(SQL.MODEL_INSERT_SQL)
+        prepared_statement.setString(1, run_id)
+        prepared_statement.setBinaryStream(2, binary_input_stream)
+        prepared_statement.setString(3, library)
+        prepared_statement.setString(4, version)
+
+        prepared_statement.execute()
+        prepared_statement.close()
+        return False
 
 
 def insert_artifact(splice_context, name, byte_array, run_uuid, file_ext=None):
@@ -712,7 +808,9 @@ def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
     return obj
 
 
-def insert_mleap_model(splice_context, run_id, model):
+def insert_mleap_model(splice_context: PySpliceContext,
+                       run_id: str,
+                       model: PipelineModel or SparkModel) -> bool:
     """
     Insert an MLeap Transformer model into the database as a Blob
     :param splice_context: pysplicectx
@@ -721,52 +819,72 @@ def insert_mleap_model(splice_context, run_id, model):
     :param model: (Transformer) the fitted Mleap Transformer (pipeline)
     """
 
-    # If a model with this run_id already exists in the table, gracefully fail
-    # May be faster to use prepared statement
-    model_exists = splice_context.df(
-        f'select count(*) from {SQL.MLMANAGER_SCHEMA}.models where RUN_UUID=\'{run_id}\'').collect()[0][0]
-    if model_exists:
-        print(
-            'A model with this ID already exists in the table. We are NOT replacing it. We will use the currently existing model.\nTo replace, use a new run_id')
-
-    else:
-        # Serialize Mleap model to BLOB
-        baos = splice_context.jvm.java.io.ByteArrayOutputStream()
-        oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
-        oos.writeObject(model)
-        oos.flush()
-        oos.close()
-        byte_array = baos.toByteArray()
-        insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
+    # Serialize Mleap model to BLOB
+    baos = splice_context.jvm.java.io.ByteArrayOutputStream()
+    oos = splice_context.jvm.java.io.ObjectOutputStream(baos)
+    oos.writeObject(model)
+    oos.flush()
+    oos.close()
+    byte_array = baos.toByteArray()
+    return insert_model(splice_context, run_id, byte_array, 'mleap', MLEAP_VERSION)
 
 
-def validate_primary_key(primary_key):
+def validate_primary_key(splice_ctx: PySpliceContext,
+                         primary_key: List[Tuple[str,str]] or None,
+                         schema: str or None,
+                         table: str or None) -> List[str] or None:
     """
-    Function to validate the primary key passed by the user conforms to SQL
+    Function to validate the primary key passed by the user conforms to SQL. If the user is deploying to an existing table
+    This verifies that the table has a primary key
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
     """
-    regex = re.compile('[^a-zA-Z]')
-    for i in primary_key:
-        sql_datatype = regex.sub('', i[1]).upper()
-        if sql_datatype not in SQL_TYPES:
-            raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
-                             f'Value {i[1]} should be a SQL type but isn\'t')
+    if primary_key:
+        regex = re.compile('[^a-zA-Z]')
+        for i in primary_key:
+            sql_datatype = regex.sub('', i[1]).upper()
+            if sql_datatype not in SQL_TYPES:
+                raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
+                                 f'Value {i[1]} should be a SQL type but isn\'t')
+    else:
+        ps = splice_ctx.getConnection().prepareStatement(f"CALL sysibm.sqlprimarykeys('splicedb','{schema}','{table}','')")
+        rs = ps.executeQuery()
+        pks = []
+        while rs.next(): pks.append(rs.getString(4).lower())
+        if not pks:
+            raise SpliceMachineException('The provided table has no primary keys. It must have a primary key before deployment')
+        pks = [(i,None) for i in pks]
+        return pks
 
 
-def create_data_table(splice_context, schema_table_name, schema_str, primary_key,
-                      verbose):
+def create_model_deployment_table(splice_context: PySpliceContext,
+                                  run_id: str,
+                                  schema_table_name: str,
+                                  schema_str: str,
+                                  classes: List[str],
+                                  primary_key: List[Tuple[str,str]],
+                                  model_type: Enum,
+                                  verbose: bool) -> None:
     """
     Creates the table that holds the columns of the feature vector as well as a unique MOMENT_ID
     :param splice_context: pysplicectx
+    :param run_id: (str) the run_id for this model
     :param schema_table_name: (str) the schema.table to create the table under
     :param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
+    :param classes: (List[str]) the labels of the model (if they exist)
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+    :param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
     :param verbose: (bool) whether to print the SQL query
     """
     if splice_context.tableExists(schema_table_name):
         raise SpliceMachineException(
-            f'A model has already been deployed to table {schema_table_name}. We currently only support deploying 1 model per table')
-    SQL_TABLE = f'CREATE TABLE {schema_table_name} (\n' + schema_str
+            f'The table {schema_table_name} already exists. To deploy to an existing table, do not pass in a dataframe or '
+            f'The create_model_table parameter')
+    SQL_TABLE = f"""CREATE TABLE {schema_table_name} (\
+                \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
+                \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                \tRUN_ID VARCHAR(50) DEFAULT '{run_id}',
+                \n {schema_str}
+                """
 
     pk_cols = ''
     for i in primary_key:
@@ -774,83 +892,108 @@ def create_data_table(splice_context, schema_table_name, schema_str, primary_key
         if i[0] not in schema_str:
             SQL_TABLE += f'\t{i[0]} {i[1]},\n'
         pk_cols += f'{i[0]},'
+
+
+    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.REGRESSION,
+                      KerasModelType.REGRESSION):
+        SQL_TABLE += '\tPREDICTION DOUBLE,\n'
+
+    elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
+                       H2OModelType.CLASSIFICATION):
+        SQL_TABLE += '\tPREDICTION VARCHAR(5000),\n'
+        for i in classes:
+            SQL_TABLE += f'\t"{i}" DOUBLE,\n'
+    elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
+        for i in classes:
+            SQL_TABLE += f'\t"{i}" DOUBLE,\n'
+
+    elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
+        SQL_TABLE += '\tPREDICTION INT,\n'
+
     SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
 
     if verbose: print('\n', SQL_TABLE, end='\n\n')
     splice_context.execute(SQL_TABLE)
 
-
-def create_data_preds_table(splice_context: PySpliceContext,
-                            run_id: str,
-                            schema_table_name: str,
-                            classes: List[str],
-                            primary_key: List[Tuple[str,str]],
-                            model_type: Enum,
-                            verbose: bool) -> None:
+def alter_model_table(splice_context: PySpliceContext,
+                      run_id: str,
+                      schema_table_name: str,
+                      classes: List[str],
+                      model_type: Enum,
+                      verbose: bool) -> None:
     """
-    Creates the data prediction table that holds the prediction for the rows of the data table
+    Alters the provided table for deployment. Adds columns for storing model results as well as metadata such as
+    current user, eval time and run_id
     :param splice_context: pysplicectx
-    :param schema_table_name: (str) the schema.table to create the table under
     :param run_id: (str) the run_id for this model
+    :param schema_table_name: (str) the schema.table to create the table under
     :param classes: (List[str]) the labels of the model (if they exist)
     :param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
     :param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
     :param verbose: (bool) whether to print the SQL query
-    Regression models output a DOUBLE as the prediction field with no probabilities
-    Classification models and Certain Clustering models have probabilities associated with them, so we need to handle the extra columns holding those probabilities
-    Clustering models without probabilities return only an INT.
-    The database is strongly typed so we need to specify the output type for each ModelType
     """
-    SQL_PRED_TABLE = f'''CREATE TABLE {schema_table_name}_PREDS (
-        \tCUR_USER VARCHAR(50) DEFAULT CURRENT_USER,
-        \tEVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        \tRUN_ID VARCHAR(50) DEFAULT \'{run_id}\',
-        '''
-    pk_cols = ''
-    for i in primary_key:
-        SQL_PRED_TABLE += f'\t{i[0]} {i[1]},\n'
-        pk_cols += f'{i[0]},'
 
-    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG):
-        SQL_PRED_TABLE += '\tPREDICTION DOUBLE,\n'
+    # Table needs to exist
+    if not splice_context.tableExists(schema_table_name):
+        raise SpliceMachineException(
+            f'The table {schema_table_name} does not exist. To create a new table for deployment, pass in a dataframe and '
+            f'The set create_model_table=True')
+
+    # Currently we only support deploying 1 model to a table
+    schema = splice_context.getSchema(schema_table_name)
+    reserved_fields = set(['CUR_USER', 'EVAL_TIME', 'RUN_ID', 'PREDICTION'] + classes)
+    for field in schema:
+        if field.name in reserved_fields:
+            raise SpliceMachineException(f'The table {schema_table_name} looks like it already has values associated with '
+                                         f'a deployed model. Only 1 model can be deployed to a table currently.'
+                                         f'The table cannot have the following fields: {reserved_fields}')
+
+    # Splice cannot currently add multiple columns in an alter statement so we need to make a bunch and execute all of them
+    SQL_ALTER_TABLE = []
+    alter_table_syntax = f'ALTER TABLE {schema_table_name} ADD COLUMN'
+    SQL_ALTER_TABLE.append(f'{alter_table_syntax} CUR_USER VARCHAR(50) DEFAULT CURRENT_USER')
+    SQL_ALTER_TABLE.append(f'{alter_table_syntax} EVAL_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+    SQL_ALTER_TABLE.append(f'{alter_table_syntax} RUN_ID VARCHAR(50) DEFAULT \'{run_id}\'')
+
+    # Add the correct prediction type
+    if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.REGRESSION,
+                      KerasModelType.REGRESSION):
+        SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION DOUBLE')
 
     elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
                        H2OModelType.CLASSIFICATION):
-        SQL_PRED_TABLE += '\tPREDICTION VARCHAR(250),\n'
+        SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION VARCHAR(5000)')
         for i in classes:
-            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
-    elif model_type in (H2OModelType.KEY_VALUE_RETURN, SklearnModelType.KEY_VALUE):
+            SQL_ALTER_TABLE.append(f'{alter_table_syntax} "{i}" DOUBLE')
+
+    elif model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
         for i in classes:
-            SQL_PRED_TABLE += f'\t"{i}" DOUBLE,\n'
+            SQL_ALTER_TABLE.append(f'{alter_table_syntax} "{i}" DOUBLE')
 
     elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
-        SQL_PRED_TABLE += '\tPREDICTION INT,\n'
+        SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION INT')
 
-    SQL_PRED_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
-
-    if verbose:
-        print()
-        print(SQL_PRED_TABLE, end='\n\n')
-    splice_context.execute(SQL_PRED_TABLE)
-
+    # SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
+    for sql in SQL_ALTER_TABLE:
+        if verbose: print(sql)
+        splice_context.execute(sql)
 
 def create_vti_prediction_trigger(splice_context: PySpliceContext,
                                   schema_table_name: str,
                                   run_id: str,
                                   feature_columns: List[str],
-                                  schema_types: StructType,
+                                  schema_types: Dict[str,str],
                                   schema_str: str,
                                   primary_key: List[Tuple[str, str]],
                                   classes: List[str],
                                   model_type: Enum,
                                   sklearn_args: Dict[str, str],
+                                  pred_threshold: float,
                                   verbose: bool) -> None:
 
     prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, '{schema_str}'"
 
-    #predict_call = sklearn_args.get('predict_call', )
     if model_type == SklearnModelType.KEY_VALUE:
-        prediction_call += ", '{predict_call}', '{predict_args}')"
         if not sklearn_args: # This must be a .transform call
             predict_call, predict_args = 'transform', None
         elif 'predict_call' in sklearn_args and 'predict_args' in sklearn_args:
@@ -859,16 +1002,19 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
             predict_call, predict_args = 'predict', sklearn_args['predict_args']
         elif 'predict_call' in sklearn_args:
             predict_call, predict_args = sklearn_args['predict_call'], None
-    else:
-        prediction_call += ')'
+        else:
+            raise SpliceMachineException('You had an invalid key in your sklearn_args. Valid keys (predict_call, predict_args)')
 
-    SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
-                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
-                       f'{schema_table_name}_PREDS('
-    pk_vals = ''
-    for i in primary_key:
-        SQL_PRED_TRIGGER += f'{i[0]},'
-        pk_vals += f'\tNEWROW.{i[0]},'
+        prediction_call += f", '{predict_call}', '{predict_args}'"
+
+    elif model_type == KerasModelType.KEY_VALUE and len(classes) == 2 and pred_threshold:
+        prediction_call +=  f", '{pred_threshold}'"
+
+    prediction_call += ')'
+    schema = schema_table_name.split('.')[0]
+    SQL_PRED_TRIGGER = f'CREATE TRIGGER {schema}.runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
+                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tUPDATE ' \
+                       f'{schema_table_name} SET ('
 
     output_column_names = ''  # Names of the output columns from the model
     output_cols_VTI_reference = ''  # Names references from the VTI (ie b.COL_NAME)
@@ -881,28 +1027,33 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     raw_data = ''
     for i, col in enumerate(feature_columns):
         raw_data += '||' if i != 0 else ''
-        inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
+        if schema_types[str(col)] == 'StringType':
+            raw_data += f'NEWROW.{col}||\',\''
+        else:
+            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
                                                                                            'DecimalType'} else f'NEWROW.{col}'
-        raw_data += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
+            raw_data += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
 
     # Cleanup + schema for PREDICT call
     raw_data = raw_data[:-5].lstrip('||')
     schema_str_pred_call = schema_str.replace('\t', '').replace('\n', '').rstrip(',')
 
-    if model_type == SklearnModelType.KEY_VALUE:
-        prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call,
-                                                 predict_call=predict_call, predict_args=predict_args)
-    else:
-        prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
+    prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
 
 
-    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) SELECT {pk_vals} {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
-                        f' as b ({output_cols_schema[:-1]})'
+    SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) = ('
+    SQL_PRED_TRIGGER += f'SELECT {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
+                        f' as b ({output_cols_schema[:-1]}) WHERE 1=1) WHERE '
+
+    for i in primary_key:
+        SQL_PRED_TRIGGER += f'{i[0]} = NEWROW.{i[0]} AND'
+    # Remove last AND
+    SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-3]
 
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
-    splice_context.execute(SQL_PRED_TRIGGER.replace('\n', ' ').replace('\t', ' '))
+    splice_context.execute(SQL_PRED_TRIGGER.replace('\t', ' '))
 
 
 def create_prediction_trigger(splice_context, schema_table_name, run_id, feature_columns,
@@ -910,7 +1061,7 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
                               model_type, verbose):
     """
     Creates the trigger that calls the model on data row insert. This trigger will call predict when a new row is inserted into the data table
-    and insert the result into the predictions table.
+    and update the row to contain the prediction(s)
     :param splice_context: pysplicectx
     :param schema_table_name: (str) the schema.table to create the table under
     :param run_id: (str) the run_id to deploy the model under
@@ -924,35 +1075,36 @@ def create_prediction_trigger(splice_context, schema_table_name, run_id, feature
 
     if model_type in (SparkModelType.CLASSIFICATION, H2OModelType.CLASSIFICATION):
         prediction_call = 'MLMANAGER.PREDICT_CLASSIFICATION'
-    elif model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.POINT_PREDICTION_REG):
+    elif model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION,
+                        SklearnModelType.REGRESSION, KerasModelType.REGRESSION):
         prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
     elif model_type == SparkModelType.CLUSTERING_WITH_PROB:
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
     elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
-    elif model_type == H2OModelType.KEY_VALUE_RETURN:
+    elif model_type == H2OModelType.KEY_VALUE:
         prediction_call = 'MLMANAGER.PREDICT_KEY_VALUE'
 
-    SQL_PRED_TRIGGER = f'CREATE TRIGGER runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tAFTER INSERT\n ' \
-                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \t\tINSERT INTO ' \
-                       f'{schema_table_name}_PREDS('
-    pk_vals = ''
-    for i in primary_key:
-        SQL_PRED_TRIGGER += f'\t{i[0]},'
-        pk_vals += f'\tNEWROW.{i[0]},'
+    schema = schema_table_name.split('.')[0]
+    SQL_PRED_TRIGGER = f'CREATE TRIGGER {schema}.runModel_{schema_table_name.replace(".", "_")}_{run_id}\n \tBEFORE INSERT\n ' \
+                       f'\tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n \tFOR EACH ROW\n \tBEGIN ATOMIC \t\t' \
+                       f'SET NEWROW.PREDICTION='
 
-    SQL_PRED_TRIGGER += f'PREDICTION) VALUES({pk_vals}' + f'{prediction_call}(\'{run_id}\','
+    SQL_PRED_TRIGGER += f'{prediction_call}(\'{run_id}\','
 
     for i, col in enumerate(feature_columns):
         SQL_PRED_TRIGGER += '||' if i != 0 else ''
-        inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
-                                                                                           'DecimalType'} else f'NEWROW.{col}'
-        SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
+        if schema_types[str(col)] == 'StringType':
+            SQL_PRED_TRIGGER += f'NEWROW.{col}||\',\''
+        else:
+            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
+                                                                                               'DecimalType'} else f'NEWROW.{col}'
+            SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
 
     # Cleanup + schema for PREDICT call
     SQL_PRED_TRIGGER = SQL_PRED_TRIGGER[:-5].lstrip('||') + ',\n\'' + schema_str.replace('\t', '').replace('\n',
                                                                                                            '').rstrip(
-        ',') + '\'))'
+        ',') + '\');END'
     if verbose:
         print()
         print(SQL_PRED_TRIGGER, end='\n\n')
@@ -971,33 +1123,140 @@ def create_parsing_trigger(splice_context, schema_table_name, primary_key, run_i
     :param model_type: (Enum) the model type (H2OModelType or SparkModelType)
     :param verbose: (bool) whether to print the SQL query
     """
-    SQL_PARSE_TRIGGER = f'CREATE TRIGGER PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
-                        f'\n \tAFTER INSERT\n \tON {schema_table_name}_PREDS\n \tREFERENCING NEW AS NEWROW\n' \
-                        f' \tFOR EACH ROW\n \t\tUPDATE {schema_table_name}_PREDS set '
-    set_prediction_case_str = 'PREDICTION=\n\t\tCASE\n'
+    schema = schema_table_name.split('.')[0]
+    SQL_PARSE_TRIGGER = f'CREATE TRIGGER {schema}.PARSERESULT_{schema_table_name.replace(".", "_")}_{run_id}' \
+                        f'\n \tBEFORE INSERT\n \tON {schema_table_name}\n \tREFERENCING NEW AS NEWROW\n' \
+                        f' \tFOR EACH ROW\n \t\tBEGIN ATOMIC\n\t set '
+    set_prediction_case_str = 'NEWROW.PREDICTION=\n\t\tCASE\n'
     for i, c in enumerate(classes):
-        SQL_PARSE_TRIGGER += f'"{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
+        SQL_PARSE_TRIGGER += f'NEWROW."{c}"=MLMANAGER.PARSEPROBS(NEWROW.prediction,{i}),'
         set_prediction_case_str += f'\t\tWHEN MLMANAGER.GETPREDICTION(NEWROW.prediction)={i} then \'{c}\'\n'
-    set_prediction_case_str += '\t\tEND'
-    if model_type == H2OModelType.KEY_VALUE_RETURN:  # These models don't have an actual prediction
-        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + ' WHERE'
-    else:
-        SQL_PARSE_TRIGGER += set_prediction_case_str + ' WHERE'
 
-    for i in primary_key:
-        SQL_PARSE_TRIGGER += f' {i[0]}=NEWROW.{i[0]} AND'
-    SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER.replace(' AND', '')
+    set_prediction_case_str += '\t\tEND;'
+    if model_type == H2OModelType.KEY_VALUE:  # These models don't have an actual prediction
+        SQL_PARSE_TRIGGER = SQL_PARSE_TRIGGER[:-1] + 'END'
+    else:
+        SQL_PARSE_TRIGGER += set_prediction_case_str + 'END'
 
     if verbose:
         print()
         print(SQL_PARSE_TRIGGER, end='\n\n')
     splice_context.execute(SQL_PARSE_TRIGGER.replace('\n', ' ').replace('\t', ' '))
 
+def get_feature_columns_and_types(splice_ctx: PySpliceContext,
+                                   df: SparkDF or None,
+                                   create_model_table: bool,
+                                   model_cols: List[str] or None,
+                                   schema_table_name: str) -> Tuple[List[str], Dict[str,str]]:
+    """
 
-def drop_tables_on_failure(splice_context, schema_table_name, run_id) -> None:
+    :param df: The dataframe or None
+    :param create_model_table: bool if the user wants to create the table
+    :param schema_table_name: The table in question
+    :param model_cols: List[str] the columns that go into the feature vector for the model or None
+    :return: The feature columns as well as the schema types
     """
-    Drop the tables if the db deployment fails
+    if create_model_table:
+        assert type(df) in (SparkDF, PandasDF), "Dataframe must be a PySpark or Pandas dataframe!"
+        if type(df) == PandasDF:
+            df = splice_ctx.spark_session.createDataFrame(df)
+        if model_cols:
+            df = df.select(*model_cols)
+        feature_columns = df.columns
+        # Get the datatype of each column in the dataframe
+        schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in df.schema}
+    # Else they are deploying to an existing table
+    else:
+        if not splice_ctx.tableExists(schema_table_name):
+            raise SpliceMachineException("You've tried to deploy a model to a table that does not exist. "
+                                         "If you'd like to create the table using this function, please pass in a dataframe"
+                                         "and set create_model_table=True")
+        schema_from_table = splice_ctx.getSchema(schema_table_name)
+        if model_cols:
+            m = set([c.upper() for c in model_cols]) # set is O(1) lookup
+            schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table if i.name.upper() in m}
+            feature_columns = [i.name for i in schema_from_table if i.name.upper() in m]
+        else:
+            feature_columns = [i.name for i in schema_from_table]
+            schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table}
+
+    return feature_columns, schema_types
+
+def get_df_for_mleap(splice_ctx: PySpliceContext,
+                      schema_table_name: str,
+                      df: SparkDF or PandasDF or None) -> SparkDF or None:
     """
-    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
-    splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}_preds')
-    splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
+    MLeap needs a dataframe in order to serialize the model. If it's not passed in, we need to get it from an existing table
+    :param splice_ctx: PySpliceContext
+    :param schema_table_name: str the table to get the dataframe from
+    :param df: the dataframe if it exists or none
+    :param create_model_table: bool if the user wants to create the table
+    :return: df
+    """
+    if df:
+        if type(df) == PandasDF:
+            df = splice_ctx.spark_session.createDataFrame(df)
+
+    elif not splice_ctx.tableExists(schema_table_name):
+        raise SpliceMachineException('MLeap requires a dataframe to serialize a spark model. You must either pass in a '
+                                     'dataframe to use for serialization or provide a table that already exists into this function.'
+                                     'Note that the model will be deployed to that table.')
+    else:
+        df = splice_ctx.df(f'select top 1 * from {schema_table_name}')
+
+    return df
+
+def add_model_to_metadata(splice_context: PySpliceContext,
+                          run_id: str,
+                          schema_table_name: str) -> None:
+
+    if splice_context.tableExists(f'{SQL.MLMANAGER_SCHEMA}.MODEL_METADATA'):
+        schema_table_name = schema_table_name.upper()
+        schema, table = schema_table_name.split('.')
+
+        table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid "
+                                          f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
+
+        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}".upper()
+        trigger_id_1, create_ts = splice_context.df(f"select triggerid, varchar(creationtimestamp) from sys.systriggers "
+                                                    f"where triggername='{trigger_name_1}' and tableid='{table_id}'")\
+                                                    .collect()[0]
+
+        # Not all models will have a second trigger
+        trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}".upper()
+        trigger_id_2 = splice_context.df(f"select triggerid from sys.systriggers where triggername='{trigger_name_2}' "
+                                         f"and tableid='{table_id}'").collect()
+
+        # Adding extra single quote to trigger_id_2  case NULL
+        trigger_id_2 = f"'{trigger_id_2[0][0]}'" if trigger_id_2 else 'NULL'
+
+        # We don't add the quotes around trigger_id_2 here because we handle it above in the NULL case
+        splice_context.execute(f"INSERT INTO {SQL.MLMANAGER_SCHEMA}.MODEL_METADATA"
+                               f"(RUN_UUID, ACTION, TABLEID, TRIGGER_TYPE, TRIGGERID, TRIGGERID_2, DB_ENV, DB_USER, ACTION_DATE)"
+                               f"values ('{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2},"
+                               f"'PROD', '{get_user()}', '{create_ts}')")
+
+
+
+def drop_tables_on_failure(splice_context: PySpliceContext,
+                           schema_table_name: str,
+                           run_id: str,
+                           model_already_exists: bool) -> None:
+    """
+    Due to some limitations DB-7726 we can't use fully utilize a single consistent JDBC connection using NSDS
+    So we will try to rollback on failure using basic logic.
+
+    If the model was already in the models table (ie it had been deployed before), we will leave it. Otherwise, delete
+    Leave the tables.
+    """
+
+    # splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
+    if not model_already_exists:
+        splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
+
+ModelUtils = {
+    DBLibraries.MLeap: SparkUtils,
+    DBLibraries.H2OMOJO: H2OUtils,
+    DBLibraries.Keras: KerasUtils,
+    DBLibraries.SKLearn: SKUtils,
+}
