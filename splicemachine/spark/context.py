@@ -483,8 +483,8 @@ class PySpliceContext:
         """
         Drop table if it exists
         """
-        print('Dropping table {schema}.{table}'.format(schema=schema, table=table))
-        self.execute('DROP TABLE IF EXISTS {schema}.{table}'.format(schema=schema, table=table))
+        print('Dropping table {st}'.format(st=schema_table_name))
+        self.execute('DROP TABLE IF EXISTS {st}'.format(st=schema_table_name))
 
     def _jstructtype(self, schema):
         """
@@ -508,10 +508,10 @@ class PySpliceContext:
             self._dropTableIfExists(schema_table_name)
         if to_upper:
             dataframe = self.toUpper(dataframe)
-        primary_keys = primary_keys if primary_keys else ()
-        self.createTableWithSchema(schema_table_name, dataframe.schema, primary_keys=primary_keys, create_table_options=create_table_options)
+        primary_keys = primary_keys if primary_keys else []
+        self.createTableWithSchema(schema_table_name, dataframe.schema, keys=primary_keys, create_table_options=create_table_options)
         
-    def createTableWithSchema(self, schema_table_name, schema, primary_keys=None, create_table_options=None):
+    def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
         """
         Creates a schema.table from a schema
         :param schema_table_name: str The schema.table to create
@@ -519,9 +519,10 @@ class PySpliceContext:
         :param keys: List[str] The primary keys. Default None
         :param create_table_options: str The additional table-level SQL options. Default None
         """
-        primary_keys = primary_keys if primary_keys else ()
-        keys_seq = self.jvm.PythonUtils.toSeq(primary_keys)
-
+        if keys:
+            keys_seq = self.jvm.PythonUtils.toSeq(keys)
+        else:
+            keys_seq = self.jvm.PythonUtils.toSeq([])
         self.context.createTable(
             schema_table_name,
             self._jstructtype(schema),
