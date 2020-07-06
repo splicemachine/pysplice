@@ -1,5 +1,5 @@
 import random
-from IPython.core.display import HTML
+from IPython.display import IFrame, HTML, display
 
 def hide_toggle(toggle_next=False):
     """
@@ -38,3 +38,7 @@ def hide_toggle(toggle_next=False):
     )
 
     return HTML(html)
+
+def get_mlflow_ui():
+    display(HTML('<font size=\"+1\"><a target=\"_blank\" href=/mlflow>MLFlow UI</a></font>'))
+    return IFrame(src='/mlflow', width='100%', height='500px')

@@ -395,9 +395,7 @@ def _log_artifact(file_name, name=None, run_uuid=None):
         byte_stream = bytearray(bytes(artifact.read()))
 
     run_id = run_uuid or mlflow.active_run().info.run_uuid
-
     name = name or file_name
-
     insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
 
 
