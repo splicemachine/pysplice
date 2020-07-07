@@ -379,7 +379,7 @@ def _load_model(run_id=None, name=None):
 
 
 @_mlflow_patch('log_artifact')
-def _log_artifact(file_name, name, run_uuid=None):
+def _log_artifact(file_name, name=None, run_uuid=None):
     """
     Log an artifact for the active run
     :param file_name: (str) the name of the file name to log
@@ -394,8 +394,8 @@ def _log_artifact(file_name, name, run_uuid=None):
     with open(file_name, 'rb') as artifact:
         byte_stream = bytearray(bytes(artifact.read()))
 
-    run_id = run_uuid if run_uuid else mlflow.active_run().info.run_uuid
-
+    run_id = run_uuid or mlflow.active_run().info.run_uuid
+    name = name or file_name
     insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
 
 
