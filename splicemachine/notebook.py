@@ -1,5 +1,7 @@
 import random
 from IPython.display import IFrame, HTML, display
+from pyspark import SparkContext
+from os import environ as env_vars
 
 def hide_toggle(toggle_next=False):
     """
@@ -42,3 +44,18 @@ def hide_toggle(toggle_next=False):
 def get_mlflow_ui():
     display(HTML('<font size=\"+1\"><a target=\"_blank\" href=/mlflow>MLFlow UI</a></font>'))
     return IFrame(src='/mlflow', width='100%', height='500px')
+  
+def get_spark_ui(port=None, spark_session=None):
+    if port:
+        pass
+    elif spark_session:
+        port = spark_session.sparkContext.uiWebUrl.split(':')[-1]
+    elif SparkContext._active_spark_context:
+        port = SparkContext._active_spark_context.uiWebUrl.split(':')[-1]
+    else:
+        raise Exception('No parameters passed and no active Spark Session found.\n'
+                        'Either pass in the active Spark Session into the "spark_session" parameter or the port of that session into the "port" parameter.\n'\
+                        'You can find the port by running spark.sparkContext.uiWebUrl and taking the number after the \':\'')
+    user = env_vars.get('JUPYTERHUB_USER','user')
+    display(HTML(f'<font size=\"+1\"><a target=\"_blank\" href=/splicejupyter/user/{user}/sparkmonitor/{port}>Spark UI</a></font>'))
+    return IFrame(src=f'/splicejupyter/user/{user}/sparkmonitor/{port}', width='100%', height='500px')
