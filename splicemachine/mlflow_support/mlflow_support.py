@@ -34,8 +34,8 @@ _PYTHON_VERSION = py_version.split('|')[0].strip()
 
 def _mlflow_patch(name):
     """
-    Create a MLFlow Patch that applies the
-    default gorilla settings
+    Create a MLFlow Patch that applies the default gorilla settings
+
     :param name: destination name under mlflow package
     :return: decorator for patched function
     """
@@ -45,10 +45,9 @@ def _mlflow_patch(name):
 def _get_current_run_data():
     """
     Get the data associated with the current run.
-    As of MLFLow 1.6, it currently does not support getting
-
-    run info from the mlflow.active_run object, so we need it
+    As of MLFLow 1.6, it currently does not support getting run info from the mlflow.active_run object, so we need it
     to be retrieved via the tracking client.
+
     :return: active run data object
     """
     return _CLIENT.get_run(mlflow.active_run().info.run_id).data
@@ -58,9 +57,10 @@ def _get_current_run_data():
 def _get_run_ids_by_name(run_name, experiment_id=None):
     """
     Gets a run id from the run name. If there are multiple runs with the same name, all run IDs are returned
-    :param run_name: The name of the run
-    :param experiment_id: The experiment to search in. If None, all experiments are searched
-    :return: List of run ids
+
+    :param run_name: (str) The name of the run
+    :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]
+    :return: (List[str]) List of run ids
     """
     exps = [experiment_id] if experiment_id else _CLIENT.list_experiments()
     run_ids = []
@@ -74,9 +74,10 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
-    Register a Splice Context for Spark/Database operations
-    (artifact storage, for example)
-    :param splice_context:  splice context to input
+    Register a Splice Context for Spark/Database operations (artifact storage, for example)
+
+    :param splice_context: (PySpliceContext) splice context to input
+    :return: None
     """
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
@@ -100,7 +101,8 @@ def _check_for_splice_ctx():
 def _current_run_id():
     """
     Retrieve the current run id
-    :return: the current run id
+
+    :return: (str) the current run id
     """
     return mlflow.active_run().info.run_uuid
 
@@ -109,7 +111,8 @@ def _current_run_id():
 def _current_exp_id():
     """
     Retrieve the current exp id
-    :return: the current experiment id
+
+    :return: (int) the current experiment id
     """
     return mlflow.active_run().info.experiment_id
 
@@ -118,9 +121,10 @@ def _current_exp_id():
 def _lp(key, value):
     """
     Add a shortcut for logging parameters in MLFlow.
-    Accessible from mlflow.lp
-    :param key: key for the parameter
-    :param value: value for the parameter
+
+    :param key: (str) key for the parameter
+    :param value: (str) value for the parameter
+    :return: None
     """
     if len(str(value)) > 250 or len(str(key)) > 250:
         raise SpliceMachineException(f'It seems your parameter input is too long. The max length is 250 characters.'
@@ -132,9 +136,10 @@ def _lp(key, value):
 def _lm(key, value, step=None):
     """
     Add a shortcut for logging metrics in MLFlow.
-    Accessible from mlflow.lm
-    :param key: key for the parameter
-    :param value: value for the parameter
+
+    :param key: (str) key for the parameter
+    :param value: (str or int) value for the parameter
+    :param step: (int) A single integer step at which to log the specified Metrics. If unspecified, each metric is logged at step zero.
     """
     if len(str(key)) > 250:
         raise SpliceMachineException(f'It seems your metric key is too long. The max length is 250 characters,'
@@ -145,10 +150,11 @@ def _lm(key, value, step=None):
 @_mlflow_patch('log_model')
 def _log_model(model, name='model'):
     """
-    Log a fitted spark pipeline/model or H2O model
-    :param model: (PipelineModel or Model) is the fitted Spark Model/Pipeline or H2O model to store
+    Log a trained machine learning model
+
+    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
         with the current run
-    :param name: (str) the run relative name to store the model under
+    :param name: (str) the run relative name to store the model under. [Deault 'model']
     """
     _check_for_splice_ctx()
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
@@ -187,16 +193,18 @@ def _log_model(model, name='model'):
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
     """
     Start a new run
+
     :param tags: a dictionary containing metadata about the current run.
         For example:
             {
                 'team': 'pd',
                 'purpose': 'r&d'
             }
-    :param run_name: an optional name for the run to show up in the MLFlow UI
-    :param run_id: if you want to reincarnate an existing run, pass in the run id
-    :param experiment_id: if you would like to create an experiment/use one for this run
-    :param nested: Controls whether run is nested in parent run. True creates a nest run
+    :param run_name: (str) an optional name for the run to show up in the MLFlow UI. [Default None]
+    :param run_id: (str) if you want to reincarnate an existing run, pass in the run id [Default None]
+    :param experiment_id: (int) if you would like to create an experiment/use one for this run [Default None]
+    :param nested: (bool) Controls whether run is nested in parent run. True creates a nest run [Default False]
+    :return: (ActiveRun) the mlflow active run object
     """
     # Get the current running transaction ID for time travel/data governance
     _check_for_splice_ctx()
@@ -227,8 +235,10 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
 @_mlflow_patch('log_pipeline_stages')
 def _log_pipeline_stages(pipeline):
     """
-    Log the pipeline stages as params for the run
-    :param pipeline: fitted/unitted pipeline
+    Log the pipeline stages of a Spark Pipeline as params for the run
+
+    :param pipeline: (PipelineModel) fitted/unitted pipeline
+    :return: None
     """
     for stage_number, pipeline_stage in enumerate(SparkUtils.get_stages(pipeline)):
         readable_stage_name = SparkUtils.readable_pipeline_stage(pipeline_stage)
@@ -238,9 +248,11 @@ def _log_pipeline_stages(pipeline):
 @_mlflow_patch('log_feature_transformations')
 def _log_feature_transformations(unfit_pipeline):
     """
-    Log feature transformations for an unfit pipeline
-    Logs --> feature movement through the pipelien
-    :param unfit_pipeline: unfit pipeline to log
+    Log feature transformations for an unfit spark pipeline
+    Logs --> feature movement through the pipeline
+
+    :param unfit_pipeline: (PipelineModel) unfit spark pipeline to log
+    :return: None
     """
     transformations = defaultdict(lambda: [[], None])  # transformations, outputColumn
 
@@ -267,9 +279,9 @@ def _log_feature_transformations(unfit_pipeline):
 @_mlflow_patch('log_model_params')
 def _log_model_params(pipeline_or_model):
     """
-    Log the parameters of a fitted model or a
-    model part of a fitted pipeline
-    :param pipeline_or_model: fitted pipeline/fitted model
+    Log the parameters of a fitted spark model or a model stage of a fitted spark pipeline
+
+    :param pipeline_or_model: fitted spark pipeline/fitted spark model
     """
     model = SparkUtils.get_model_stage(pipeline_or_model)
 
@@ -294,9 +306,17 @@ def _log_model_params(pipeline_or_model):
 def _timer(timer_name, param=True):
     """
     Context manager for logging
-    :param timer_name:
-    :param param: whether or not to log the timer as a param (default=True). If false, logs as metric.
-    :return:
+
+    :param timer_name: (str) the name of the timer
+    :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.
+
+    USAGE:
+    ```
+    with mlflow.timer('my_timer'):
+       ...
+    ```
+
+    :return: None
     """
     try:
         print(f'Starting Code Block {timer_name}...', end=' ')
@@ -315,15 +335,12 @@ def _timer(timer_name, param=True):
 @_mlflow_patch('download_artifact')
 def _download_artifact(name, local_path, run_id=None):
     """
-    Download the artifact at the given
-    run id (active default) + name
-    to the local path
-    :param name: (str) artifact name to load
-      (with respect to the run)
-    :param local_path: (str) local path to download the
-      model to. This path MUST include the file extension
-    :param run_id: (str) the run id to download the artifact
-      from. Defaults to active run
+    Download the artifact at the given run id (active default) + name to the local path
+
+    :param name: (str) artifact name to load (with respect to the run)
+    :param local_path: (str) local path to download the model to. This path MUST include the file extension
+    :param run_id: (str) the run id to download the artifact from. Defaults to active run
+    :return: None
     """
     _check_for_splice_ctx()
     file_ext = path.splitext(local_path)[1]
@@ -341,16 +358,17 @@ def _download_artifact(name, local_path, run_id=None):
 def _get_model_name(run_id):
     """
     Gets the model name associated with a run or None
-    :param run_id:
-    :return: str or None
+
+    :param run_id: (str) the run_id that the model is stored under
+    :return: (str or None) The model name if it exists
     """
     return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
 
 @_mlflow_patch('load_model')
 def _load_model(run_id=None, name=None):
     """
-    Download a model from database
-    and load it into Spark
+    Download and deserialize a serialized model
+
     :param run_id: the id of the run to get a model from
         (the run must have an associated model with it named spark_model)
     :param name: the name of the model in the database
@@ -382,6 +400,7 @@ def _load_model(run_id=None, name=None):
 def _log_artifact(file_name, name=None, run_uuid=None):
     """
     Log an artifact for the active run
+
     :param file_name: (str) the name of the file name to log
     :param name: (str) the name of the run relative name to store the model under
     :param run_uuid: the run uuid of a previous run, if none, defaults to current run
@@ -403,8 +422,9 @@ def _log_artifact(file_name, name=None, run_uuid=None):
 def _login_director(username, password):
     """
     Authenticate into the MLManager Director
-    :param username: database username
-    :param password: database password
+
+    :param username: (str) database username
+    :param password: (str) database password
     """
     mlflow._basic_auth = HTTPBasicAuth(username, password)
 
@@ -412,6 +432,7 @@ def _login_director(username, password):
 def _initiate_job(payload, endpoint):
     """
     Send a job to the initiation endpoint
+
     :param payload: (dict) JSON payload for POST request
     :param endpoint: (str) REST endpoint to target
     :return: (str) Response text from request
@@ -444,6 +465,7 @@ def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
     """
     Queue Job to deploy a run to sagemaker with the
     given run id (found in MLFlow UI or through search API)
+
     :param run_id: the id of the run to deploy. Will default to the current
         run id.
     :param app_name: the name of the app in sagemaker once deployed
@@ -489,6 +511,7 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
                   cpu_cores=0.1, allocated_ram=0.5, model_name=None):
     """
     Deploy a given run to AzureML.
+
     :param endpoint_name: (str) the name of the endpoint in AzureML when deployed to
         Azure Container Services. Must be unique.
     :param resource_group: (str) Azure Resource Group for model. Automatically created if
@@ -542,12 +565,11 @@ def _deploy_db(db_schema_name,
                pred_threshold = None,
                replace=False) -> None:
     """
-    Function to deploy a trained (currently Spark, Sklearn or H2O) model to the Database.
-    This creates 2 tables: One with the features of the model, and one with the prediction and metadata.
-    They are linked with a column called MOMENT_ID
+    Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.
+    This either creates a new table or alters an existing table in the database (depending on parameters passed)
 
-    :param db_schema_name: (str) the schema name to deploy to. If None, the currently set schema will be used.
-    :param db_table_name: (str) the table name to deploy to. If none, the run_id will be used for the table name(s)
+    :param db_schema_name: (str) the schema name to deploy to.
+    :param db_table_name: (str) the table name to deploy to.
     :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
 
 
@@ -560,7 +582,7 @@ def _deploy_db(db_schema_name,
                 that will be used to create the table.
     :param create_model_table: Whether or not to create the table from the dataframe. Default false. This
                                 Will ONLY be used if the table does not exist and a dataframe is passed in
-    :param predictor_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
+    :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
                                         IN THAT ORDER. The columns passed here must exist in the table.
     :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
@@ -600,6 +622,8 @@ def _deploy_db(db_schema_name,
         calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run
     * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted,
         parsing the prediction probabilities and filling in proper column values
+
+    :return: None
 
     """
     _check_for_splice_ctx()

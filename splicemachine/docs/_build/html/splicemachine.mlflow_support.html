@@ -1,0 +1,966 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>splicemachine.mlflow_support package &mdash; MLManager  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="splicemachine.spark package" href="splicemachine.spark.html" />
+    <link rel="prev" title="splicemachine package" href="splicemachine.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> MLManager
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">splicemachine</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="splicemachine.html">splicemachine package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="splicemachine.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">splicemachine.mlflow_support package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="splicemachine.spark.html">splicemachine.spark package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="splicemachine.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="splicemachine.html#module-splicemachine.notebook">splicemachine.notebook module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="splicemachine.html#module-splicemachine.stats">splicemachine.stats module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="splicemachine.html#module-splicemachine">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MLManager</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">splicemachine</a> &raquo;</li>
+        
+          <li><a href="splicemachine.html">splicemachine package</a> &raquo;</li>
+        
+      <li>splicemachine.mlflow_support package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/splicemachine.mlflow_support.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="splicemachine-mlflow-support-package">
+<h1>splicemachine.mlflow_support package<a class="headerlink" href="#splicemachine-mlflow-support-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-splicemachine.mlflow_support.constants">
+<span id="splicemachine-mlflow-support-constants-module"></span><h2>splicemachine.mlflow_support.constants module<a class="headerlink" href="#module-splicemachine.mlflow_support.constants" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">DBLibraries</code><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries.H2OMOJO">
+<code class="sig-name descname">H2OMOJO</code><em class="property"> = 'h2omojo'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries.H2OMOJO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries.Keras">
+<code class="sig-name descname">Keras</code><em class="property"> = 'keras'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries.Keras" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries.MLeap">
+<code class="sig-name descname">MLeap</code><em class="property"> = 'mleap'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries.MLeap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries.SKLearn">
+<code class="sig-name descname">SKLearn</code><em class="property"> = 'sklearn'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries.SKLearn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.DBLibraries.SUPPORTED_LIBRARIES">
+<code class="sig-name descname">SUPPORTED_LIBRARIES</code><em class="property"> = ['mleap', 'h2omojo', 'sklearn', 'keras']</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.DBLibraries.SUPPORTED_LIBRARIES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">FileExtensions</code><a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class containing names for
+valid File Extensions</p>
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions.get_valid">
+<em class="property">static </em><code class="sig-name descname">get_valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; tuple<a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions.get_valid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tuple of the valid file extensions
+in Database
+:return: (tuple) valid statuses</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions.h2o">
+<code class="sig-name descname">h2o</code><em class="property">: str</em><em class="property"> = 'h2o'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions.h2o" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions.keras">
+<code class="sig-name descname">keras</code><em class="property">: str</em><em class="property"> = 'h5'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions.keras" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions.sklearn">
+<code class="sig-name descname">sklearn</code><em class="property">: str</em><em class="property"> = 'pkl'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions.sklearn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.FileExtensions.spark">
+<code class="sig-name descname">spark</code><em class="property">: str</em><em class="property"> = 'spark'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.FileExtensions.spark" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.H2OModelType">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">H2OModelType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.constants.H2OModelType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.H2OModelType.CLASSIFICATION">
+<code class="sig-name descname">CLASSIFICATION</code><em class="property"> = 2</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.H2OModelType.CLASSIFICATION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.H2OModelType.KEY_VALUE">
+<code class="sig-name descname">KEY_VALUE</code><em class="property"> = 3</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.H2OModelType.KEY_VALUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.H2OModelType.REGRESSION">
+<code class="sig-name descname">REGRESSION</code><em class="property"> = 0</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.H2OModelType.REGRESSION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.H2OModelType.SINGULAR">
+<code class="sig-name descname">SINGULAR</code><em class="property"> = 1</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.H2OModelType.SINGULAR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.KerasModelType">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">KerasModelType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.constants.KerasModelType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Model Types for SKLearn models
+Sklearn isn’t as well defined in their model categories, so we are going to classify them by their return values</p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.KerasModelType.KEY_VALUE">
+<code class="sig-name descname">KEY_VALUE</code><em class="property"> = 1</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.KerasModelType.KEY_VALUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.KerasModelType.REGRESSION">
+<code class="sig-name descname">REGRESSION</code><em class="property"> = 0</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.KerasModelType.REGRESSION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.ModelStatuses">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">ModelStatuses</code><a class="headerlink" href="#splicemachine.mlflow_support.constants.ModelStatuses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class containing names
+for In Database Model Deployments</p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.ModelStatuses.SUPPORTED_STATUSES">
+<code class="sig-name descname">SUPPORTED_STATUSES</code><em class="property"> = ['DEPLOYED', 'DELETED']</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.ModelStatuses.SUPPORTED_STATUSES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.ModelStatuses.deleted">
+<code class="sig-name descname">deleted</code><em class="property">: str</em><em class="property"> = 'DELETED'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.ModelStatuses.deleted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.ModelStatuses.deployed">
+<code class="sig-name descname">deployed</code><em class="property">: str</em><em class="property"> = 'DEPLOYED'</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.ModelStatuses.deployed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.SklearnModelType">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">SklearnModelType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.constants.SklearnModelType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Model Types for SKLearn models
+Sklearn isn’t as well defined in their model categories, so we are going to classify them by their return values</p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SklearnModelType.KEY_VALUE">
+<code class="sig-name descname">KEY_VALUE</code><em class="property"> = 2</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SklearnModelType.KEY_VALUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SklearnModelType.POINT_PREDICTION_CLF">
+<code class="sig-name descname">POINT_PREDICTION_CLF</code><em class="property"> = 1</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SklearnModelType.POINT_PREDICTION_CLF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SklearnModelType.REGRESSION">
+<code class="sig-name descname">REGRESSION</code><em class="property"> = 0</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SklearnModelType.REGRESSION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.constants.SparkModelType">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.constants.</code><code class="sig-name descname">SparkModelType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.constants.SparkModelType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Model types for MLeap Deployment to DB</p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SparkModelType.CLASSIFICATION">
+<code class="sig-name descname">CLASSIFICATION</code><em class="property"> = 0</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SparkModelType.CLASSIFICATION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SparkModelType.CLUSTERING_WITH_PROB">
+<code class="sig-name descname">CLUSTERING_WITH_PROB</code><em class="property"> = 2</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SparkModelType.CLUSTERING_WITH_PROB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SparkModelType.CLUSTERING_WO_PROB">
+<code class="sig-name descname">CLUSTERING_WO_PROB</code><em class="property"> = 3</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SparkModelType.CLUSTERING_WO_PROB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.constants.SparkModelType.REGRESSION">
+<code class="sig-name descname">REGRESSION</code><em class="property"> = 1</em><a class="headerlink" href="#splicemachine.mlflow_support.constants.SparkModelType.REGRESSION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-splicemachine.mlflow_support.mlflow_support">
+<span id="splicemachine-mlflow-support-mlflow-support-module"></span><h2>splicemachine.mlflow_support.mlflow_support module<a class="headerlink" href="#module-splicemachine.mlflow_support.mlflow_support" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.mlflow_support.apply_patches">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.mlflow_support.</code><code class="sig-name descname">apply_patches</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support.apply_patches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply all the Gorilla Patches;
+ALL GORILLA PATCHES SHOULD BE PREFIXED WITH “_” BEFORE THEIR DESTINATION IN MLFLOW</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.mlflow_support.main">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.mlflow_support.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-splicemachine.mlflow_support.utilities">
+<span id="splicemachine-mlflow-support-utilities-module"></span><h2>splicemachine.mlflow_support.utilities module<a class="headerlink" href="#module-splicemachine.mlflow_support.utilities" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">H2OUtils</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.get_h2omojo_model">
+<em class="property">static </em><code class="sig-name descname">get_h2omojo_model</code><span class="sig-paren">(</span><em class="sig-param">splice_context: splicemachine.spark.context.PySpliceContext</em>, <em class="sig-param">model: h2o.model.model_base.ModelBase) -&gt; (&lt;class 'object'&gt;</em>, <em class="sig-param">&lt;class 'object'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.get_h2omojo_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.get_model_type">
+<em class="property">static </em><code class="sig-name descname">get_model_type</code><span class="sig-paren">(</span><em class="sig-param">h2omojo: object) -&gt; (&lt;enum 'H2OModelType'&gt;</em>, <em class="sig-param">&lt;class 'str'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.get_model_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.insert_h2omojo_model">
+<em class="property">static </em><code class="sig-name descname">insert_h2omojo_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">object</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.insert_h2omojo_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.load_h2o_model">
+<em class="property">static </em><code class="sig-name descname">load_h2o_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_blob</span><span class="p">:</span> <span class="n">bytes</span></em><span class="sig-paren">)</span> &#x2192; h2o.model.model_base.ModelBase<a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.load_h2o_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.log_h2o_model">
+<em class="property">static </em><code class="sig-name descname">log_h2o_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">object</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.log_h2o_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.H2OUtils.prep_model_for_deployment">
+<em class="property">static </em><code class="sig-name descname">prep_model_for_deployment</code><span class="sig-paren">(</span><em class="sig-param">splice_context: splicemachine.spark.context.PySpliceContext, model: h2o.model.model_base.ModelBase, classes: List[str], run_id: str, df: pyspark.sql.dataframe.DataFrame, pred_threshold: float, sklearn_args: Dict[str, str]) -&gt; (&lt;enum 'H2OModelType'&gt;, typing.List[str]</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.H2OUtils.prep_model_for_deployment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the H2O mojo model
+Gets the model type
+Inserts the raw model into the MODELS table
+gets the classes (if applicable)
+returns the model type and classes
+:param splice_context:
+:param model:
+:param classes:
+:param run_id:
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">KerasUtils</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.get_keras_model_type">
+<em class="property">static </em><code class="sig-name descname">get_keras_model_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">tensorflow.python.keras.engine.training.Model</span></em>, <em class="sig-param"><span class="n">pred_threshold</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#splicemachine.mlflow_support.constants.KerasModelType" title="splicemachine.mlflow_support.constants.KerasModelType">splicemachine.mlflow_support.constants.KerasModelType</a><a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.get_keras_model_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keras models are either Key value returns or “regression” (single value)
+If the output layer has multiple nodes, or there is a threshold (for binary classification), it will</p>
+<blockquote>
+<div><p>be a key value return because n values will be returned (n = # output nodes + 1)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – </p></li>
+<li><p><strong>pred_threshold</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.insert_keras_model">
+<em class="property">static </em><code class="sig-name descname">insert_keras_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">tensorflow.python.keras.engine.training.Model</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.insert_keras_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.load_keras_model">
+<em class="property">static </em><code class="sig-name descname">load_keras_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_blob</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.load_keras_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.log_keras_model">
+<em class="property">static </em><code class="sig-name descname">log_keras_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">run_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.log_keras_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.prep_model_for_deployment">
+<em class="property">static </em><code class="sig-name descname">prep_model_for_deployment</code><span class="sig-paren">(</span><em class="sig-param">splice_context: splicemachine.spark.context.PySpliceContext, model: tensorflow.python.keras.engine.training.Model, classes: List[str], run_id: str, df: pyspark.sql.dataframe.DataFrame, pred_threshold: float, sklearn_args: Dict[str, str]) -&gt; (&lt;enum 'KerasModelType'&gt;, typing.List[str]</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.prep_model_for_deployment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inserts the model into the MODELS table for deployment
+Gets the Keras model type
+Gets the classes (if applicable)
+:param splice_context: PySpliceContext
+:param model: KerasModel
+:param classes: List[str] the class labels
+:param run_id: str
+:param pred_threshold: double
+:return: (KerasModelType, List[str]) the modelType and the classes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.KerasUtils.validate_keras_model">
+<em class="property">static </em><code class="sig-name descname">validate_keras_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">tensorflow.python.keras.engine.training.Model</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.KerasUtils.validate_keras_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right now, we only support feed forward models. Vector inputs and Vector outputs only
+When we move to LSTMs we will need to change that
+:param model:
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">SKUtils</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.get_model_type">
+<em class="property">static </em><code class="sig-name descname">get_model_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">sklearn.base.BaseEstimator</span></em>, <em class="sig-param"><span class="n">sklearn_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#splicemachine.mlflow_support.constants.SklearnModelType" title="splicemachine.mlflow_support.constants.SklearnModelType">splicemachine.mlflow_support.constants.SklearnModelType</a><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.get_model_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.get_pipeline_model_type">
+<em class="property">static </em><code class="sig-name descname">get_pipeline_model_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span><span class="p">:</span> <span class="n">sklearn.pipeline.Pipeline</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#splicemachine.mlflow_support.constants.SklearnModelType" title="splicemachine.mlflow_support.constants.SklearnModelType">splicemachine.mlflow_support.constants.SklearnModelType</a><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.get_pipeline_model_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the type of model in the Sklearn Pipeline
+:param pipeline: The Sklearn Pipeline
+:return: SKlearnModelType</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.insert_sklearn_model">
+<em class="property">static </em><code class="sig-name descname">insert_sklearn_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">sklearn.base.BaseEstimator</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.insert_sklearn_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.load_sklearn_model">
+<em class="property">static </em><code class="sig-name descname">load_sklearn_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_blob</span><span class="p">:</span> <span class="n">bytes</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.load_sklearn_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.log_sklearn_model">
+<em class="property">static </em><code class="sig-name descname">log_sklearn_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">sklearn.base.BaseEstimator</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.log_sklearn_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.prep_model_for_deployment">
+<em class="property">static </em><code class="sig-name descname">prep_model_for_deployment</code><span class="sig-paren">(</span><em class="sig-param">splice_context: splicemachine.spark.context.PySpliceContext, model: sklearn.base.BaseEstimator, classes: List[str], run_id: str, df: pyspark.sql.dataframe.DataFrame, pred_threshold: float, sklearn_args: Dict[str, str]) -&gt; (&lt;enum 'SklearnModelType'&gt;, typing.List[str]</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.prep_model_for_deployment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SKUtils.validate_sklearn_args">
+<em class="property">static </em><code class="sig-name descname">validate_sklearn_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">sklearn.base.BaseEstimator</span></em>, <em class="sig-param"><span class="n">sklearn_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SKUtils.validate_sklearn_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make sure sklearn args contains valid values. sklearn_args can only contain 2 keys.
+predict_call and predict_args.
+predict_call: ‘predict’/’predict_proba’/’transform’
+predict_args: ‘return_std’/’return_cov’
+:param model: ScikitModel
+:param sklearn_args: Dict[str, str]
+:return: sklearn_args</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.utilities.SQL">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">SQL</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.utilities.SQL.ARTIFACT_INSERT_SQL">
+<code class="sig-name descname">ARTIFACT_INSERT_SQL</code><em class="property"> = 'INSERT INTO MLMANAGER.ARTIFACTS (run_uuid, name, &quot;size&quot;, &quot;binary&quot;, file_extension) VALUES (?, ?, ?, ?, ?)'</em><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL.ARTIFACT_INSERT_SQL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.utilities.SQL.ARTIFACT_RETRIEVAL_SQL">
+<code class="sig-name descname">ARTIFACT_RETRIEVAL_SQL</code><em class="property"> = 'SELECT &quot;binary&quot;, file_extension FROM MLMANAGER.ARTIFACTS WHERE name=\'{name}\' AND run_uuid=\'{runid}\''</em><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL.ARTIFACT_RETRIEVAL_SQL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.utilities.SQL.MLMANAGER_SCHEMA">
+<code class="sig-name descname">MLMANAGER_SCHEMA</code><em class="property"> = 'MLMANAGER'</em><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL.MLMANAGER_SCHEMA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.utilities.SQL.MODEL_INSERT_SQL">
+<code class="sig-name descname">MODEL_INSERT_SQL</code><em class="property"> = 'INSERT INTO MLMANAGER.MODELS(RUN_UUID, MODEL, LIBRARY, &quot;version&quot;) VALUES (?, ?, ?, ?)'</em><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL.MODEL_INSERT_SQL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="splicemachine.mlflow_support.utilities.SQL.MODEL_RETRIEVAL_SQL">
+<code class="sig-name descname">MODEL_RETRIEVAL_SQL</code><em class="property"> = &quot;SELECT MODEL FROM {MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID='{run_uuid}'&quot;</em><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SQL.MODEL_RETRIEVAL_SQL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils">
+<em class="property">class </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">SparkUtils</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_cols">
+<em class="property">static </em><code class="sig-name descname">get_cols</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transformer</span></em>, <em class="sig-param"><span class="n">get_input</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_cols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get columns from a transformer
+:param transformer: the transformer (fit or unfit)
+:param get_input: whether or not to return the input columns
+:return: a list of either input or output columns</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_feature_vector_columns">
+<em class="property">static </em><code class="sig-name descname">get_feature_vector_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fittedPipe</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_feature_vector_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the input columns from the VectorAssembler stage of a fitted Pipeline</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_model_stage">
+<em class="property">static </em><code class="sig-name descname">get_model_stage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_model_stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>”
+Gets the Model stage of a FIT PipelineModel</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_model_type">
+<em class="property">static </em><code class="sig-name descname">get_model_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_or_model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_model_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a fitted Spark Pipeline or Model and determines if it is a Regression, Classification, or Clustering model</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_num_classes">
+<em class="property">static </em><code class="sig-name descname">get_num_classes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_or_model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_num_classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to find the number of classes in a Pipeline or Model object
+:param pipeline_or_model: The Pipeline or Model object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.get_stages">
+<em class="property">static </em><code class="sig-name descname">get_stages</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.get_stages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the stages from a fit or unfit pipeline
+:param pipeline: a fit or unfit Spark pipeline
+:return: stages list</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.is_spark_pipeline">
+<em class="property">static </em><code class="sig-name descname">is_spark_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">spark_object</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.is_spark_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether or not the given
+object is a spark pipeline. If it
+is a model, it will return True, if it is a
+pipeline model is will return False.
+Otherwise, it will throw an exception
+:param spark_object: (Model) Spark object to check
+:return: (bool) whether or not the object is a model
+:exception: (Exception) throws an error if it is not either</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.load_spark_model">
+<em class="property">static </em><code class="sig-name descname">load_spark_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_ctx</span></em>, <em class="sig-param"><span class="n">spark_pipeline_blob</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.load_spark_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.log_spark_model">
+<em class="property">static </em><code class="sig-name descname">log_spark_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">run_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.log_spark_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.parse_string_parameters">
+<em class="property">static </em><code class="sig-name descname">parse_string_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">string_parameters</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.parse_string_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse string rendering of extractParamMap
+:param string_parameters:
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.prep_model_for_deployment">
+<em class="property">static </em><code class="sig-name descname">prep_model_for_deployment</code><span class="sig-paren">(</span><em class="sig-param">splice_context: splicemachine.spark.context.PySpliceContext, fittedPipe: pyspark.ml.pipeline.PipelineModel, classes: List[str], run_id: str, df: pyspark.sql.dataframe.DataFrame, pred_threshold: float, sklearn_args: Dict[str, str]) -&gt; (&lt;enum 'SparkModelType'&gt;, typing.List[str]</em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.prep_model_for_deployment" title="Permalink to this definition">¶</a></dt>
+<dd><p>All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
+:param fittedPipe:
+:param df:
+:param classes:
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.readable_pipeline_stage">
+<em class="property">static </em><code class="sig-name descname">readable_pipeline_stage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_stage</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.readable_pipeline_stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a readable version of the Pipeline stage
+(without the memory address)
+:param pipeline_stage: the name of the stage to parse</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.retrieve_artifact_stream">
+<em class="property">static </em><code class="sig-name descname">retrieve_artifact_stream</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">run_id</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.retrieve_artifact_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the binary stream for a given
+artifact with the specified name and run id
+:param splice_context: splice context 
+:param run_id: (str) the run id for the run</p>
+<blockquote>
+<div><p>that the artifact belongs to</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – (str) the name of the artifact</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(bytearray(byte)) byte array from BLOB</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.mlflow_support.utilities.SparkUtils.try_get_class_labels">
+<em class="property">static </em><code class="sig-name descname">try_get_class_labels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SparkUtils.try_get_class_labels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to get the class labels for a Spark Model. This will only work if the Pipeline has a Model and an IndexToString
+where the inputCol of the IndexToString is the same as the predictionCol of the Model
+:param pipeline: The fitted spark PipelineModel
+:return: List[str] the class labels in order of numeric value (0,1,2 etc)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="splicemachine.mlflow_support.utilities.SpliceMachineException">
+<em class="property">exception </em><code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">SpliceMachineException</code><a class="headerlink" href="#splicemachine.mlflow_support.utilities.SpliceMachineException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.add_model_to_metadata">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">add_model_to_metadata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.add_model_to_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.alter_model_table">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">alter_model_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">classes</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">model_type</span><span class="p">:</span> <span class="n">enum.Enum</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.alter_model_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alters the provided table for deployment. Adds columns for storing model results as well as metadata such as
+current user, eval time and run_id
+:param splice_context: pysplicectx
+:param run_id: (str) the run_id for this model
+:param schema_table_name: (str) the schema.table to create the table under
+:param classes: (List[str]) the labels of the model (if they exist)
+:param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+:param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
+:param verbose: (bool) whether to print the SQL query</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.create_model_deployment_table">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">create_model_deployment_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema_str</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">classes</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">primary_key</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">model_type</span><span class="p">:</span> <span class="n">enum.Enum</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.create_model_deployment_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the table that holds the columns of the feature vector as well as a unique MOMENT_ID
+:param splice_context: pysplicectx
+:param run_id: (str) the run_id for this model
+:param schema_table_name: (str) the schema.table to create the table under
+:param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
+:param classes: (List[str]) the labels of the model (if they exist)
+:param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+:param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
+:param verbose: (bool) whether to print the SQL query</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.create_parsing_trigger">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">create_parsing_trigger</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">primary_key</span></em>, <em class="sig-param"><span class="n">run_id</span></em>, <em class="sig-param"><span class="n">classes</span></em>, <em class="sig-param"><span class="n">model_type</span></em>, <em class="sig-param"><span class="n">verbose</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.create_parsing_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the secondary trigger that parses the results of the first trigger and updates the prediction row populating the relevant columns
+:param splice_context: splice context specified in mlflow
+:param schema_table_name: (str) the schema.table to create the table under
+:param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+:param run_id: (str) the run_id to deploy the model under
+:param classes: (List[str]) the labels of the model (if they exist)
+:param model_type: (Enum) the model type (H2OModelType or SparkModelType)
+:param verbose: (bool) whether to print the SQL query</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.create_prediction_trigger">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">create_prediction_trigger</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">run_id</span></em>, <em class="sig-param"><span class="n">feature_columns</span></em>, <em class="sig-param"><span class="n">schema_types</span></em>, <em class="sig-param"><span class="n">schema_str</span></em>, <em class="sig-param"><span class="n">primary_key</span></em>, <em class="sig-param"><span class="n">model_type</span></em>, <em class="sig-param"><span class="n">verbose</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.create_prediction_trigger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the trigger that calls the model on data row insert. This trigger will call predict when a new row is inserted into the data table
+and update the row to contain the prediction(s)
+:param splice_context: pysplicectx
+:param schema_table_name: (str) the schema.table to create the table under
+:param run_id: (str) the run_id to deploy the model under
+:param feature_columns: (List[str]) the original features that are transformed into the final feature vector
+:param schema_types: (Dict[str, str]) a mapping of feature column to data type
+:param schema_str: (str) the structure of the schema of the table as a string (col_name TYPE,)
+:param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table
+:param model_type: (ModelType) Whether the model is a Regression, Classification or Clustering (with/without probabilities)
+:param verbose: (bool) whether to print the SQL query</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.create_vti_prediction_trigger">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">create_vti_prediction_trigger</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">feature_columns</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema_types</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema_str</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">primary_key</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">classes</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">model_type</span><span class="p">:</span> <span class="n">enum.Enum</span></em>, <em class="sig-param"><span class="n">sklearn_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">pred_threshold</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.create_vti_prediction_trigger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.drop_tables_on_failure">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">drop_tables_on_failure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">model_already_exists</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.utilities.drop_tables_on_failure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Due to some limitations DB-7726 we can’t use fully utilize a single consistent JDBC connection using NSDS
+So we will try to rollback on failure using basic logic.</p>
+<p>If the model was already in the models table (ie it had been deployed before), we will leave it. Otherwise, delete
+Leave the tables.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.find_inputs_by_output">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">find_inputs_by_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dictionary</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.find_inputs_by_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the input columns for a given output column
+:param dictionary: dictionary to search
+:param value: column
+:return: None if not found, otherwise first column</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_df_for_mleap">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_df_for_mleap</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_ctx</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pyspark.sql.dataframe.DataFrame</span></em><span class="sig-paren">)</span> &#x2192; pyspark.sql.dataframe.DataFrame<a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_df_for_mleap" title="Permalink to this definition">¶</a></dt>
+<dd><p>MLeap needs a dataframe in order to serialize the model. If it’s not passed in, we need to get it from an existing table
+:param splice_ctx: PySpliceContext
+:param schema_table_name: str the table to get the dataframe from
+:param df: the dataframe if it exists or none
+:param create_model_table: bool if the user wants to create the table
+:return: df</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_feature_columns_and_types">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_feature_columns_and_types</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_ctx</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pyspark.sql.dataframe.DataFrame</span></em>, <em class="sig-param"><span class="n">create_model_table</span><span class="p">:</span> <span class="n">bool</span></em>, <em class="sig-param"><span class="n">model_cols</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema_table_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_feature_columns_and_types" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – The dataframe or None</p></li>
+<li><p><strong>create_model_table</strong> – bool if the user wants to create the table</p></li>
+<li><p><strong>schema_table_name</strong> – The table in question</p></li>
+<li><p><strong>model_cols</strong> – List[str] the columns that go into the feature vector for the model or None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The feature columns as well as the schema types</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_mleap_model">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_mleap_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">fittedPipe</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_mleap_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turns a fitted Spark Pipeline into an Mleap Transformer
+:param splice_context: pysplicectx
+:param fittedPipe: Fitted Spark Pipeline
+:param df: A TRANSFORMED dataframe. ie a dataframe that the pipeline has called .transform() on
+:param run_id: (str) the MLFlow run associated with the model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_model_library">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_model_library</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#splicemachine.mlflow_support.constants.DBLibraries" title="splicemachine.mlflow_support.constants.DBLibraries">splicemachine.mlflow_support.constants.DBLibraries</a><a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_model_library" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the model library of a trained model
+:param model: The trained model
+:return: DBLibraries</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_pod_uri">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_pod_uri</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pod</span></em>, <em class="sig-param"><span class="n">port</span></em>, <em class="sig-param"><span class="n">_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_pod_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get address of MLFlow Container for Kubernetes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.get_user">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">get_user</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.get_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current logged in user to
+Jupyter
+:return: (str) name of the logged in user</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.insert_artifact">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">insert_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">byte_array</span></em>, <em class="sig-param"><span class="n">run_uuid</span></em>, <em class="sig-param"><span class="n">file_ext</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.insert_artifact" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – (str) the path to store the binary
+under (with respect to the current run)</p></li>
+<li><p><strong>byte_array</strong> – (byte[]) Java byte array</p></li>
+<li><p><strong>run_uuid</strong> – run uuid for the run</p></li>
+<li><p><strong>file_ext</strong> – (str) the file extension of the model (used for downloading)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.insert_mleap_model">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">insert_mleap_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">pyspark.ml.pipeline.PipelineModel</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#splicemachine.mlflow_support.utilities.insert_mleap_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert an MLeap Transformer model into the database as a Blob
+:param splice_context: pysplicectx
+:param model_id: (str) the mlflow run_id that the model is associated with</p>
+<blockquote>
+<div><p>(with respect to the current run)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model</strong> – (Transformer) the fitted Mleap Transformer (pipeline)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.insert_model">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">insert_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">run_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">byte_array</span><span class="p">:</span> <span class="n">bytearray</span></em>, <em class="sig-param"><span class="n">library</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">version</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#splicemachine.mlflow_support.utilities.insert_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a serialized model into the Mlmanager models table
+:param splice_context: pysplicectx
+:param run_id: mlflow run id
+:param byte_array: byte array
+:param library: The library of the model (mleap, h2omojo etc)
+:param version: The version of the library</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.mlflow_support.utilities.validate_primary_key">
+<code class="sig-prename descclassname">splicemachine.mlflow_support.utilities.</code><code class="sig-name descname">validate_primary_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_ctx</span><span class="p">:</span> <span class="n"><a class="reference internal" href="splicemachine.spark.html#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext">splicemachine.spark.context.PySpliceContext</a></span></em>, <em class="sig-param"><span class="n">primary_key</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">table</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>str<span class="p">]</span><a class="headerlink" href="#splicemachine.mlflow_support.utilities.validate_primary_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to validate the primary key passed by the user conforms to SQL. If the user is deploying to an existing table
+This verifies that the table has a primary key
+:param primary_key: List[Tuple[str,str]] column name, SQL datatype for the primary key(s) of the table</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-splicemachine.mlflow_support">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-splicemachine.mlflow_support" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="splicemachine.spark.html" class="btn btn-neutral float-right" title="splicemachine.spark package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="splicemachine.html" class="btn btn-neutral float-left" title="splicemachine package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Ben Epstein, Amrit Baveja
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
