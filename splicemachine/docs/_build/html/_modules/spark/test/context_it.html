@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>spark.test.context_it &mdash; MLManager  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> MLManager
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MLManager</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>spark.test.context_it</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for spark.test.context_it</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="kn">import</span> <span class="n">SparkSession</span>
+<span class="kn">from</span> <span class="nn">splicemachine.spark.context</span> <span class="kn">import</span> <span class="n">PySpliceContext</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="PySpliceTest"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.PySpliceTest">[docs]</a><span class="k">class</span> <span class="nc">PySpliceTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+
+<div class="viewcode-block" id="PySpliceTest.create_spark_session"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.PySpliceTest.create_spark_session">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_spark_session</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">spark_session</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+        <span class="c1">#spark_session.sparkContext.setLogLevel(&quot;ERROR&quot;)</span>
+        <span class="n">logger</span> <span class="o">=</span> <span class="n">spark_session</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">_jvm</span><span class="o">.</span><span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">log4j</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">LogManager</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;org&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">Level</span><span class="o">.</span><span class="n">OFF</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">LogManager</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;akka&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">Level</span><span class="o">.</span><span class="n">OFF</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">spark_session</span></div>
+
+<div class="viewcode-block" id="PySpliceTest.create_testing_pysplice_session"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.PySpliceTest.create_testing_pysplice_session">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_testing_pysplice_session</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">spark_session</span><span class="p">):</span>
+        <span class="n">db_url</span> <span class="o">=</span> <span class="s1">&#39;jdbc:splice://localhost:1527/splicedb;user=splice;password=admin&#39;</span>
+        <span class="n">splice_context</span> <span class="o">=</span> <span class="n">PySpliceContext</span><span class="p">(</span><span class="n">db_url</span><span class="p">,</span><span class="n">spark_session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">splice_context</span></div>
+
+<div class="viewcode-block" id="PySpliceTest.setUp"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.PySpliceTest.setUp">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">spark_session</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_spark_session</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">splice_context</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_testing_pysplice_session</span><span class="p">(</span><span class="n">spark_session</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">spark_session</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PySpliceTest.tearDown"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.PySpliceTest.tearDown">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="Test"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test">[docs]</a><span class="k">class</span> <span class="nc">Test</span><span class="p">(</span><span class="n">PySpliceTest</span><span class="p">):</span>
+<div class="viewcode-block" id="Test.test_analyzeSchema"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_analyzeSchema">[docs]</a>    <span class="k">def</span> <span class="nf">test_analyzeSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">analyzeSchema</span><span class="p">(</span><span class="s2">&quot;splice&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Test.test_analyzeTable"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_analyzeTable">[docs]</a>    <span class="k">def</span> <span class="nf">test_analyzeTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">analyzeTable</span><span class="p">(</span><span class="s2">&quot;sys.systables&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Test.test_executeUpdate"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_executeUpdate">[docs]</a>    <span class="k">def</span> <span class="nf">test_executeUpdate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.systables&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table systables as select * from sys.systables&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s2">&quot;SPLICE.SYSTABLES&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Test.test_dropTable"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_dropTable">[docs]</a>    <span class="k">def</span> <span class="nf">test_dropTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test_droptable&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test_droptable ( COL1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s2">&quot;splice.pysplice_test_droptable&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from sys.sysschemas a join sys.systables b on a.SCHEMAID = b.SCHEMAID where a.SCHEMANAME = &#39;SPLICE&#39; and b.TABLENAME = &#39;PYSPLICE_TEST_DROPTABLE&#39;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Test.test_df"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_df">[docs]</a>    <span class="k">def</span> <span class="nf">test_df</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test_df&quot;</span><span class="p">)</span>
+        <span class="n">test_df_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1: int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test_df ( COL1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_df_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_df&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test_df&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="Test.test_delete"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_delete">[docs]</a>    <span class="k">def</span> <span class="nf">test_delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">test_delete_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1: int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test ( COL1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_delete_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">test_delete_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Test.test_execute"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_execute">[docs]</a>    <span class="k">def</span> <span class="nf">test_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;select count(*) from sys.systables&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Test.test_export"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_export">[docs]</a>    <span class="k">def</span> <span class="nf">test_export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">test_export_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1:int&quot;</span><span class="p">)</span>
+        <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span> <span class="o">+</span> <span class="s1">&#39;.csv&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">test_export_df</span><span class="p">,</span><span class="n">file</span><span class="p">)</span>
+        <span class="n">test_export_load_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;timestampFormat&quot;</span><span class="p">,</span> <span class="s2">&quot;yyyy/MM/dd HH:mm:ss ZZ&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">csv</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="n">inferSchema</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">test_export_df</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="n">test_export_load_df</span><span class="o">.</span><span class="n">count</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Test.test_exportBinary"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_exportBinary">[docs]</a>    <span class="k">def</span> <span class="nf">test_exportBinary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">test_exportBinary_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1:int&quot;</span><span class="p">)</span>
+        <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span> <span class="o">+</span> <span class="s1">&#39;.parquet&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">exportBinary</span><span class="p">(</span><span class="n">test_exportBinary_df</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="s2">&quot;parquet&quot;</span><span class="p">)</span>
+        <span class="n">load_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">parquet</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">test_exportBinary_df</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="n">load_df</span><span class="o">.</span><span class="n">count</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Test.test_getSchema"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_getSchema">[docs]</a>    <span class="k">def</span> <span class="nf">test_getSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">systables_schema_from_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select * from sys.systables&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">schema</span>
+        <span class="n">systables_schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">getSchema</span><span class="p">(</span><span class="s2">&quot;sys.systables&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">systables_schema_from_df</span> <span class="o">==</span> <span class="n">systables_schema</span></div>
+
+<div class="viewcode-block" id="Test.test_insert"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_insert">[docs]</a>    <span class="k">def</span> <span class="nf">test_insert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test_insert&quot;</span><span class="p">)</span>
+        <span class="n">test_insert_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1 : int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table splice.pysplice_test_insert ( col1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_insert_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_insert&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test_insert&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="Test.test_internalDf"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_internalDf">[docs]</a>    <span class="k">def</span> <span class="nf">test_internalDf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">test_internalDf_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1 : int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table splice.pysplice_test ( col1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_internalDf_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">internalDf</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="Test.test_tableExists"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_tableExists">[docs]</a>    <span class="k">def</span> <span class="nf">test_tableExists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test ( COL1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Test.test_truncateTable"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_truncateTable">[docs]</a>    <span class="k">def</span> <span class="nf">test_truncateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">test_truncateTable_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">]],</span> <span class="s2">&quot;COL1: int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test ( col1 int primary key)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_truncateTable_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">truncateTable</span><span class="p">(</span><span class="s2">&quot;splice.pysplice_test&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;CNT&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="Test.test_update"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_update">[docs]</a>    <span class="k">def</span> <span class="nf">test_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">test_update_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]],</span> <span class="s2">&quot;COL1:int,COL2:int&quot;</span><span class="p">)</span>
+        <span class="n">test_update_update_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">]],</span><span class="s2">&quot;COL1:int,COL2:int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test_update&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test_update ( COL1 int primary key,COL2 int)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_update_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_update&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test_update_update_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_update&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test_update where col2 = 4&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;CNT&quot;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Test.test_upsert"><a class="viewcode-back" href="../../../spark.test.html#spark.test.context_it.Test.test_upsert">[docs]</a>    <span class="k">def</span> <span class="nf">test_upsert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">test_upsert_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]],</span> <span class="s2">&quot;COL1:int,COL2:int&quot;</span><span class="p">)</span>
+        <span class="n">test_upsert_upsert_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">],[</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">]],</span><span class="s2">&quot;COL1:int,COL2:int&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;drop table if exists splice.pysplice_test_upsert&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s2">&quot;create table pysplice_test_upsert ( COL1 int primary key,COL2 int)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">test_upsert_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_upsert&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">test_upsert_upsert_df</span><span class="p">,</span><span class="s2">&quot;splice.pysplice_test_upsert&quot;</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s2">&quot;select count(*) as cnt from splice.pysplice_test_upsert where col2 = 2 or col1 = 3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;CNT&quot;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">cnt</span> <span class="o">==</span> <span class="mi">2</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Splice Machine
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

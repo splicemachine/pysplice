@@ -42,10 +42,17 @@ def hide_toggle(toggle_next=False):
     return HTML(html)
 
 def get_mlflow_ui():
+    """Display the MLflow UI as an IFrame"""
     display(HTML('<font size=\"+1\"><a target=\"_blank\" href=/mlflow>MLFlow UI</a></font>'))
     return IFrame(src='/mlflow', width='100%', height='500px')
   
 def get_spark_ui(port=None, spark_session=None):
+    """
+    Display the Spark Jobs UI as an IFrame at a specific port
+    :param port: (int or str) The port of the desired spark session
+    :param spark_session: (SparkSession) Optionally the Spark Session associated with the desired UI
+    :return:
+    """
     if port:
         pass
     elif spark_session:
