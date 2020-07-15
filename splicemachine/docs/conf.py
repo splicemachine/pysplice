@@ -12,14 +12,14 @@
 #
 import os
 import sys
-sys.path.insert(0, '/Users/benepstein/Documents/Github/pysplice/splicemachine')
+sys.path.insert(0, os.path.abspath('../'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'MLManager'
+project = 'Splice MLManager'
 copyright = '2020, Splice Machine'
-author = 'Ben Epstein, Amrit Baveja'
+author = 'Ben Epstein'
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,8 +31,19 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.autosummary',
+    'sphinx.ext.autosummary'
 ]
+
+
+# To allow sphinx to document the mlflow_support functions since they are private functions
+autodoc_default_flags = ['members', 'undoc-members', 'private-members', 'special-members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {
+    'members':True,
+    'private-members':True,
+    'inherited-members':True,
+    'undoc-members': False, 
+    'exclude-members': '_check_for_splice_ctx,_dropTableIfExists, _generateDBSchema,_getCreateTableSchema,_jstructtype,_spliceSparkPackagesName,_splicemachineContext'
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,8 +58,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = ['**mlflow_support.utilities.*','_build', 'Thumbs.db', '.DS_Store', '*test/*', '*.test.*','*test*']
 
 # -- Options for HTML output -------------------------------------------------
 

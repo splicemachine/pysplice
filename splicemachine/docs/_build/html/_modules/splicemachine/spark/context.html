@@ -7,12 +7,12 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>spark.context &mdash; Splice MLManager  documentation</title>
+  <title>splicemachine.spark.context &mdash; Splice MLManager  documentation</title>
   
 
   
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
 
   
   
@@ -21,21 +21,21 @@
 
   
   <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
     
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
     
-    <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -49,7 +49,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> Splice MLManager
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Splice MLManager
           
 
           
@@ -62,7 +62,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -82,7 +82,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../splicemachine.html">splicemachine package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">splicemachine package</a></li>
 </ul>
 
             
@@ -98,7 +98,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">Splice MLManager</a>
+          <a href="../../../index.html">Splice MLManager</a>
         
       </nav>
 
@@ -127,11 +127,11 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
         
-          <li><a href="../index.html">Module code</a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-      <li>spark.context</li>
+      <li>splicemachine.spark.context</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -146,7 +146,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for spark.context</h1><div class="highlight"><pre>
+  <h1>Source code for splicemachine.spark.context</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Copyright 2020 Splice Machine, Inc.</span>
 
@@ -172,7 +172,7 @@
 <span class="kn">from</span> <span class="nn">splicemachine.spark.constants</span> <span class="kn">import</span> <span class="n">CONVERSIONS</span>
 
 
-<div class="viewcode-block" id="PySpliceContext"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext">[docs]</a><span class="k">class</span> <span class="nc">PySpliceContext</span><span class="p">:</span>
+<div class="viewcode-block" id="PySpliceContext"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext">[docs]</a><span class="k">class</span> <span class="nc">PySpliceContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class implements a SpliceMachineContext object (similar to the SparkContext object)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -223,7 +223,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">jvm</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">MockedScalaContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jdbcurl</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PySpliceContext.toUpper"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.toUpper">[docs]</a>    <span class="k">def</span> <span class="nf">toUpper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.toUpper"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.toUpper">[docs]</a>    <span class="k">def</span> <span class="nf">toUpper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a dataframe with all of the columns in uppercase</span>
 
@@ -234,7 +234,7 @@
         <span class="c1"># You need to re-generate the dataframe for the capital letters to take effect</span>
         <span class="k">return</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">rdd</span><span class="o">.</span><span class="n">toDF</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.replaceDataframeSchema"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.replaceDataframeSchema">[docs]</a>    <span class="k">def</span> <span class="nf">replaceDataframeSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.replaceDataframeSchema"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.replaceDataframeSchema">[docs]</a>    <span class="k">def</span> <span class="nf">replaceDataframeSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a dataframe with all column names replaced with the proper string case from the DB table</span>
 
@@ -247,13 +247,13 @@
         <span class="n">dataframe</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">rdd</span><span class="o">.</span><span class="n">toDF</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.getConnection"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.getConnection">[docs]</a>    <span class="k">def</span> <span class="nf">getConnection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.getConnection"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.getConnection">[docs]</a>    <span class="k">def</span> <span class="nf">getConnection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a connection to the database</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">getConnection</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.tableExists"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.tableExists">[docs]</a>    <span class="k">def</span> <span class="nf">tableExists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_and_or_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.tableExists"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.tableExists">[docs]</a>    <span class="k">def</span> <span class="nf">tableExists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_and_or_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check whether or not a table exists</span>
 
@@ -273,7 +273,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="n">schema_and_or_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.dropTable"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.dropTable">[docs]</a>    <span class="k">def</span> <span class="nf">dropTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_and_or_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.dropTable"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.dropTable">[docs]</a>    <span class="k">def</span> <span class="nf">dropTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_and_or_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Drop a specified table.</span>
 
@@ -293,7 +293,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="n">schema_and_or_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.df"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.df">[docs]</a>    <span class="k">def</span> <span class="nf">df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.df"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.df">[docs]</a>    <span class="k">def</span> <span class="nf">df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a Spark Dataframe from the results of a Splice Machine SQL Query</span>
 
@@ -307,7 +307,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="n">sql</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_sql_context</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.insert"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">to_upper</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.insert"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">to_upper</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Insert a dataframe into a table (schema.table).</span>
 
@@ -321,7 +321,7 @@
             <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">toUpper</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.insertWithStatus"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.insertWithStatus">[docs]</a>    <span class="k">def</span> <span class="nf">insertWithStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">statusDirectory</span><span class="p">,</span> <span class="n">badRecordsAllowed</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.insertWithStatus"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.insertWithStatus">[docs]</a>    <span class="k">def</span> <span class="nf">insertWithStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">statusDirectory</span><span class="p">,</span> <span class="n">badRecordsAllowed</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Insert a dataframe into a table (schema.table) while tracking and limiting records that fail to insert.</span>
 <span class="sd">        The status directory and number of badRecordsAllowed allow for duplicate primary keys to be</span>
@@ -337,7 +337,7 @@
         <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceDataframeSchema</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">statusDirectory</span><span class="p">,</span> <span class="n">badRecordsAllowed</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.insertRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.insertRdd">[docs]</a>    <span class="k">def</span> <span class="nf">insertRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.insertRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.insertRdd">[docs]</a>    <span class="k">def</span> <span class="nf">insertRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Insert an rdd into a table (schema.table)</span>
 
@@ -351,7 +351,7 @@
             <span class="n">schema_table_name</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.insertRddWithStatus"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.insertRddWithStatus">[docs]</a>    <span class="k">def</span> <span class="nf">insertRddWithStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">statusDirectory</span><span class="p">,</span> <span class="n">badRecordsAllowed</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.insertRddWithStatus"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.insertRddWithStatus">[docs]</a>    <span class="k">def</span> <span class="nf">insertRddWithStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">statusDirectory</span><span class="p">,</span> <span class="n">badRecordsAllowed</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Insert an rdd into a table (schema.table) while tracking and limiting records that fail to insert. \</span>
 <span class="sd">        The status directory and number of badRecordsAllowed allow for duplicate primary keys to be \</span>
@@ -372,7 +372,7 @@
             <span class="n">badRecordsAllowed</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.upsert"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.upsert">[docs]</a>    <span class="k">def</span> <span class="nf">upsert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.upsert"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.upsert">[docs]</a>    <span class="k">def</span> <span class="nf">upsert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Upsert the data from a dataframe into a table (schema.table).</span>
 
@@ -384,7 +384,7 @@
         <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceDataframeSchema</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.upsertWithRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.upsertWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">upsertWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.upsertWithRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.upsertWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">upsertWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Upsert the data from an RDD into a table (schema.table).</span>
 
@@ -398,7 +398,7 @@
             <span class="n">schema_table_name</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.delete"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.delete"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete records in a dataframe based on joining by primary keys from the data frame.</span>
 <span class="sd">        Be careful with column naming and case sensitivity.</span>
@@ -409,7 +409,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.deleteWithRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.deleteWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">deleteWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.deleteWithRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.deleteWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">deleteWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete records using an rdd based on joining by primary keys from the rdd.</span>
 <span class="sd">        Be careful with column naming and case sensitivity.</span>
@@ -424,7 +424,7 @@
             <span class="n">schema_table_name</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.update"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.update"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update data from a dataframe for a specified schema_table_name (schema.table).</span>
 <span class="sd">        The keys are required for the update and any other columns provided will be updated</span>
@@ -438,7 +438,7 @@
         <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">replaceDataframeSchema</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.updateWithRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.updateWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">updateWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.updateWithRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.updateWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">updateWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update data from an rdd for a specified schema_table_name (schema.table).</span>
 <span class="sd">        The keys are required for the update and any other columns provided will be updated</span>
@@ -454,7 +454,7 @@
             <span class="n">schema_table_name</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.getSchema"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.getSchema">[docs]</a>    <span class="k">def</span> <span class="nf">getSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.getSchema"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.getSchema">[docs]</a>    <span class="k">def</span> <span class="nf">getSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the schema via JDBC.</span>
 
@@ -463,7 +463,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_parse_datatype_json_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">getSchema</span><span class="p">(</span><span class="n">schema_table_name</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.execute"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.execute"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        execute a query over JDBC</span>
 
@@ -477,7 +477,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_string</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.executeUpdate"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.executeUpdate">[docs]</a>    <span class="k">def</span> <span class="nf">executeUpdate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.executeUpdate"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.executeUpdate">[docs]</a>    <span class="k">def</span> <span class="nf">executeUpdate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        execute a dml query:(update,delete,drop,etc)</span>
 
@@ -491,7 +491,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="n">query_string</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.internalDf"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.internalDf">[docs]</a>    <span class="k">def</span> <span class="nf">internalDf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.internalDf"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.internalDf">[docs]</a>    <span class="k">def</span> <span class="nf">internalDf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_string</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        SQL to Dataframe translation (Lazy). Runs the query inside Splice Machine and sends the results to the Spark Adapter app</span>
 
@@ -500,7 +500,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">internalDf</span><span class="p">(</span><span class="n">query_string</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_sql_context</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.rdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.rdd">[docs]</a>    <span class="k">def</span> <span class="nf">rdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">column_projection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.rdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.rdd">[docs]</a>    <span class="k">def</span> <span class="nf">rdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">column_projection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Table with projections in Splice mapped to an RDD.</span>
 
@@ -514,7 +514,7 @@
             <span class="n">colnames</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;select &#39;</span><span class="o">+</span><span class="n">colnames</span><span class="o">+</span><span class="s1">&#39; from &#39;</span><span class="o">+</span><span class="n">schema_table_name</span><span class="p">)</span><span class="o">.</span><span class="n">rdd</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.internalRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.internalRdd">[docs]</a>    <span class="k">def</span> <span class="nf">internalRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">column_projection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.internalRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.internalRdd">[docs]</a>    <span class="k">def</span> <span class="nf">internalRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">column_projection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Table with projections in Splice mapped to an RDD.</span>
 <span class="sd">        Runs the projection inside Splice Machine and sends the results to the Spark Adapter app as an rdd</span>
@@ -529,7 +529,7 @@
             <span class="n">colnames</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">internalDf</span><span class="p">(</span><span class="s1">&#39;select &#39;</span><span class="o">+</span><span class="n">colnames</span><span class="o">+</span><span class="s1">&#39; from &#39;</span><span class="o">+</span><span class="n">schema_table_name</span><span class="p">)</span><span class="o">.</span><span class="n">rdd</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.truncateTable"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.truncateTable">[docs]</a>    <span class="k">def</span> <span class="nf">truncateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.truncateTable"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.truncateTable">[docs]</a>    <span class="k">def</span> <span class="nf">truncateTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Truncate a table</span>
 
@@ -538,7 +538,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">truncateTable</span><span class="p">(</span><span class="n">schema_table_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.analyzeSchema"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.analyzeSchema">[docs]</a>    <span class="k">def</span> <span class="nf">analyzeSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_name</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.analyzeSchema"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.analyzeSchema">[docs]</a>    <span class="k">def</span> <span class="nf">analyzeSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Analyze the schema</span>
 
@@ -547,7 +547,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">analyzeSchema</span><span class="p">(</span><span class="n">schema_name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.analyzeTable"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.analyzeTable">[docs]</a>    <span class="k">def</span> <span class="nf">analyzeTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">estimateStatistics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">samplePercent</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.analyzeTable"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.analyzeTable">[docs]</a>    <span class="k">def</span> <span class="nf">analyzeTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">estimateStatistics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">samplePercent</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Collect stats info on a table</span>
 <span class="sd">        </span>
@@ -558,7 +558,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">analyzeTable</span><span class="p">(</span><span class="n">schema_table_name</span><span class="p">,</span> <span class="n">estimateStatistics</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">samplePercent</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.export"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="PySpliceContext.export"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                <span class="n">dataframe</span><span class="p">,</span>
                <span class="n">location</span><span class="p">,</span>
                <span class="n">compression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -581,7 +581,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">compression</span><span class="p">,</span> <span class="n">replicationCount</span><span class="p">,</span>
                                    <span class="n">fileEncoding</span><span class="p">,</span> <span class="n">fieldSeparator</span><span class="p">,</span> <span class="n">quoteCharacter</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.exportBinary"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.exportBinary">[docs]</a>    <span class="k">def</span> <span class="nf">exportBinary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">compression</span><span class="p">,</span> <span class="n">e_format</span><span class="o">=</span><span class="s1">&#39;parquet&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.exportBinary"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.exportBinary">[docs]</a>    <span class="k">def</span> <span class="nf">exportBinary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">compression</span><span class="p">,</span> <span class="n">e_format</span><span class="o">=</span><span class="s1">&#39;parquet&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Export a dataFrame in binary format</span>
 
@@ -593,7 +593,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">exportBinary</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">compression</span><span class="p">,</span> <span class="n">e_format</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.bulkImportHFile"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.bulkImportHFile">[docs]</a>    <span class="k">def</span> <span class="nf">bulkImportHFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.bulkImportHFile"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.bulkImportHFile">[docs]</a>    <span class="k">def</span> <span class="nf">bulkImportHFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Bulk Import HFile from a dataframe into a schema.table</span>
 
@@ -607,7 +607,7 @@
             <span class="n">optionsMap</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">bulkImportHFile</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">optionsMap</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.bulkImportHFileWithRdd"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.bulkImportHFileWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">bulkImportHFileWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.bulkImportHFileWithRdd"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.bulkImportHFileWithRdd">[docs]</a>    <span class="k">def</span> <span class="nf">bulkImportHFileWithRdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Bulk Import HFile from an rdd into a schema.table</span>
 
@@ -623,7 +623,7 @@
             <span class="n">options</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.splitAndInsert"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.splitAndInsert">[docs]</a>    <span class="k">def</span> <span class="nf">splitAndInsert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.splitAndInsert"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.splitAndInsert">[docs]</a>    <span class="k">def</span> <span class="nf">splitAndInsert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sample the dataframe, split the table, and insert a dataFrame into a schema.table.</span>
 <span class="sd">        This corresponds to an insert into from select statement</span>
@@ -637,7 +637,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">splitAndInsert</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">_jdf</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">sample_fraction</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.createDataFrame"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.createDataFrame">[docs]</a>    <span class="k">def</span> <span class="nf">createDataFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.createDataFrame"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.createDataFrame">[docs]</a>    <span class="k">def</span> <span class="nf">createDataFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rdd</span><span class="p">,</span> <span class="n">schema</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a dataframe from a given rdd and schema.</span>
 
@@ -693,7 +693,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Table exists. Dropping table&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="n">schema_and_or_table_name</span><span class="o">=</span><span class="n">schema_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="n">table_name</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PySpliceContext.dropTableIfExists"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.dropTableIfExists">[docs]</a>    <span class="k">def</span> <span class="nf">dropTableIfExists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.dropTableIfExists"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.dropTableIfExists">[docs]</a>    <span class="k">def</span> <span class="nf">dropTableIfExists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Drops a table if exists</span>
 <span class="sd">        </span>
@@ -719,7 +719,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spark_session</span><span class="o">.</span><span class="n">_jsparkSession</span><span class="o">.</span><span class="n">parseDataType</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
 
-<div class="viewcode-block" id="PySpliceContext.createTable"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.createTable">[docs]</a>    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">primary_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">create_table_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_upper</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">drop_table</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.createTable"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.createTable">[docs]</a>    <span class="k">def</span> <span class="nf">createTable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">primary_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">create_table_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_upper</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">drop_table</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a schema.table (schema_table_name) from a dataframe</span>
 <span class="sd">        </span>
@@ -741,7 +741,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">createTableWithSchema</span><span class="p">(</span><span class="n">schema_table_name</span><span class="p">,</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span>
                                    <span class="n">keys</span><span class="o">=</span><span class="n">primary_keys</span><span class="p">,</span> <span class="n">create_table_options</span><span class="o">=</span><span class="n">create_table_options</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PySpliceContext.createTableWithSchema"><a class="viewcode-back" href="../../spark.html#spark.context.PySpliceContext.createTableWithSchema">[docs]</a>    <span class="k">def</span> <span class="nf">createTableWithSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">create_table_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="PySpliceContext.createTableWithSchema"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.PySpliceContext.createTableWithSchema">[docs]</a>    <span class="k">def</span> <span class="nf">createTableWithSchema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">create_table_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a schema.table from a schema</span>
 
@@ -763,7 +763,7 @@
         <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="ExtPySpliceContext"><a class="viewcode-back" href="../../spark.html#spark.context.ExtPySpliceContext">[docs]</a><span class="k">class</span> <span class="nc">ExtPySpliceContext</span><span class="p">(</span><span class="n">PySpliceContext</span><span class="p">):</span>
+<div class="viewcode-block" id="ExtPySpliceContext"><a class="viewcode-back" href="../../../splicemachine.spark.html#splicemachine.spark.context.ExtPySpliceContext">[docs]</a><span class="k">class</span> <span class="nc">ExtPySpliceContext</span><span class="p">(</span><span class="n">PySpliceContext</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class implements a SplicemachineContext object from com.splicemachine.spark2 for use outside of the K8s Cloud Service</span>
 <span class="sd">    &quot;&quot;&quot;</span>

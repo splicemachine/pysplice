@@ -56,8 +56,10 @@ class PySpliceContext:
             self.spark_session = sparkSession
             self.jvm = self.spark_sql_context._sc._jvm
             java_import(self.jvm, self._spliceSparkPackagesName)
-            java_import(self.jvm,"org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions")
-            java_import(self.jvm,"org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils")
+            java_import(
+                self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions")
+            java_import(
+                self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils")
             java_import(self.jvm, "scala.collection.JavaConverters._")
             java_import(self.jvm, "com.splicemachine.derby.impl.*")
             java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
@@ -80,17 +82,20 @@ class PySpliceContext:
         """
         for s in dataframe.schema:
             s.name = s.name.upper()
-        return dataframe.rdd.toDF(dataframe.schema) # You need to re-generate the dataframe for the capital letters to take effect
-
+        # You need to re-generate the dataframe for the capital letters to take effect
+        return dataframe.rdd.toDF(dataframe.schema)
 
     def replaceDataframeSchema(self, dataframe, schema_table_name):
         """
         Returns a dataframe with all column names replaced with the proper string case from the DB table
+
         :param dataframe: (Dataframe) A dataframe with column names to convert
         :param schema_table_name: (str) The schema.table with the correct column cases to pull from the database
+        :return: (DataFrame) A Spark DataFrame with the replaced schema
         """
         schema = self.getSchema(schema_table_name)
-        dataframe = dataframe.rdd.toDF(schema) #Fastest way to replace the column case if changed
+        # Fastest way to replace the column case if changed
+        dataframe = dataframe.rdd.toDF(schema)
         return dataframe
 
     def getConnection(self):
@@ -103,10 +108,11 @@ class PySpliceContext:
         """
         Check whether or not a table exists
 
-        USAGE:
-            tableExists('schemaName.tableName')
-        Or:
-            tableExists('schemaName', 'tableName')
+        :Example:
+        .. code-block:: python
+
+            splice.tableExists('schemaName.tableName')\n
+            splice.tableExists('schemaName', 'tableName')
 
         :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,
           or pass schemaName.tableName in this param without passing the table_name param
@@ -122,14 +128,16 @@ class PySpliceContext:
         """
         Drop a specified table.
 
-        USAGE:
-            dropTable('schemaName.tableName')
-        Or:
-            dropTable('schemaName', 'tableName')
+        :Example:
+        .. code-block:: python
+
+            splice.dropTable('schemaName.tableName') \n
+            splice.dropTable('schemaName', 'tableName')
 
         :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,
           or pass schemaName.tableName in this param without passing the table_name param
         :param table_name: (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name
+        :return: None
         """
         if table_name:
             return self.context.dropTable(schema_and_or_table_name, table_name)
@@ -140,10 +148,12 @@ class PySpliceContext:
         """
         Return a Spark Dataframe from the results of a Splice Machine SQL Query
 
-        USAGE:
-        `df = splice.df('SELECT * FROM MYSCHEMA.TABLE1 WHERE COLUMN2 > 3')`
+        :Example:
+        .. code-block:: python
 
-        :param sql: (str) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+            df = splice.df('SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 > 3')
+
+        :param sql: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: (Dataframe) A Spark DataFrame containing the results
         """
         return DataFrame(self.context.df(sql), self.spark_sql_context)
@@ -156,6 +166,7 @@ class PySpliceContext:
         :param schema_table_name: (str) The table in which you would like to insert the DF
         :param to_upper: (bool) If the dataframe columns should be converted to uppercase before table creation
                             If False, the table will be created with lower case columns. [Default False]
+        :return: None
         """
         if to_upper:
             dataframe = self.toUpper(dataframe)
@@ -172,6 +183,7 @@ class PySpliceContext:
         :param schema_table_name: (str) The table in which you would like to insert the dataframe
         :param statusDirectory: (str) The status directory where bad records file will be created
         :param badRecordsAllowed: (int) The number of bad records are allowed. -1 for unlimited
+        :return: None
         """
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
         return self.context.insert(dataframe._jdf, schema_table_name, statusDirectory, badRecordsAllowed)
@@ -183,6 +195,7 @@ class PySpliceContext:
         :param rdd: (RDD) The RDD you would like to insert
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) The table in which you would like to insert the RDD
+        :return: None
         """
         return self.insert(
             self.createDataFrame(rdd, schema),
@@ -201,6 +214,7 @@ class PySpliceContext:
         :param schema_table_name: (str) The table in which you would like to insert the dataframe
         :param statusDirectory: (str) The status directory where bad records file will be created
         :param badRecordsAllowed: (int) The number of bad records are allowed. -1 for unlimited
+        :return: None
         """
         return self.insertWithStatus(
             self.createDataFrame(rdd, schema),
@@ -215,6 +229,7 @@ class PySpliceContext:
 
         :param dataframe: (Dataframe) The dataframe you would like to upsert
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
+        :return: None
         """
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
@@ -227,6 +242,7 @@ class PySpliceContext:
         :param rdd: (RDD) The RDD you would like to upsert
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
+        :return: None
         """
         return self.upsert(
             self.createDataFrame(rdd, schema),
@@ -240,6 +256,7 @@ class PySpliceContext:
 
         :param dataframe: (Dataframe) The dataframe you would like to delete
         :param schema_table_name: (str) Splice Machine Table
+        :return: None
         """
         return self.context.delete(dataframe._jdf, schema_table_name)
 
@@ -251,6 +268,7 @@ class PySpliceContext:
         :param rdd: (RDD) The RDD containing the primary keys you would like to delete from the table
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) Splice Machine Table
+        :return: None
         """
         return self.delete(
             self.createDataFrame(rdd, schema),
@@ -265,6 +283,7 @@ class PySpliceContext:
 
         :param dataframe: (Dataframe) The dataframe you would like to update
         :param schema_table_name: (str) Splice Machine Table
+        :return: None
         """
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
@@ -279,6 +298,7 @@ class PySpliceContext:
         :param rdd: (RDD) The RDD you would like to use for updating the table
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) Splice Machine Table
+        :return: None
         """
         return self.update(
             self.createDataFrame(rdd, schema),
@@ -298,10 +318,12 @@ class PySpliceContext:
         '''
         execute a query over JDBC
 
-        USAGE:
-        `splice.execute('SELECT * FROM table1 WHERE column2 > 3')`
+        :Example:
+        .. code-block:: python
+            
+            splice.execute('DELETE FROM TABLE1 WHERE col2 > 3')
 
-        :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+        :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: None
         '''
         return self.context.execute(query_string)
@@ -310,8 +332,10 @@ class PySpliceContext:
         '''
         execute a dml query:(update,delete,drop,etc)
 
-        USAGE:
-        `splice.executeUpdate('DROP TABLE table1')`
+        :Example:
+        .. code-block:: python
+
+            splice.executeUpdate('DROP TABLE table1')
 
         :param query_string: (string) SQL Query (eg. DROP TABLE table1)
         :return: None
@@ -322,7 +346,7 @@ class PySpliceContext:
         '''
         SQL to Dataframe translation (Lazy). Runs the query inside Splice Machine and sends the results to the Spark Adapter app
 
-        :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE column2 > 3)
+        :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: (DataFrame) pyspark dataframe contains the result of query_string
         '''
         return DataFrame(self.context.internalDf(query_string), self.spark_sql_context)
@@ -333,7 +357,7 @@ class PySpliceContext:
 
         :param schema_table_name: (string) Accessed table
         :param column_projection: (list of strings) Names of selected columns
-        :return RDD[Row] with the result of the projection
+        :return: (RDD[Row]) the result of the projection
         """
         if column_projection:
             colnames = ', '.join(str(col) for col in column_projection)
@@ -348,7 +372,7 @@ class PySpliceContext:
 
         :param schema_table_name: (str) Accessed table
         :param column_projection: (list of strings) Names of selected columns
-        :return RDD[Row] with the result of the projection
+        :return: (RDD[Row]) the result of the projection
         """
         if column_projection:
             colnames = ', '.join(str(col) for col in column_projection)
@@ -377,10 +401,10 @@ class PySpliceContext:
     def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=10.0):
         """
         Collect stats info on a table
-
-        :param schema_table_name: full table name in the format of "schema.table"
-        :param estimateStatistics:will use estimate statistics if True
-        :param samplePercent:  the percentage or rows to be sampled.
+        
+        :param schema_table_name: full table name in the format of 'schema.table'
+        :param estimateStatistics: will use estimate statistics if True
+        :param samplePercent: the percentage or rows to be sampled.
         :return: None
         """
         return self.context.analyzeTable(schema_table_name, estimateStatistics, float(samplePercent))
@@ -442,6 +466,7 @@ class PySpliceContext:
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) Full table name in the format of "schema.table"
         :param options: (Dict) Dictionary of options to be passed to --splice-properties; bulkImportDirectory is required
+        :return: None
         """
         return self.bulkImportHFile(
             self.createDataFrame(rdd, schema),
@@ -457,8 +482,8 @@ class PySpliceContext:
         :param dataframe: (DataFrame) Input data
         :param schema_table_name: (str) Full table name in the format of "schema.table"
         :param sample_fraction: (float) A value between 0 and 1 that specifies the percentage of data in the dataFrame \
-            that should be sampled to determine the splits. \
-            For example, specify 0.005 if you want 0.5% of the data sampled.
+        that should be sampled to determine the splits. \
+        For example, specify 0.005 if you want 0.5% of the data sampled.
         :return: None
         """
         return self.context.splitAndInsert(dataframe._jdf, schema_table_name, float(sample_fraction))
@@ -469,6 +494,7 @@ class PySpliceContext:
 
         :param rdd: (RDD) Input data
         :param schema: (StructType) The schema of the rows in the RDD
+        :return: (DataFrame) The Spark DataFrame
         """
         return self.spark_session.createDataFrame(rdd, schema)
 
@@ -484,7 +510,8 @@ class PySpliceContext:
         # i contains the name and pyspark datatype of the column
         for i in dataframe.schema:
             if i.name.upper() in types:
-                print('Column {} is of type {}'.format(i.name.upper(), i.dataType))
+                print('Column {} is of type {}'.format(
+                    i.name.upper(), i.dataType))
                 dt = types[i.name.upper()]
             else:
                 dt = CONVERSIONS[str(i.dataType)]
@@ -509,12 +536,30 @@ class PySpliceContext:
 
         return schema, table
 
-    def _dropTableIfExists(self, schema_table_name):
+    def _dropTableIfExists(self, schema_table_name, table_name=None):
         """
         Drop table if it exists
         """
-        print('Dropping table {st}'.format(st=schema_table_name))
-        self.execute('DROP TABLE IF EXISTS {st}'.format(st=schema_table_name))
+        if self.tableExists(schema_and_or_table_name=schema_table_name, table_name=table_name):
+            print('Table exists. Dropping table')
+            self.dropTable(schema_and_or_table_name=schema_table_name, table_name=table_name)
+
+    def dropTableIfExists(self, schema_table_name, table_name=None):
+        """
+        Drops a table if exists
+        
+        :Example:
+        .. code-block:: python
+
+            splice.dropTableIfExists('schemaName.tableName') \n
+            splice.dropTableIfExists('schemaName', 'tableName')
+
+        :param schema_table_name: (str) Pass the schema name in this param when passing the table_name param,
+          or pass schemaName.tableName in this param without passing the table_name param
+        :param table_name: (optional) (str) Table Name, used when schema_table_name contains only the schema name
+        :return: None
+        """
+        self._dropTableIfExists(schema_table_name, table_name)
 
     def _jstructtype(self, schema):
         """
@@ -527,25 +572,26 @@ class PySpliceContext:
 
     def createTable(self, dataframe, schema_table_name, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
         """
-        Creates a schema.table from a dataframe
-
+        Creates a schema.table (schema_table_name) from a dataframe
+        
         :param dataframe: The Spark DataFrame to base the table off
         :param schema_table_name: str The schema.table to create
         :param primary_keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
-        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation \
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation. \
             If False, the table will be created with lower case columns. Default False
-        :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists, \
-            the function will throw an exception.
+        :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists, the function will throw an exception
         :return: None
+
         """
         if drop_table:
             self._dropTableIfExists(schema_table_name)
         if to_upper:
             dataframe = self.toUpper(dataframe)
         primary_keys = primary_keys if primary_keys else []
-        self.createTableWithSchema(schema_table_name, dataframe.schema, keys=primary_keys, create_table_options=create_table_options)
-        
+        self.createTableWithSchema(schema_table_name, dataframe.schema,
+                                   keys=primary_keys, create_table_options=create_table_options)
+
     def createTableWithSchema(self, schema_table_name, schema, keys=None, create_table_options=None):
         """
         Creates a schema.table from a schema
@@ -566,6 +612,7 @@ class PySpliceContext:
             keys_seq,
             create_table_options
         )
+
 
 class ExtPySpliceContext(PySpliceContext):
     """

@@ -1,3 +1,18 @@
+"""
+Copyright 2020 Splice Machine, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import time
 from collections import defaultdict
 from contextlib import contextmanager
@@ -194,11 +209,24 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     """
     Start a new run
 
-    :param tags: a dictionary containing metadata about the current run.
-        For example:
-            {
-                'team': 'pd',
-                'purpose': 'r&d'
+    :Example:
+    .. code-block:: python
+    
+        mlflow.start_run(run_name='my_run')
+        
+    or
+
+    .. code-block:: python
+
+        with mlflow.start_run(run_name='my_run'):
+            ...
+
+
+    :param tags: a dictionary containing metadata about the current run. \
+        For example: \
+            { \
+                'team': 'pd', \
+                'purpose': 'r&d' \
             }
     :param run_name: (str) an optional name for the run to show up in the MLFlow UI. [Default None]
     :param run_id: (str) if you want to reincarnate an existing run, pass in the run id [Default None]
@@ -307,15 +335,14 @@ def _timer(timer_name, param=True):
     """
     Context manager for logging
 
+    :Example:
+    .. code-block:: python
+    
+        with mlflow.timer('my_timer'): \n
+            ...
+
     :param timer_name: (str) the name of the timer
     :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.
-
-    USAGE:
-    ```
-    with mlflow.timer('my_timer'):
-       ...
-    ```
-
     :return: None
     """
     try:
@@ -401,11 +428,18 @@ def _log_artifact(file_name, name=None, run_uuid=None):
     """
     Log an artifact for the active run
 
+    :Example:
+    .. code-block:: python
+
+        mlflow.log_artifact('my_image.png')
+
     :param file_name: (str) the name of the file name to log
     :param name: (str) the name of the run relative name to store the model under
-    :param run_uuid: the run uuid of a previous run, if none, defaults to current run
-    NOTE: We do not currently support logging directories. If you would like to log a directory, please zip it first
-          and log the zip file
+    :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run
+    :return: None
+    
+    :NOTE: 
+        We do not currently support logging directories. If you would like to log a directory, please zip it first and log the zip file
     """
     _check_for_splice_ctx()
     file_ext = path.splitext(file_name)[1].lstrip('.')
@@ -572,56 +606,51 @@ def _deploy_db(db_schema_name,
     :param db_table_name: (str) the table name to deploy to.
     :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
 
-
-    OPTIONAL PARAMETERS:
-    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key.
-                        If you are deploying to a table that already exists, this primary/composite key must exist in the table
-                        If you are creating the table in this function, you MUST pass in a primary key
-    :param df: (Spark or Pandas DF) The dataframe used to train the model
-                NOTE: this dataframe should NOT be transformed by the model. The columns in this df are the ones
-                that will be used to create the table.
+    \n OPTIONAL PARAMETERS
+    
+    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key. \n
+        * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n
+        * If you are creating the table in this function, you MUST pass in a primary key 
+    :param df: (Spark or Pandas DF) The dataframe used to train the model \n
+                | NOTE: The columns in this df are the ones that will be used to create the table unless specified by model_cols
     :param create_model_table: Whether or not to create the table from the dataframe. Default false. This
                                 Will ONLY be used if the table does not exist and a dataframe is passed in
     :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
                                         IN THAT ORDER. The columns passed here must exist in the table.
-    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
+    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.\n
                     NOTE: If not supplied, the table will have default column names for each class
-    :param sklearn_args: (dict{str: str}) Prediction options for sklearn models
-                        Available key value options:
-                        'predict_call': 'predict', 'predict_proba', or 'transform'
-                                                                       - Determines the function call for the model
-                                                                       If blank, predict will be used
-                                                                       (or transform if model doesn't have predict)
-                        'predict_args': 'return_std' or 'return_cov' - For Bayesian and Gaussian models
-                                                                         Only one can be specified
-                        If the model does not have the option specified, it will be ignored.
+    :param sklearn_args: (dict{str: str}) Prediction options for sklearn models: \n
+        * Available key value options: \n
+            * 'predict_call': 'predict', 'predict_proba', or 'transform' \n
+                * Determines the function call for the model \n
+                        * If blank, predict will be used (or transform if model doesn't have predict) \n
+            * 'predict_args': 'return_std' or 'return_cov' - For Bayesian and Gaussian models \n
+                * Only one can be specified \n
+                    * If the model does not have the option specified, it will be ignored.
     :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging
-    :param pred_threshold: (double) A prediction threshold for *Keras* binary classification models
-                            If the model type isn't Keras, this parameter will be ignored
-                            NOTE: If the model type is Keras, the output layer has 1 node, and pred_threshold is None,
-                                  you will NOT receive a class prediction, only the output of the final layer (like model.predict()).
-                                  If you want a class prediction
-                                  for your binary classification problem, you MUST pass in a threshold.
+    :param pred_threshold: (double) A prediction threshold for *Keras* binary classification models \n
+        * If the model type isn't Keras, this parameter will be ignored \n
+        NOTE: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, \
+                you will NOT receive a class prediction, only the output of the final layer (like model.predict()). \
+                If you want a class prediction \
+                for your binary classification problem, you MUST pass in a threshold.
     :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
 
 
-    This function creates the following:
-    IF you are creating the table from the dataframe:
-        * The model table where run_id is the run_id passed in (or the current active run_id
-            This will have a column for each feature in the feature vector. It will also contain:
-            USER which is the current user who made the request
-            EVAL_TIME which is the CURRENT_TIMESTAMP
-            the PRIMARY KEY column same as the DATA table to link predictions to rows in the table (primary key)
-            PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
-            A column for each class of the predictor with the value being the probability/confidence of the model if applicable
-    IF you are deploying to an existing table:
-        * The table will be altered to include
-
-    * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table,
-        calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run
-    * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted,
-        parsing the prediction probabilities and filling in proper column values
+    This function creates the following IF you are creating a table from the dataframe: \n
+        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:
+            * USER which is the current user who made the request
+            * EVAL_TIME which is the CURRENT_TIMESTAMP
+            * the PRIMARY KEY column same as the DATA table to link predictions to rows in the table (primary key)
+            * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
+            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable
+    IF you are deploying to an existing table, the table will be altered to include the columns above. \n
+    The following will also be created for all deployments: \n
+        * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \
+            calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n
+        * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \
+            parsing the prediction probabilities and filling in proper column values
 
     :return: None
 
@@ -726,8 +755,8 @@ def _get_deployed_models() -> PandasDF:
 
 def apply_patches():
     """
-    Apply all the Gorilla Patches;
-    ALL GORILLA PATCHES SHOULD BE PREFIXED WITH "_" BEFORE THEIR DESTINATION IN MLFLOW
+    Apply all the Gorilla Patches; \
+    All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
