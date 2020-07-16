@@ -65,7 +65,11 @@ from pyspark.sql.dataframe import DataFrame as SparkDF
 from pandas.core.frame import DataFrame as PandasDF
 
 _TESTING = env_vars.get("TESTING", False)
-_TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
+try:
+    _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
+except:
+    print("It looks like you're running outside the Splice K8s Cloud Service. You must run set_mlflow_uri() and pass in the URL to the MLFlow UI")
+    _TRACKING_URL = ''
 
 _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
 mlflow.client = _CLIENT
@@ -791,6 +795,17 @@ def apply_patches():
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
+
+def set_mlflow_uri(uri):
+    """
+    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
+
+    :param uri: (str) the URL of your mlflow UI.
+    :return: None
+    """
+    _CLIENT = uri
+    mlflow.client = _CLIENT 
+    mlflow.set_tracking_uri(uri)
 
 
 def main():
