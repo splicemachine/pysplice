@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" xml:lang="en"
+ unique-identifier="unknown"
+ prefix="ibooks: http://vocabulary.itunes.apple.com/rdf/ibooks/vocabulary-extensions-1.0/">
+  <metadata xmlns:opf="http://www.idpf.org/2007/opf"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:language>en</dc:language>
+    <dc:title>Splice MLManager</dc:title>
+    <dc:description>unknown</dc:description>
+    <dc:creator>Ben Epstein</dc:creator>
+    <dc:contributor>unknown</dc:contributor>
+    <dc:publisher>Ben Epstein</dc:publisher>
+    <dc:rights>2020, Splice Machine</dc:rights>
+    <dc:identifier id="unknown">unknown</dc:identifier>
+    <dc:date>2020-07-16T14:56:46Z</dc:date>
+    <meta property="dcterms:modified">2020-07-16T14:56:46Z</meta>
+    <meta property="ibooks:version"></meta>
+    <meta property="ibooks:specified-fonts">true</meta>
+    <meta property="ibooks:binding">true</meta>
+    <meta property="ibooks:scroll-axis">vertical</meta>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml" />
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="epub-0" href="genindex.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-1" href="index.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-2" href="py-modindex.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-3" href="spark.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-4" href="splicemachine.mlflow_support.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-5" href="splicemachine.spark.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-6" href="splicemachine.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-7" href="_modules/index.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-8" href="_modules/pyspark/ml/base.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-9" href="_modules/pyspark/ml/param.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-10" href="_modules/pyspark/ml/tuning.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-11" href="_modules/pyspark/ml/util.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-12" href="_modules/pyspark/ml/param/shared.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-13" href="_modules/spark/context.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-14" href="_modules/splicemachine/notebook.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-15" href="_modules/splicemachine/stats.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-16" href="_modules/splicemachine/mlflow_support/mlflow_support.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-17" href="_modules/splicemachine/spark/context.xhtml" media-type="application/xhtml+xml" />
+    <item id="epub-18" href="_static/basic.css" media-type="text/css" />
+    <item id="epub-19" href="_static/epub.css" media-type="text/css" />
+    <item id="epub-20" href="_static/file.png" media-type="image/png" />
+    <item id="epub-21" href="_static/minus.png" media-type="image/png" />
+    <item id="epub-22" href="_static/plus.png" media-type="image/png" />
+    <item id="epub-23" href="_static/pygments.css" media-type="text/css" />
+  </manifest>
+  <spine toc="ncx" page-progression-direction="ltr">
+    <itemref idref="epub-1" />
+    <itemref idref="epub-6" />
+    <itemref idref="epub-4" />
+    <itemref idref="epub-5" />
+    <itemref idref="epub-2" />
+    <itemref idref="epub-0" />
+    <itemref idref="epub-3" linear="no" />
+    <itemref idref="epub-7" linear="no" />
+    <itemref idref="epub-8" linear="no" />
+    <itemref idref="epub-9" linear="no" />
+    <itemref idref="epub-10" linear="no" />
+    <itemref idref="epub-11" linear="no" />
+    <itemref idref="epub-12" linear="no" />
+    <itemref idref="epub-13" linear="no" />
+    <itemref idref="epub-14" linear="no" />
+    <itemref idref="epub-15" linear="no" />
+    <itemref idref="epub-16" linear="no" />
+    <itemref idref="epub-17" linear="no" />
+  </spine>
+  <guide>
+    <reference type="toc" title="Table of Contents" href="index.xhtml" />
+  </guide>
+</package>
