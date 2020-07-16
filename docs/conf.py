@@ -78,7 +78,7 @@ add_module_names = False
 # Allows us to remove the _ from the mlflow_support functions
 autodoc_docstring_signature=True
 # So we don't have to have pyspark
-autodoc_mock_imports = ["pyspark"]
+#autodoc_mock_imports = ["pyspark"]
 
 # To skip the mlflow_support.utilities/constants and spark.constants modules
 def check_skip_member(app, what, name, obj, skip, options):
