@@ -15,12 +15,12 @@ limitations under the License.\n
 
 ======================================================================================================================================================================================\n
 
-All functions in this module are accessible through the mlflow object and are to be referenced as \n
+All functions in this module are accessible through the mlflow object and are to be referenced without the leading underscore as \n
 .. code-block:: python
 
     mlflow.function_name()
 
-For example, the function splicemachine.mlflow_support.mlflow_support._current_exp_id() is accessible via\n
+For example, the function _current_exp_id() is accessible via\n
 .. code-block:: python
 
     mlflow.current_exp_id()
@@ -236,16 +236,12 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     Start a new run
 
     :Example:
-    .. code-block:: python
+        .. code-block:: python
     
-        mlflow.start_run(run_name='my_run')
-        
-    or
-
-    .. code-block:: python
-
-        with mlflow.start_run(run_name='my_run'):
-            ...
+            mlflow.start_run(run_name='my_run')\n
+            # or\n
+            with mlflow.start_run(run_name='my_run'):
+                ...
 
 
     :param tags: a dictionary containing metadata about the current run. \
@@ -362,10 +358,10 @@ def _timer(timer_name, param=True):
     Context manager for logging
 
     :Example:
-    .. code-block:: python
+        .. code-block:: python
     
-        with mlflow.timer('my_timer'): \n
-            ...
+            with mlflow.timer('my_timer'): \n
+                ...
 
     :param timer_name: (str) the name of the timer
     :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.
@@ -455,9 +451,10 @@ def _log_artifact(file_name, name=None, run_uuid=None):
     Log an artifact for the active run
 
     :Example:
-    .. code-block:: python
+        .. code-block:: python
 
-        mlflow.log_artifact('my_image.png')
+            with mlflow.start_run():\n
+                mlflow.log_artifact('my_image.png')
 
     :param file_name: (str) the name of the file name to log
     :param name: (str) the name of the run relative name to store the model under
@@ -631,9 +628,6 @@ def _deploy_db(db_schema_name,
     :param db_schema_name: (str) the schema name to deploy to.
     :param db_table_name: (str) the table name to deploy to.
     :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
-
-    \n OPTIONAL PARAMETERS
-    
     :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key. \n
         * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n
         * If you are creating the table in this function, you MUST pass in a primary key 
@@ -662,24 +656,30 @@ def _deploy_db(db_schema_name,
                 If you want a class prediction \
                 for your binary classification problem, you MUST pass in a threshold.
     :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
-
-
-    This function creates the following IF you are creating a table from the dataframe: \n
-        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:
+    :return: None\n
+    
+    This function creates the following IF you are creating a table from the dataframe \n
+        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n
             * USER which is the current user who made the request
             * EVAL_TIME which is the CURRENT_TIMESTAMP
-            * the PRIMARY KEY column same as the DATA table to link predictions to rows in the table (primary key)
+            * the PRIMARY KEY column(s) passed in
             * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
-            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable
+            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n
     IF you are deploying to an existing table, the table will be altered to include the columns above. \n
+    :NOTE:
+        .. code-block:: text
+    
+            The columns listed above are default value columns.\n 
+            This means that on a SQL insert into the table, \n
+            you do not need to reference or insert values into them.\n
+            They are automatically taken care of.\n
+            Set verbose=True in the function call for more information
+
     The following will also be created for all deployments: \n
         * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \
             calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n
         * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \
             parsing the prediction probabilities and filling in proper column values
-
-    :return: None
-
     """
     _check_for_splice_ctx()
 

@@ -73,6 +73,11 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# Removes the full module path for the function name
+add_module_names = False
+# Allows us to remove the _ from the mlflow_support functions
+autodoc_docstring_signature=True
+
 # To skip the mlflow_support.utilities/constants and spark.constants modules
 def check_skip_member(app, what, name, obj, skip, options):
     try:

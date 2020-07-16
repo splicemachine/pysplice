@@ -258,10 +258,11 @@
 <span class="sd">        Check whether or not a table exists</span>
 
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 
-<span class="sd">            splice.tableExists(&#39;schemaName.tableName&#39;)\n</span>
-<span class="sd">            splice.tableExists(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
+<span class="sd">                splice.tableExists(&#39;schemaName.tableName&#39;)\n</span>
+<span class="sd">                # or\n</span>
+<span class="sd">                splice.tableExists(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
 
 <span class="sd">        :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,</span>
 <span class="sd">          or pass schemaName.tableName in this param without passing the table_name param</span>
@@ -278,10 +279,11 @@
 <span class="sd">        Drop a specified table.</span>
 
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 
-<span class="sd">            splice.dropTable(&#39;schemaName.tableName&#39;) \n</span>
-<span class="sd">            splice.dropTable(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
+<span class="sd">                splice.dropTable(&#39;schemaName.tableName&#39;) \n</span>
+<span class="sd">                # or\n</span>
+<span class="sd">                splice.dropTable(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
 
 <span class="sd">        :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,</span>
 <span class="sd">          or pass schemaName.tableName in this param without passing the table_name param</span>
@@ -298,9 +300,9 @@
 <span class="sd">        Return a Spark Dataframe from the results of a Splice Machine SQL Query</span>
 
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 
-<span class="sd">            df = splice.df(&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;)</span>
+<span class="sd">                df = splice.df(&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;)</span>
 
 <span class="sd">        :param sql: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</span>
 <span class="sd">        :return: (Dataframe) A Spark DataFrame containing the results</span>
@@ -468,9 +470,9 @@
 <span class="sd">        execute a query over JDBC</span>
 
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 <span class="sd">            </span>
-<span class="sd">            splice.execute(&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;)</span>
+<span class="sd">                splice.execute(&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;)</span>
 
 <span class="sd">        :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</span>
 <span class="sd">        :return: None</span>
@@ -482,9 +484,9 @@
 <span class="sd">        execute a dml query:(update,delete,drop,etc)</span>
 
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 
-<span class="sd">            splice.executeUpdate(&#39;DROP TABLE table1&#39;)</span>
+<span class="sd">                splice.executeUpdate(&#39;DROP TABLE table1&#39;)</span>
 
 <span class="sd">        :param query_string: (string) SQL Query (eg. DROP TABLE table1)</span>
 <span class="sd">        :return: None</span>
@@ -698,10 +700,11 @@
 <span class="sd">        Drops a table if exists</span>
 <span class="sd">        </span>
 <span class="sd">        :Example:</span>
-<span class="sd">        .. code-block:: python</span>
+<span class="sd">            .. code-block:: python</span>
 
-<span class="sd">            splice.dropTableIfExists(&#39;schemaName.tableName&#39;) \n</span>
-<span class="sd">            splice.dropTableIfExists(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
+<span class="sd">                splice.dropTableIfExists(&#39;schemaName.tableName&#39;) \n</span>
+<span class="sd">                # or\n</span>
+<span class="sd">                splice.dropTableIfExists(&#39;schemaName&#39;, &#39;tableName&#39;)</span>
 
 <span class="sd">        :param schema_table_name: (str) Pass the schema name in this param when passing the table_name param,</span>
 <span class="sd">          or pass schemaName.tableName in this param without passing the table_name param</span>

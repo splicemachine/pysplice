@@ -109,10 +109,11 @@ class PySpliceContext:
         Check whether or not a table exists
 
         :Example:
-        .. code-block:: python
+            .. code-block:: python
 
-            splice.tableExists('schemaName.tableName')\n
-            splice.tableExists('schemaName', 'tableName')
+                splice.tableExists('schemaName.tableName')\n
+                # or\n
+                splice.tableExists('schemaName', 'tableName')
 
         :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,
           or pass schemaName.tableName in this param without passing the table_name param
@@ -129,10 +130,11 @@ class PySpliceContext:
         Drop a specified table.
 
         :Example:
-        .. code-block:: python
+            .. code-block:: python
 
-            splice.dropTable('schemaName.tableName') \n
-            splice.dropTable('schemaName', 'tableName')
+                splice.dropTable('schemaName.tableName') \n
+                # or\n
+                splice.dropTable('schemaName', 'tableName')
 
         :param schema_and_or_table_name: (str) Pass the schema name in this param when passing the table_name param,
           or pass schemaName.tableName in this param without passing the table_name param
@@ -149,9 +151,9 @@ class PySpliceContext:
         Return a Spark Dataframe from the results of a Splice Machine SQL Query
 
         :Example:
-        .. code-block:: python
+            .. code-block:: python
 
-            df = splice.df('SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 > 3')
+                df = splice.df('SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 > 3')
 
         :param sql: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: (Dataframe) A Spark DataFrame containing the results
@@ -319,9 +321,9 @@ class PySpliceContext:
         execute a query over JDBC
 
         :Example:
-        .. code-block:: python
+            .. code-block:: python
             
-            splice.execute('DELETE FROM TABLE1 WHERE col2 > 3')
+                splice.execute('DELETE FROM TABLE1 WHERE col2 > 3')
 
         :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: None
@@ -333,9 +335,9 @@ class PySpliceContext:
         execute a dml query:(update,delete,drop,etc)
 
         :Example:
-        .. code-block:: python
+            .. code-block:: python
 
-            splice.executeUpdate('DROP TABLE table1')
+                splice.executeUpdate('DROP TABLE table1')
 
         :param query_string: (string) SQL Query (eg. DROP TABLE table1)
         :return: None
@@ -549,10 +551,11 @@ class PySpliceContext:
         Drops a table if exists
         
         :Example:
-        .. code-block:: python
+            .. code-block:: python
 
-            splice.dropTableIfExists('schemaName.tableName') \n
-            splice.dropTableIfExists('schemaName', 'tableName')
+                splice.dropTableIfExists('schemaName.tableName') \n
+                # or\n
+                splice.dropTableIfExists('schemaName', 'tableName')
 
         :param schema_table_name: (str) Pass the schema name in this param when passing the table_name param,
           or pass schemaName.tableName in this param without passing the table_name param

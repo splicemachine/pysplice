@@ -177,7 +177,7 @@ See the License for the specific language governing permissions and
 limitations under the License.</p>
 <dl class="py class">
 <dt id="spark.context.ExtPySpliceContext">
-<em class="property">class </em><code class="sig-prename descclassname">spark.context.</code><code class="sig-name descname">ExtPySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kafkaServers</span><span class="o">=</span><span class="default_value">'localhost:9092'</span></em>, <em class="sig-param"><span class="n">kafkaPollTimeout</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#ExtPySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.ExtPySpliceContext" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-name descname">ExtPySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kafkaServers</span><span class="o">=</span><span class="default_value">'localhost:9092'</span></em>, <em class="sig-param"><span class="n">kafkaPollTimeout</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#ExtPySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.ExtPySpliceContext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#spark.context.PySpliceContext" title="spark.context.PySpliceContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">spark.context.PySpliceContext</span></code></a></p>
 <p>This class implements a SplicemachineContext object from com.splicemachine.spark2 for use outside of the K8s Cloud Service</p>
 <dl class="py method">
@@ -347,19 +347,17 @@ Be careful with column naming and case sensitivity.</p>
 <dt id="spark.context.ExtPySpliceContext.df">
 <code class="sig-name descname">df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sql</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.df" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a Spark Dataframe from the results of a Splice Machine SQL Query</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(Dataframe) A Spark DataFrame containing the results</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(Dataframe) A Spark DataFrame containing the results</p>
 </dd>
 </dl>
 </dd></dl>
@@ -368,25 +366,25 @@ Be careful with column naming and case sensitivity.</p>
 <dt id="spark.context.ExtPySpliceContext.dropTable">
 <code class="sig-name descname">dropTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.dropTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Drop a specified table.</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -395,25 +393,25 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.ExtPySpliceContext.dropTableIfExists">
 <code class="sig-name descname">dropTableIfExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.dropTableIfExists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Drops a table if exists</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -422,19 +420,17 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.ExtPySpliceContext.execute">
 <code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.execute" title="Permalink to this definition">¶</a></dt>
 <dd><p>execute a query over JDBC</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -443,19 +439,17 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.ExtPySpliceContext.executeUpdate">
 <code class="sig-name descname">executeUpdate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.executeUpdate" title="Permalink to this definition">¶</a></dt>
 <dd><p>execute a dml query:(update,delete,drop,etc)</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -689,25 +683,25 @@ This corresponds to an insert into from select statement</p>
 <dt id="spark.context.ExtPySpliceContext.tableExists">
 <code class="sig-name descname">tableExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spark.context.ExtPySpliceContext.tableExists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether or not a table exists</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(bool) whether or not the table exists</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) whether or not the table exists</p>
 </dd>
 </dl>
 </dd></dl>
@@ -815,7 +809,7 @@ in the rows.</p>
 
 <dl class="py class">
 <dt id="spark.context.PySpliceContext">
-<em class="property">class </em><code class="sig-prename descclassname">spark.context.</code><code class="sig-name descname">PySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-name descname">PySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class implements a SpliceMachineContext object (similar to the SparkContext object)</p>
 <dl class="py method">
@@ -985,19 +979,17 @@ Be careful with column naming and case sensitivity.</p>
 <dt id="spark.context.PySpliceContext.df">
 <code class="sig-name descname">df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sql</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.df" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a Spark Dataframe from the results of a Splice Machine SQL Query</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(Dataframe) A Spark DataFrame containing the results</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(Dataframe) A Spark DataFrame containing the results</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1006,25 +998,25 @@ Be careful with column naming and case sensitivity.</p>
 <dt id="spark.context.PySpliceContext.dropTable">
 <code class="sig-name descname">dropTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.dropTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.dropTable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Drop a specified table.</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1033,25 +1025,25 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.PySpliceContext.dropTableIfExists">
 <code class="sig-name descname">dropTableIfExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.dropTableIfExists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.dropTableIfExists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Drops a table if exists</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1060,19 +1052,17 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.PySpliceContext.execute">
 <code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.execute" title="Permalink to this definition">¶</a></dt>
 <dd><p>execute a query over JDBC</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1081,19 +1071,17 @@ or pass schemaName.tableName in this param without passing the table_name param<
 <dt id="spark.context.PySpliceContext.executeUpdate">
 <code class="sig-name descname">executeUpdate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.executeUpdate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.executeUpdate" title="Permalink to this definition">¶</a></dt>
 <dd><p>execute a dml query:(update,delete,drop,etc)</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1327,25 +1315,25 @@ This corresponds to an insert into from select statement</p>
 <dt id="spark.context.PySpliceContext.tableExists">
 <code class="sig-name descname">tableExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spark/context.html#PySpliceContext.tableExists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spark.context.PySpliceContext.tableExists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check whether or not a table exists</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+
+<span class="c1"># or</span>
 
 <span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
 or pass schemaName.tableName in this param without passing the table_name param</p></li>
 <li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(bool) whether or not the table exists</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) whether or not the table exists</p>
 </dd>
 </dl>
 </dd></dl>

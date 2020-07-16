@@ -164,12 +164,12 @@
 
 <span class="sd">======================================================================================================================================================================================\n</span>
 
-<span class="sd">All functions in this module are accessible through the mlflow object and are to be referenced as \n</span>
+<span class="sd">All functions in this module are accessible through the mlflow object and are to be referenced without the leading underscore as \n</span>
 <span class="sd">.. code-block:: python</span>
 
 <span class="sd">    mlflow.function_name()</span>
 
-<span class="sd">For example, the function splicemachine.mlflow_support.mlflow_support._current_exp_id() is accessible via\n</span>
+<span class="sd">For example, the function _current_exp_id() is accessible via\n</span>
 <span class="sd">.. code-block:: python</span>
 
 <span class="sd">    mlflow.current_exp_id()</span>
@@ -233,7 +233,8 @@
 
 
 <div class="viewcode-block" id="_get_current_run_data"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_current_run_data">[docs]</a><span class="k">def</span> <span class="nf">_get_current_run_data</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;get_current_run_data()</span>
+<span class="sd">    </span>
 <span class="sd">    Get the data associated with the current run.</span>
 <span class="sd">    As of MLFLow 1.6, it currently does not support getting run info from the mlflow.active_run object, so we need it</span>
 <span class="sd">    to be retrieved via the tracking client.</span>
@@ -290,6 +291,8 @@
 <div class="viewcode-block" id="_current_run_id"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._current_run_id">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;current_run_id&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">_current_run_id</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    current_run_id()</span>
+
 <span class="sd">    Retrieve the current run id</span>
 
 <span class="sd">    :return: (str) the current run id</span>
@@ -385,16 +388,12 @@
 <span class="sd">    Start a new run</span>
 
 <span class="sd">    :Example:</span>
-<span class="sd">    .. code-block:: python</span>
+<span class="sd">        .. code-block:: python</span>
 <span class="sd">    </span>
-<span class="sd">        mlflow.start_run(run_name=&#39;my_run&#39;)</span>
-<span class="sd">        </span>
-<span class="sd">    or</span>
-
-<span class="sd">    .. code-block:: python</span>
-
-<span class="sd">        with mlflow.start_run(run_name=&#39;my_run&#39;):</span>
-<span class="sd">            ...</span>
+<span class="sd">            mlflow.start_run(run_name=&#39;my_run&#39;)\n</span>
+<span class="sd">            # or\n</span>
+<span class="sd">            with mlflow.start_run(run_name=&#39;my_run&#39;):</span>
+<span class="sd">                ...</span>
 
 
 <span class="sd">    :param tags: a dictionary containing metadata about the current run. \</span>
@@ -511,10 +510,10 @@
 <span class="sd">    Context manager for logging</span>
 
 <span class="sd">    :Example:</span>
-<span class="sd">    .. code-block:: python</span>
+<span class="sd">        .. code-block:: python</span>
 <span class="sd">    </span>
-<span class="sd">        with mlflow.timer(&#39;my_timer&#39;): \n</span>
-<span class="sd">            ...</span>
+<span class="sd">            with mlflow.timer(&#39;my_timer&#39;): \n</span>
+<span class="sd">                ...</span>
 
 <span class="sd">    :param timer_name: (str) the name of the timer</span>
 <span class="sd">    :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.</span>
@@ -604,9 +603,10 @@
 <span class="sd">    Log an artifact for the active run</span>
 
 <span class="sd">    :Example:</span>
-<span class="sd">    .. code-block:: python</span>
+<span class="sd">        .. code-block:: python</span>
 
-<span class="sd">        mlflow.log_artifact(&#39;my_image.png&#39;)</span>
+<span class="sd">            with mlflow.start_run():\n</span>
+<span class="sd">                mlflow.log_artifact(&#39;my_image.png&#39;)</span>
 
 <span class="sd">    :param file_name: (str) the name of the file name to log</span>
 <span class="sd">    :param name: (str) the name of the run relative name to store the model under</span>
@@ -780,9 +780,6 @@
 <span class="sd">    :param db_schema_name: (str) the schema name to deploy to.</span>
 <span class="sd">    :param db_table_name: (str) the table name to deploy to.</span>
 <span class="sd">    :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed</span>
-
-<span class="sd">    \n OPTIONAL PARAMETERS</span>
-<span class="sd">    </span>
 <span class="sd">    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key. \n</span>
 <span class="sd">        * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n</span>
 <span class="sd">        * If you are creating the table in this function, you MUST pass in a primary key </span>
@@ -811,24 +808,30 @@
 <span class="sd">                If you want a class prediction \</span>
 <span class="sd">                for your binary classification problem, you MUST pass in a threshold.</span>
 <span class="sd">    :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work</span>
-
-
-<span class="sd">    This function creates the following IF you are creating a table from the dataframe: \n</span>
-<span class="sd">        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:</span>
+<span class="sd">    :return: None\n</span>
+<span class="sd">    </span>
+<span class="sd">    This function creates the following IF you are creating a table from the dataframe \n</span>
+<span class="sd">        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n</span>
 <span class="sd">            * USER which is the current user who made the request</span>
 <span class="sd">            * EVAL_TIME which is the CURRENT_TIMESTAMP</span>
-<span class="sd">            * the PRIMARY KEY column same as the DATA table to link predictions to rows in the table (primary key)</span>
+<span class="sd">            * the PRIMARY KEY column(s) passed in</span>
 <span class="sd">            * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models</span>
-<span class="sd">            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable</span>
+<span class="sd">            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n</span>
 <span class="sd">    IF you are deploying to an existing table, the table will be altered to include the columns above. \n</span>
+<span class="sd">    :NOTE:</span>
+<span class="sd">        .. code-block:: text</span>
+<span class="sd">    </span>
+<span class="sd">            The columns listed above are default value columns.\n </span>
+<span class="sd">            This means that on a SQL insert into the table, \n</span>
+<span class="sd">            you do not need to reference or insert values into them.\n</span>
+<span class="sd">            They are automatically taken care of.\n</span>
+<span class="sd">            Set verbose=True in the function call for more information</span>
+
 <span class="sd">    The following will also be created for all deployments: \n</span>
 <span class="sd">        * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \</span>
 <span class="sd">            calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n</span>
 <span class="sd">        * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \</span>
 <span class="sd">            parsing the prediction probabilities and filling in proper column values</span>
-
-<span class="sd">    :return: None</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
 
