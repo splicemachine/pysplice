@@ -79,6 +79,8 @@ add_module_names = False
 autodoc_docstring_signature=True
 # So we don't have to have pyspark
 #autodoc_mock_imports = ["pyspark"]
+# Set master doc
+master_doc = 'index'
 
 # To skip the mlflow_support.utilities/constants and spark.constants modules
 def check_skip_member(app, what, name, obj, skip, options):
