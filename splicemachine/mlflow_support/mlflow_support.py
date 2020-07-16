@@ -11,7 +11,33 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.
+limitations under the License.\n
+
+======================================================================================================================================================================================\n
+
+All functions in this module are accessible through the mlflow object and are to be referenced as \n
+.. code-block:: python
+
+    mlflow.function_name()
+
+For example, the function splicemachine.mlflow_support.mlflow_support._current_exp_id() is accessible via\n
+.. code-block:: python
+
+    mlflow.current_exp_id()
+
+
+All functions are accessible after running the following import\n
+.. code-block:: python
+
+    from splicemachine.mlflow_support import *
+
+Importing anything directly from mlflow before running the above statement will cause problems. After running the above import, you can import additional mlflow submodules as normal\n
+.. code-block:: python
+
+    from splicemachine.mlflow_support import *
+    from mlflow.tensorflow import autolog
+
+======================================================================================================================================================================================\n
 """
 import time
 from collections import defaultdict

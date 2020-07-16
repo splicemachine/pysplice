@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import inspect
 sys.path.insert(0, os.path.abspath('../'))
 
 
@@ -42,7 +43,7 @@ autodoc_default_options = {
     'private-members':True,
     'inherited-members':True,
     'undoc-members': False, 
-    'exclude-members': '_check_for_splice_ctx,_dropTableIfExists, _generateDBSchema,_getCreateTableSchema,_jstructtype,_spliceSparkPackagesName,_splicemachineContext'
+    'exclude-members': '_check_for_splice_ctx,_dropTableIfExists, _generateDBSchema,_getCreateTableSchema,_jstructtype,_spliceSparkPackagesName,_splicemachineContext,apply_patches, main'
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -58,7 +59,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**mlflow_support.utilities.*','_build', 'Thumbs.db', '.DS_Store', '*test/*', '*.test.*','*test*']
+exclude_patterns = ['**mlflow_support.utilities.*','_build', 'Thumbs.db', '.DS_Store','*test/*', '*.test.*','*test*']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -72,6 +73,20 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# To skip the mlflow_support.utilities/constants and spark.constants modules
+def check_skip_member(app, what, name, obj, skip, options):
+    try:
+        mro = obj.__module__
+    except:
+        mro = ''
+    #print('WHAT:', what, 'NAME:', name, 'OBJ:', mro, end='==>')
+    if "constants" in mro or 'utilities' in mro:
+        return True
+    else:
+        return None # Default behavior
+
+def setup(app):
+    app.connect("autodoc-skip-member", check_skip_member)
 
 # -- Extension configuration -------------------------------------------------
 

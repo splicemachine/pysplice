@@ -9,9 +9,11 @@ Welcome to splicemachine's documentation!
 .. toctree::
    :maxdepth: 4
    :caption: Contents:
-
+   :titlesonly:
+   
    splicemachine
-
+   
+   :hidden:
 
 Indices and tables
 ==================
