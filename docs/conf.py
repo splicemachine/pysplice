@@ -37,9 +37,10 @@ extensions = [
 
 
 # To allow sphinx to document the mlflow_support functions since they are private functions
-autodoc_default_flags = ['members', 'undoc-members', 'private-members', 'special-members', 'inherited-members', 'show-inheritance']
+#autodoc_default_flags = ['members', 'undoc-members', 'private-members', 'special-members', 'inherited-members', 'show-inheritance']
 autodoc_default_options = {
     'members':True,
+    'special-members':False,
     'private-members':True,
     'inherited-members':True,
     'undoc-members': False, 
