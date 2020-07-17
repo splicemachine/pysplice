@@ -41,9 +41,10 @@ def hide_toggle(toggle_next=False):
 
     return HTML(html)
 
-def get_mlflow_ui():
-    display(HTML('<font size=\"+1\"><a target=\"_blank\" href=/mlflow>MLFlow UI</a></font>'))
-    return IFrame(src='/mlflow', width='100%', height='500px')
+def get_mlflow_ui(experiment_id=0):
+    mlflow_url = '/mlflow/#/experiments/{}'.format(experiment_id)
+    display(HTML('<font size=\"+1\"><a target=\"_blank\" href={}>MLFlow UI</a></font>'.format(mlflow_url)))
+    return IFrame(src=mlflow_url, width='100%', height='500px')
   
 def get_spark_ui(port=None, spark_session=None):
     if port:
