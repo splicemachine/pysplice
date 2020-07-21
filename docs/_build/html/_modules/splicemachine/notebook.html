@@ -13,6 +13,10 @@
   
   <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sphinx_tabs/tabs.css" type="text/css" />
 
   
   
@@ -30,6 +34,8 @@
         <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/language_data.js"></script>
+        <script src="../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+        <script src="../../_static/sphinx_tabs/tabs.js"></script>
     
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
@@ -82,7 +88,8 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../splicemachine.html">splicemachine package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../splicemachine.html">Splicemachine package</a></li>
 </ul>
 
             
@@ -152,7 +159,7 @@
 <span class="kn">from</span> <span class="nn">pyspark</span> <span class="kn">import</span> <span class="n">SparkContext</span>
 <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">environ</span> <span class="k">as</span> <span class="n">env_vars</span>
 
-<div class="viewcode-block" id="hide_toggle"><a class="viewcode-back" href="../../splicemachine.html#splicemachine.notebook.hide_toggle">[docs]</a><span class="k">def</span> <span class="nf">hide_toggle</span><span class="p">(</span><span class="n">toggle_next</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="hide_toggle"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.hide_toggle">[docs]</a><span class="k">def</span> <span class="nf">hide_toggle</span><span class="p">(</span><span class="n">toggle_next</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.</span>
 <span class="sd">    :param toggle_next: Bool determine if the toggle should affect the current cell or the next cell</span>
@@ -190,12 +197,12 @@
 
     <span class="k">return</span> <span class="n">HTML</span><span class="p">(</span><span class="n">html</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="get_mlflow_ui"><a class="viewcode-back" href="../../splicemachine.html#splicemachine.notebook.get_mlflow_ui">[docs]</a><span class="k">def</span> <span class="nf">get_mlflow_ui</span><span class="p">():</span>
+<div class="viewcode-block" id="get_mlflow_ui"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.get_mlflow_ui">[docs]</a><span class="k">def</span> <span class="nf">get_mlflow_ui</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Display the MLflow UI as an IFrame&quot;&quot;&quot;</span>
     <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s1">&#39;&lt;font size=</span><span class="se">\&quot;</span><span class="s1">+1</span><span class="se">\&quot;</span><span class="s1">&gt;&lt;a target=</span><span class="se">\&quot;</span><span class="s1">_blank</span><span class="se">\&quot;</span><span class="s1"> href=/mlflow&gt;MLFlow UI&lt;/a&gt;&lt;/font&gt;&#39;</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s1">&#39;/mlflow&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;500px&#39;</span><span class="p">)</span></div>
   
-<div class="viewcode-block" id="get_spark_ui"><a class="viewcode-back" href="../../splicemachine.html#splicemachine.notebook.get_spark_ui">[docs]</a><span class="k">def</span> <span class="nf">get_spark_ui</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spark_session</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="get_spark_ui"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.get_spark_ui">[docs]</a><span class="k">def</span> <span class="nf">get_spark_ui</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spark_session</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Display the Spark Jobs UI as an IFrame at a specific port</span>
 <span class="sd">    :param port: (int or str) The port of the desired spark session</span>

@@ -13,6 +13,10 @@
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/tabs.css" type="text/css" />
 
   
   
@@ -30,6 +34,8 @@
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/language_data.js"></script>
+        <script src="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+        <script src="../../../_static/sphinx_tabs/tabs.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -82,7 +88,8 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">splicemachine package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">Splicemachine package</a></li>
 </ul>
 
             
@@ -227,6 +234,14 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sparkSession</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="k">def</span> <span class="nf">context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sqlContext</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the Spark SQLContext to use for saving/loading.</span>
+
+<span class="sd">        .. note:: Deprecated in 2.1 and will be removed in 3.0, use session instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Read/Write is not yet implemented for type: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
     <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sparkSession</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sets the Spark Session to use for saving/loading.</span>
@@ -268,7 +283,7 @@
 
         <span class="n">_java_obj</span> <span class="o">=</span> <span class="n">JavaWrapper</span><span class="o">.</span><span class="n">_new_java_obj</span><span class="p">(</span><span class="s2">&quot;org.apache.spark.ml.util.FileSystemOverwrite&quot;</span><span class="p">)</span>
         <span class="n">wrapper</span> <span class="o">=</span> <span class="n">JavaWrapper</span><span class="p">(</span><span class="n">_java_obj</span><span class="p">)</span>
-        <span class="n">wrapper</span><span class="o">.</span><span class="n">_call_java</span><span class="p">(</span><span class="s2">&quot;handleOverwrite&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparkSession</span><span class="o">.</span><span class="n">_jsparkSession</span><span class="p">)</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="n">_call_java</span><span class="p">(</span><span class="s2">&quot;handleOverwrite&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sc</span><span class="o">.</span><span class="n">_jsc</span><span class="o">.</span><span class="n">sc</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save the ML instance to the input path.&quot;&quot;&quot;</span>
@@ -330,6 +345,18 @@
 
     <span class="k">def</span> <span class="nf">option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_jwrite</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sqlContext</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the SQL context to use for saving.</span>
+
+<span class="sd">        .. note:: Deprecated in 2.1 and will be removed in 3.0, use session instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Deprecated in 2.1 and will be removed in 3.0, use session instead.&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jwrite</span><span class="o">.</span><span class="n">context</span><span class="p">(</span><span class="n">sqlContext</span><span class="o">.</span><span class="n">_ssql_ctx</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sparkSession</span><span class="p">):</span>
@@ -432,6 +459,18 @@
                                       <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clazz</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clazz</span><span class="o">.</span><span class="n">_from_java</span><span class="p">(</span><span class="n">java_obj</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sqlContext</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the SQL context to use for loading.</span>
+
+<span class="sd">        .. note:: Deprecated in 2.1 and will be removed in 3.0, use session instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Deprecated in 2.1 and will be removed in 3.0, use session instead.&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jread</span><span class="o">.</span><span class="n">context</span><span class="p">(</span><span class="n">sqlContext</span><span class="o">.</span><span class="n">_ssql_ctx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
     <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sparkSession</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sets the Spark Session to use for loading.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_jread</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="n">sparkSession</span><span class="o">.</span><span class="n">_jsparkSession</span><span class="p">)</span>
@@ -492,8 +531,26 @@
 
 
 <span class="nd">@inherit_doc</span>
+<span class="k">class</span> <span class="nc">JavaPredictionModel</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    (Private) Java Model for prediction tasks (regression and classification).</span>
+<span class="sd">    To be mixed in with class:`pyspark.ml.JavaModel`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@since</span><span class="p">(</span><span class="s2">&quot;2.1.0&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">numFeatures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the number of features the model was trained on. If unknown, returns -1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_java</span><span class="p">(</span><span class="s2">&quot;numFeatures&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@inherit_doc</span>
 <span class="k">class</span> <span class="nc">DefaultParamsWritable</span><span class="p">(</span><span class="n">MLWritable</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    .. note:: DeveloperApi</span>
+
 <span class="sd">    Helper trait for making simple :py:class:`Params` types writable.  If a :py:class:`Params`</span>
 <span class="sd">    class stores all data as :py:class:`Param` values, then extending this trait will provide</span>
 <span class="sd">    a default implementation of writing saved instances of the class.</span>
@@ -517,6 +574,8 @@
 <span class="nd">@inherit_doc</span>
 <span class="k">class</span> <span class="nc">DefaultParamsWriter</span><span class="p">(</span><span class="n">MLWriter</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    .. note:: DeveloperApi</span>
+
 <span class="sd">    Specialization of :py:class:`MLWriter` for :py:class:`Params` types</span>
 
 <span class="sd">    Class for writing Estimators and Transformers whose parameters are JSON-serializable.</span>
@@ -535,7 +594,6 @@
     <span class="k">def</span> <span class="nf">saveMetadata</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">extraMetadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">paramMap</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Saves metadata + Params to: path + &quot;/metadata&quot;</span>
-
 <span class="sd">        - class</span>
 <span class="sd">        - timestamp</span>
 <span class="sd">        - sparkVersion</span>
@@ -543,7 +601,6 @@
 <span class="sd">        - paramMap</span>
 <span class="sd">        - defaultParamMap (since 2.4.0)</span>
 <span class="sd">        - (optionally, extra metadata)</span>
-
 <span class="sd">        :param extraMetadata:  Extra metadata to be saved at same level as uid, paramMap, etc.</span>
 <span class="sd">        :param paramMap:  If given, this is saved in the &quot;paramMap&quot; field.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -590,6 +647,8 @@
 <span class="nd">@inherit_doc</span>
 <span class="k">class</span> <span class="nc">DefaultParamsReadable</span><span class="p">(</span><span class="n">MLReadable</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    .. note:: DeveloperApi</span>
+
 <span class="sd">    Helper trait for making simple :py:class:`Params` types readable.</span>
 <span class="sd">    If a :py:class:`Params` class stores all data as :py:class:`Param` values,</span>
 <span class="sd">    then extending this trait will provide a default implementation of reading saved</span>
@@ -609,6 +668,8 @@
 <span class="nd">@inherit_doc</span>
 <span class="k">class</span> <span class="nc">DefaultParamsReader</span><span class="p">(</span><span class="n">MLReader</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    .. note:: DeveloperApi</span>
+
 <span class="sd">    Specialization of :py:class:`MLReader` for :py:class:`Params` types</span>
 
 <span class="sd">    Default :py:class:`MLReader` implementation for transformers and estimators that</span>
@@ -706,33 +767,6 @@
         <span class="n">py_type</span> <span class="o">=</span> <span class="n">DefaultParamsReader</span><span class="o">.</span><span class="n">__get_class</span><span class="p">(</span><span class="n">pythonClassName</span><span class="p">)</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="n">py_type</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">instance</span>
-
-
-<span class="nd">@inherit_doc</span>
-<span class="k">class</span> <span class="nc">HasTrainingSummary</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for models that provides Training summary.</span>
-
-<span class="sd">    .. versionadded:: 3.0.0</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="nd">@property</span>
-    <span class="nd">@since</span><span class="p">(</span><span class="s2">&quot;2.1.0&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">hasSummary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Indicates whether a training summary exists for this model</span>
-<span class="sd">        instance.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_java</span><span class="p">(</span><span class="s2">&quot;hasSummary&quot;</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="nd">@since</span><span class="p">(</span><span class="s2">&quot;2.1.0&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Gets summary of the model trained on the training set. An exception is thrown if</span>
-<span class="sd">        no summary exists.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_call_java</span><span class="p">(</span><span class="s2">&quot;summary&quot;</span><span class="p">))</span>
 </pre></div>
 
            </div>

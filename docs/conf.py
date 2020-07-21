@@ -32,7 +32,9 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
+    'sphinx_tabs.tabs',
+    'sphinx.ext.autosectionlabel'
 ]
 
 

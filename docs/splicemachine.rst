@@ -1,39 +1,15 @@
-splicemachine package
+Splicemachine package
 =====================
+
+This package contains the classes and modules necessary for interacting with Splice Machine's MLManager workbench. Follow the documentation below to get started, or check out the Getting Started section for installation
 
 Subpackages
 -----------
 
 .. toctree::
    :maxdepth: 4
-
-   splicemachine.mlflow_support
+   
    splicemachine.spark
-
-Submodules
-----------
-
-splicemachine.notebook module
------------------------------
-
-.. automodule:: splicemachine.notebook
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-splicemachine.stats module
---------------------------
-
-.. automodule:: splicemachine.stats
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: splicemachine
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   splicemachine.mlflow_support
+   splicemachine.notebook
+   splicemachine.stats

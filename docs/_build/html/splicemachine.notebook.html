@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Splicemachine package &mdash; Splice MLManager  documentation</title>
+  <title>splicemachine.notebook module &mdash; Splice MLManager  documentation</title>
   
 
   
@@ -36,8 +36,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="splicemachine.spark package" href="splicemachine.spark.html" />
-    <link rel="prev" title="Getting Started" href="getting-started.html" /> 
+    <link rel="prev" title="splicemachine.mlflow_support package" href="splicemachine.mlflow_support.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -85,11 +84,10 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Splicemachine package</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="splicemachine.html">Splicemachine package</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html">splicemachine.spark package</a></li>
 <li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html">splicemachine.mlflow_support package</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.notebook.html">splicemachine.notebook module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.stats.html">splicemachine.stats module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">splicemachine.notebook module</a></li>
 </ul>
 </li>
 </ul>
@@ -138,13 +136,15 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Splicemachine package</li>
+          <li><a href="splicemachine.html">Splicemachine package</a> &raquo;</li>
+        
+      <li>splicemachine.notebook module</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/splicemachine.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/splicemachine.notebook.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -157,30 +157,35 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="splicemachine-package">
-<h1>Splicemachine package<a class="headerlink" href="#splicemachine-package" title="Permalink to this headline">¶</a></h1>
-<p>This package contains the classes and modules necessary for interacting with Splice Machine’s MLManager workbench. Follow the documentation below to get started, or check out the Getting Started section for installation</p>
-<div class="section" id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="splicemachine.spark.html">splicemachine.spark package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html#splicemachine-spark-context-module">splicemachine.spark.context module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html#module-splicemachine.spark">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="splicemachine.mlflow_support.html">splicemachine.mlflow_support package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html#module-splicemachine.mlflow_support.mlflow_support">splicemachine.mlflow_support module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html#module-splicemachine.mlflow_support">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="splicemachine.notebook.html">splicemachine.notebook module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="splicemachine.stats.html">splicemachine.stats module</a></li>
-</ul>
-</div>
-</div>
+  <div class="section" id="splicemachine-notebook-module">
+<h1>splicemachine.notebook module<a class="headerlink" href="#splicemachine-notebook-module" title="Permalink to this headline">¶</a></h1>
+<p>This module contains helper functions and tools for use inside of a Jupyter Notebook</p>
+<span class="target" id="module-splicemachine.notebook"></span><dl class="py function">
+<dt id="splicemachine.notebook.get_mlflow_ui">
+<code class="sig-name descname">get_mlflow_ui</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#get_mlflow_ui"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.get_mlflow_ui" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the MLflow UI as an IFrame</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.notebook.get_spark_ui">
+<code class="sig-name descname">get_spark_ui</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">spark_session</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#get_spark_ui"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.get_spark_ui" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the Spark Jobs UI as an IFrame at a specific port
+:param port: (int or str) The port of the desired spark session
+:param spark_session: (SparkSession) Optionally the Spark Session associated with the desired UI
+:return:</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.notebook.hide_toggle">
+<code class="sig-name descname">hide_toggle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">toggle_next</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#hide_toggle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.hide_toggle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.
+:param toggle_next: Bool determine if the toggle should affect the current cell or the next cell
+Usage: from splicemachine.stats.utilities import hide_toggle</p>
+<blockquote>
+<div><p>hide_toggle()</p>
+</div></blockquote>
+</dd></dl>
+
 </div>
 
 
@@ -191,10 +196,8 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="splicemachine.spark.html" class="btn btn-neutral float-right" title="splicemachine.spark package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="getting-started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="splicemachine.mlflow_support.html" class="btn btn-neutral float-left" title="splicemachine.mlflow_support package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

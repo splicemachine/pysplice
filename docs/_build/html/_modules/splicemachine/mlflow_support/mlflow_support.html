@@ -13,6 +13,10 @@
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/tabs.css" type="text/css" />
 
   
   
@@ -30,6 +34,8 @@
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/language_data.js"></script>
+        <script src="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+        <script src="../../../_static/sphinx_tabs/tabs.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -82,7 +88,8 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">splicemachine package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">Splicemachine package</a></li>
 </ul>
 
             
@@ -214,7 +221,11 @@
 <span class="kn">from</span> <span class="nn">pandas.core.frame</span> <span class="kn">import</span> <span class="n">DataFrame</span> <span class="k">as</span> <span class="n">PandasDF</span>
 
 <span class="n">_TESTING</span> <span class="o">=</span> <span class="n">env_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;TESTING&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-<span class="n">_TRACKING_URL</span> <span class="o">=</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s2">&quot;mlflow&quot;</span><span class="p">,</span> <span class="s2">&quot;5001&quot;</span><span class="p">,</span> <span class="n">_TESTING</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">_TRACKING_URL</span> <span class="o">=</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s2">&quot;mlflow&quot;</span><span class="p">,</span> <span class="s2">&quot;5001&quot;</span><span class="p">,</span> <span class="n">_TESTING</span><span class="p">)</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;It looks like you&#39;re running outside the Splice K8s Cloud Service. You must run set_mlflow_uri() and pass in the URL to the MLFlow UI&quot;</span><span class="p">)</span>
+    <span class="n">_TRACKING_URL</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 
 <span class="n">_CLIENT</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">(</span><span class="n">tracking_uri</span><span class="o">=</span><span class="n">_TRACKING_URL</span><span class="p">)</span>
 <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span>
@@ -940,6 +951,17 @@
 
     <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
         <span class="n">gorilla</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">gorilla</span><span class="o">.</span><span class="n">Patch</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">),</span> <span class="n">target</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">_GORILLA_SETTINGS</span><span class="p">))</span>
+
+<div class="viewcode-block" id="set_mlflow_uri"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.set_mlflow_uri">[docs]</a><span class="k">def</span> <span class="nf">set_mlflow_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service</span>
+
+<span class="sd">    :param uri: (str) the URL of your mlflow UI.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_CLIENT</span> <span class="o">=</span> <span class="n">uri</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span> 
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>

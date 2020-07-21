@@ -36,8 +36,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="splicemachine.spark package" href="splicemachine.spark.html" />
-    <link rel="prev" title="splicemachine package" href="splicemachine.html" /> 
+    <link rel="next" title="splicemachine.notebook module" href="splicemachine.notebook.html" />
+    <link rel="prev" title="splicemachine.spark package" href="splicemachine.spark.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -84,9 +84,12 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="splicemachine.html">splicemachine package</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">splicemachine.mlflow_support package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="splicemachine.html">Splicemachine package</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html">splicemachine.spark package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">splicemachine.mlflow_support package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.notebook.html">splicemachine.notebook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.stats.html">splicemachine.stats module</a></li>
 </ul>
 </li>
 </ul>
@@ -135,7 +138,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-          <li><a href="splicemachine.html">splicemachine package</a> &raquo;</li>
+          <li><a href="splicemachine.html">Splicemachine package</a> &raquo;</li>
         
       <li>splicemachine.mlflow_support package</li>
     
@@ -161,11 +164,8 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-splicemachine.mlflow_support.constants">
-<span id="splicemachine-mlflow-support-constants-module"></span><h2>splicemachine.mlflow_support.constants module<a class="headerlink" href="#module-splicemachine.mlflow_support.constants" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="module-splicemachine.mlflow_support.mlflow_support">
-<span id="splicemachine-mlflow-support-mlflow-support-module"></span><h2>splicemachine.mlflow_support.mlflow_support module<a class="headerlink" href="#module-splicemachine.mlflow_support.mlflow_support" title="Permalink to this headline">¶</a></h2>
+<span id="splicemachine-mlflow-support-module"></span><h2>splicemachine.mlflow_support module<a class="headerlink" href="#module-splicemachine.mlflow_support.mlflow_support" title="Permalink to this headline">¶</a></h2>
 <p>Copyright 2020 Splice Machine, Inc.</p>
 <p>Licensed under the Apache License, Version 2.0 (the “License”);
 you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ limitations under the License.</p>
 <hr class="docutils" />
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._current_exp_id">
-<code class="sig-name descname">_current_exp_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._current_exp_id" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_current_exp_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_current_exp_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._current_exp_id" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve the current exp id</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -210,7 +210,7 @@ limitations under the License.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._current_run_id">
-<code class="sig-name descname">_current_run_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._current_run_id" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_current_run_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_current_run_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._current_run_id" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve the current run id</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -221,7 +221,7 @@ limitations under the License.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._deploy_aws">
-<code class="sig-name descname">_deploy_aws</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">app_name</span></em>, <em class="sig-param"><span class="n">region</span><span class="o">=</span><span class="default_value">'us-east-2'</span></em>, <em class="sig-param"><span class="n">instance_type</span><span class="o">=</span><span class="default_value">'ml.m5.xlarge'</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">instance_count</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">deployment_mode</span><span class="o">=</span><span class="default_value">'replace'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_aws" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_deploy_aws</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">app_name</span></em>, <em class="sig-param"><span class="n">region</span><span class="o">=</span><span class="default_value">'us-east-2'</span></em>, <em class="sig-param"><span class="n">instance_type</span><span class="o">=</span><span class="default_value">'ml.m5.xlarge'</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">instance_count</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">deployment_mode</span><span class="o">=</span><span class="default_value">'replace'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_deploy_aws"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_aws" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queue Job to deploy a run to sagemaker with the
 given run id (found in MLFlow UI or through search API)</p>
 <dl class="field-list simple">
@@ -247,7 +247,7 @@ add=add the specified model to a prexisting application (not recommended)</p></l
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._deploy_azure">
-<code class="sig-name descname">_deploy_azure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">endpoint_name</span></em>, <em class="sig-param"><span class="n">resource_group</span></em>, <em class="sig-param"><span class="n">workspace</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">region</span><span class="o">=</span><span class="default_value">'East US'</span></em>, <em class="sig-param"><span class="n">cpu_cores</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">allocated_ram</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">model_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_azure" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_deploy_azure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">endpoint_name</span></em>, <em class="sig-param"><span class="n">resource_group</span></em>, <em class="sig-param"><span class="n">workspace</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">region</span><span class="o">=</span><span class="default_value">'East US'</span></em>, <em class="sig-param"><span class="n">cpu_cores</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">allocated_ram</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">model_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_deploy_azure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_azure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deploy a given run to AzureML.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -275,7 +275,7 @@ Otherwise, the model name will be randomly generated.</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._deploy_db">
-<code class="sig-name descname">_deploy_db</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_schema_name</span></em>, <em class="sig-param"><span class="n">db_table_name</span></em>, <em class="sig-param"><span class="n">run_id</span></em>, <em class="sig-param"><span class="n">primary_key</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">df</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_model_table</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">model_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sklearn_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pred_threshold</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">replace</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_db" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_deploy_db</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">db_schema_name</span></em>, <em class="sig-param"><span class="n">db_table_name</span></em>, <em class="sig-param"><span class="n">run_id</span></em>, <em class="sig-param"><span class="n">primary_key</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">df</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_model_table</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">model_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">classes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sklearn_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pred_threshold</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">replace</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_deploy_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._deploy_db" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.
 This either creates a new table or alters an existing table in the database (depending on parameters passed)</p>
 <dl class="field-list simple">
@@ -396,7 +396,7 @@ Set verbose=True in the function call for more information
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._download_artifact">
-<code class="sig-name descname">_download_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">local_path</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._download_artifact" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_download_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">local_path</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_download_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._download_artifact" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download the artifact at the given run id (active default) + name to the local path</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -414,7 +414,7 @@ Set verbose=True in the function call for more information
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._get_current_run_data">
-<code class="sig-name descname">_get_current_run_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_current_run_data" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_get_current_run_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_get_current_run_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_current_run_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the data associated with the current run.
 As of MLFLow 1.6, it currently does not support getting run info from the mlflow.active_run object, so we need it
 to be retrieved via the tracking client.</p>
@@ -427,14 +427,14 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._get_deployed_models">
-<code class="sig-name descname">_get_deployed_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_deployed_models" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_get_deployed_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_get_deployed_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_deployed_models" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the currently deployed models in the database
 :return: Pandas df</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._get_model_name">
-<code class="sig-name descname">_get_model_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_model_name" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_get_model_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_get_model_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_model_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the model name associated with a run or None</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -448,7 +448,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._get_run_ids_by_name">
-<code class="sig-name descname">_get_run_ids_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_name</span></em>, <em class="sig-param"><span class="n">experiment_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_run_ids_by_name" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_get_run_ids_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_name</span></em>, <em class="sig-param"><span class="n">experiment_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_get_run_ids_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._get_run_ids_by_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets a run id from the run name. If there are multiple runs with the same name, all run IDs are returned</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -465,7 +465,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._initiate_job">
-<code class="sig-name descname">_initiate_job</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">payload</span></em>, <em class="sig-param"><span class="n">endpoint</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._initiate_job" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_initiate_job</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">payload</span></em>, <em class="sig-param"><span class="n">endpoint</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_initiate_job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._initiate_job" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send a job to the initiation endpoint</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -482,7 +482,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._lm">
-<code class="sig-name descname">_lm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._lm" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_lm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_lm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._lm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a shortcut for logging metrics in MLFlow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -497,7 +497,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._load_model">
-<code class="sig-name descname">_load_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._load_model" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_load_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_load_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._load_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download and deserialize a serialized model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -512,7 +512,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_artifact">
-<code class="sig-name descname">_log_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_artifact" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_artifact" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log an artifact for the active run</p>
 <dl class="field-list">
 <dt class="field-odd">Example</dt>
@@ -540,7 +540,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_feature_transformations">
-<code class="sig-name descname">_log_feature_transformations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">unfit_pipeline</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_feature_transformations" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_feature_transformations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">unfit_pipeline</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_feature_transformations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_feature_transformations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log feature transformations for an unfit spark pipeline
 Logs –&gt; feature movement through the pipeline</p>
 <dl class="field-list simple">
@@ -555,7 +555,7 @@ Logs –&gt; feature movement through the pipeline</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_model">
-<code class="sig-name descname">_log_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'model'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_model" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'model'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log a trained machine learning model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -570,7 +570,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_model_params">
-<code class="sig-name descname">_log_model_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_or_model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_model_params" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_model_params</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_or_model</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_model_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log the parameters of a fitted spark model or a model stage of a fitted spark pipeline</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -581,7 +581,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_pipeline_stages">
-<code class="sig-name descname">_log_pipeline_stages</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_pipeline_stages" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_pipeline_stages</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_pipeline_stages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_pipeline_stages" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log the pipeline stages of a Spark Pipeline as params for the run</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -595,7 +595,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._login_director">
-<code class="sig-name descname">_login_director</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">username</span></em>, <em class="sig-param"><span class="n">password</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._login_director" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_login_director</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">username</span></em>, <em class="sig-param"><span class="n">password</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_login_director"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._login_director" title="Permalink to this definition">¶</a></dt>
 <dd><p>Authenticate into the MLManager Director</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -609,7 +609,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._lp">
-<code class="sig-name descname">_lp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._lp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_lp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_lp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._lp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a shortcut for logging parameters in MLFlow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -626,7 +626,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._mlflow_patch">
-<code class="sig-name descname">_mlflow_patch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._mlflow_patch" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_mlflow_patch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_mlflow_patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._mlflow_patch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a MLFlow Patch that applies the default gorilla settings</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -640,7 +640,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._register_splice_context">
-<code class="sig-name descname">_register_splice_context</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._register_splice_context" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_register_splice_context</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">splice_context</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_register_splice_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._register_splice_context" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a Splice Context for Spark/Database operations (artifact storage, for example)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -654,7 +654,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._start_run">
-<code class="sig-name descname">_start_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">experiment_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nested</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._start_run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_start_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">experiment_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nested</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_start_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._start_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start a new run</p>
 <dl class="field-list">
 <dt class="field-odd">Example</dt>
@@ -684,7 +684,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._timer">
-<code class="sig-name descname">_timer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">timer_name</span></em>, <em class="sig-param"><span class="n">param</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._timer" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_timer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">timer_name</span></em>, <em class="sig-param"><span class="n">param</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_timer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._timer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Context manager for logging</p>
 <dl class="field-list">
 <dt class="field-odd">Example</dt>
@@ -708,7 +708,7 @@ with the current run</p></li>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support.set_mlflow_uri">
-<code class="sig-name descname">set_mlflow_uri</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">uri</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support.set_mlflow_uri" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">set_mlflow_uri</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">uri</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#set_mlflow_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support.set_mlflow_uri" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -720,9 +720,6 @@ with the current run</p></li>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="module-splicemachine.mlflow_support.utilities">
-<span id="splicemachine-mlflow-support-utilities-module"></span><h2>splicemachine.mlflow_support.utilities module<a class="headerlink" href="#module-splicemachine.mlflow_support.utilities" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-splicemachine.mlflow_support">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-splicemachine.mlflow_support" title="Permalink to this headline">¶</a></h2>
@@ -737,10 +734,10 @@ with the current run</p></li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="splicemachine.spark.html" class="btn btn-neutral float-right" title="splicemachine.spark package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="splicemachine.notebook.html" class="btn btn-neutral float-right" title="splicemachine.notebook module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="splicemachine.html" class="btn btn-neutral float-left" title="splicemachine package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="splicemachine.spark.html" class="btn btn-neutral float-left" title="splicemachine.spark package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
