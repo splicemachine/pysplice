@@ -25,12 +25,14 @@ from pyspark.ml.tuning import CrossValidator, ParamGridBuilder, CrossValidatorMo
 
 def get_confusion_matrix(spark, TP, TN, FP, FN):
     """
-    function that shows you a device called a confusion matrix... will be helpful when evaluating.
-    It allows you to see how well your model performs
+    Creates and returns a confusion matrix
+
     :param TP: True Positives
     :param TN: True Negatives
     :param FP: False Positives
     :param FN: False Negatives
+
+    :return: Spark DataFrame
     """
 
     row = Row('', 'True', 'False')
@@ -48,7 +50,8 @@ class SpliceBaseEvaluator(object):
                  labelCol="label"):
         """
         Constructor for SpliceBaseEvaluator
-        :param spark: spark from zeppelin
+        
+        :param spark: spark session
         :param evaluator: evaluator class from spark
         :param supported_metrics: supported metrics list
         :param predictionCol: prediction column
@@ -64,6 +67,7 @@ class SpliceBaseEvaluator(object):
     def input(self, predictions_dataframe):
         """
         Input a dataframe
+        
         :param ev: evaluator class
         :param predictions_dataframe: input df
         :return: none
@@ -79,6 +83,7 @@ class SpliceBaseEvaluator(object):
     def get_results(self, as_dict=False):
         """
         Get Results
+        
         :param dict: whether to get results in a dict or not
         :return: dictionary
         """
@@ -95,6 +100,9 @@ class SpliceBaseEvaluator(object):
 
 
 class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
+    """
+    A Splice Machine evaluator for Spark Binary Classification models. Implements functions from SpliceBaseEvaluator.
+    """
     def __init__(self, spark, predictionCol="prediction", labelCol="label", confusion_matrix=True):
         self.avg_tp = []
         self.avg_tn = []
@@ -109,6 +117,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
     def input(self, predictions_dataframe):
         """
         Evaluate actual vs Predicted in a dataframe
+        
         :param predictions_dataframe: the dataframe containing the label and the predicition
         """
         for metric in self.supported_metrics:
@@ -163,6 +172,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
     def plotROC(self, fittedEstimator, ax):
         """
         Plots the receiver operating characteristic curve for the trained classifier
+        
         :param fittedEstimator: fitted logistic regression model
         :param ax: matplotlib axis object
         :return: axis with ROC plot
@@ -182,7 +192,7 @@ class SpliceBinaryClassificationEvaluator(SpliceBaseEvaluator):
 
 class SpliceRegressionEvaluator(SpliceBaseEvaluator):
     """
-    Splice Regression Evaluator
+    A Splice Machine evaluator for Spark Regression models. Implements functions from SpliceBaseEvaluator.
     """
 
     def __init__(self, spark, predictionCol="prediction", labelCol="label"):
@@ -192,6 +202,10 @@ class SpliceRegressionEvaluator(SpliceBaseEvaluator):
 
 
 class SpliceMultiClassificationEvaluator(SpliceBaseEvaluator):
+    """
+    A Splice Machine evaluator for Spark MultiClass models. Implements functions from SpliceBaseEvaluator.
+    """
+
     def __init__(self, spark, predictionCol="prediction", labelCol="label"):
         supported = ["f1", "weightedPrecision", "weightedRecall", "accuracy"]
         SpliceBaseEvaluator.__init__(self, spark, MulticlassClassificationEvaluator, supported,
@@ -207,9 +221,10 @@ class DecisionTreeVisualizer(object):
     def feature_importance(spark, model, dataset, featuresCol="features"):
         """
         Return a dataframe containing the relative importance of each feature
-        :param model:
-        :param dataframe:
-        :param featureCol:
+        
+        :param model: The Spark Machine Learning model
+        :param dataframe: Spark Dataframe
+        :param featureCol: (str) the column containing the feature vector
         :return: dataframe containing importance
         """
         import pandas as pd
@@ -234,9 +249,10 @@ class DecisionTreeVisualizer(object):
     ):
         """
         Visualize a decision tree, either in a code like format, or graphviz
-        :param model: the fitted decision tree classifier
+        
+        :param model: the fitted decision tree classifier\n
         :param feature_column_names: (List[str]) column names for features
-               You can access these feature names by using your VectorAssembler (in PySpark) and calling it's .getInputCols() function
+            You can access these feature names by using your VectorAssembler (in PySpark) and calling it's .getInputCols() function
         :param label_names: (List[str]) labels vector (below avg, above avg)
         :param size: tuple(int,int) The size of the graph. If unspecified, graphviz will automatically assign a size
         :param horizontal: (Bool) if the tree should be rendered horizontally
@@ -276,13 +292,14 @@ class DecisionTreeVisualizer(object):
     def replacer(string, bad, good):
         """
         Replace every string in "bad" with the corresponding string in "good"
+        
         :param string: string to replace in
         :param bad: array of strings to replace
         :param good: array of strings to replace with
         :return:
         """
 
-        for (b, g) in zip(bad, good):
+        for b, g in zip(bad, good):
             string = string.replace(b, g)
         return string
 
@@ -296,6 +313,7 @@ class DecisionTreeVisualizer(object):
     ):
         """
         Traverse through the .debugString json and generate a graphviz tree
+        
         :param dot: dot file object
         :param parent: not used currently
         :param node_hash: unique node id
@@ -323,13 +341,13 @@ class DecisionTreeVisualizer(object):
     def parse(lines):
         """
         Lines in debug string
+       
         :param lines:
         :return: block json
         """
 
         block = []
         while lines:
-
             if lines[0].startswith('If'):
                 bl = ' '.join(lines.pop(0).split()[1:]).replace('(', ''
                                                                 ).replace(')', '')
@@ -352,6 +370,7 @@ class DecisionTreeVisualizer(object):
     def tree_json(tree):
         """
         Generate a JSON representation of a decision tree
+        
         :param tree: tree debug string
         :return: json
         """
@@ -371,7 +390,9 @@ class DecisionTreeVisualizer(object):
 
 
 def inspectTable(spliceMLCtx, sql, topN=5):
-    """Inspect the values of the columns of the table (dataframe) returned from the sql query
+    """
+    Inspect the values of the columns of the table (dataframe) returned from the sql query
+    
     :param spliceMLCtx: SpliceMLContext
     :param sql: sql string to execute
     :param topN: the number of most frequent elements of a column to return, defaults to 5
@@ -395,68 +416,71 @@ def inspectTable(spliceMLCtx, sql, topN=5):
 class Rounder(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
     """Transformer to round predictions for ordinal regression
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+    
     :param Transformer: Inherited Class
     :param HasInputCol: Inherited Class
     :param HasOutputCol: Inherited Class
     :return: Transformed Dataframe with rounded predictionCol
-    Example:
-    --------
-    >>> from pyspark.sql.session import SparkSession
-    >>> from splicemachine.stats.stats import Rounder
-    >>> spark = SparkSession.builder.getOrCreate()
-    >>> dataset = spark.createDataFrame(
-    ...      [(0.2, 0.0),
-    ...       (1.2, 1.0),
-    ...       (1.6, 2.0),
-    ...       (1.1, 0.0),
-    ...       (3.1, 0.0)],
-    ...      ["prediction", "label"])
-    >>> dataset.show()
-    +----------+-----+
-    |prediction|label|
-    +----------+-----+
-    |       0.2|  0.0|
-    |       1.2|  1.0|
-    |       1.6|  2.0|
-    |       1.1|  0.0|
-    |       3.1|  0.0|
-    +----------+-----+
-    >>> rounder = Rounder(predictionCol = "prediction", labelCol = "label", clipPreds = True)
-    >>> rounder.transform(dataset).show()
-    +----------+-----+
-    |prediction|label|
-    +----------+-----+
-    |       0.0|  0.0|
-    |       1.0|  1.0|
-    |       2.0|  2.0|
-    |       1.0|  0.0|
-    |       2.0|  0.0|
-    +----------+-----+
-    >>> rounderNoClip = Rounder(predictionCol = "prediction", labelCol = "label", clipPreds = False)
-    >>> rounderNoClip.transform(dataset).show()
-    +----------+-----+
-    |prediction|label|
-    +----------+-----+
-    |       0.0|  0.0|
-    |       1.0|  1.0|
-    |       2.0|  2.0|
-    |       1.0|  0.0|
-    |       3.0|  0.0|
-    +----------+-----+
+    
+    :Example:
+        .. code-block:: python
+
+            >>> from pyspark.sql.session import SparkSession
+            >>> from splicemachine.stats.stats import Rounder
+            >>> spark = SparkSession.builder.getOrCreate()
+            >>> dataset = spark.createDataFrame(
+            ...      [(0.2, 0.0),
+            ...       (1.2, 1.0),
+            ...       (1.6, 2.0),
+            ...       (1.1, 0.0),
+            ...       (3.1, 0.0)],
+            ...      ["prediction", "label"])
+            >>> dataset.show()
+            +----------+-----+
+            |prediction|label|
+            +----------+-----+
+            |       0.2|  0.0|
+            |       1.2|  1.0|
+            |       1.6|  2.0|
+            |       1.1|  0.0|
+            |       3.1|  0.0|
+            +----------+-----+
+            >>> rounder = Rounder(predictionCol = "prediction", labelCol = "label",
+                clipPreds = True)
+            >>> rounder.transform(dataset).show()
+            +----------+-----+
+            |prediction|label|
+            +----------+-----+
+            |       0.0|  0.0|
+            |       1.0|  1.0|
+            |       2.0|  2.0|
+            |       1.0|  0.0|
+            |       2.0|  0.0|
+            +----------+-----+
+            >>> rounderNoClip = Rounder(predictionCol = "prediction", labelCol = "label",
+                clipPreds = False)
+            >>> rounderNoClip.transform(dataset).show()
+            +----------+-----+
+            |prediction|label|
+            +----------+-----+
+            |       0.0|  0.0|
+            |       1.0|  1.0|
+            |       2.0|  2.0|
+            |       1.0|  0.0|
+            |       3.0|  0.0|
+            +----------+-----+
     """
 
     @keyword_only
     def __init__(self, predictionCol="prediction", labelCol="label", clipPreds=True, maxLabel=None, minLabel=None):
-        """initialize self
+        """
+        initialize self
+
         :param predictionCol: column containing predictions, defaults to "prediction"
         :param labelCol: column containing labels, defaults to "label"
         :param clipPreds: clip all predictions above a specified maximum value
         :param maxLabel: optional: the maximum value for the prediction column, otherwise uses the maximum of the labelCol, defaults to None
         :param minLabel: optional: the minimum value for the prediction column, otherwise uses the maximum of the labelCol, defaults to None
-        """
-        """initialize self
-        :param predictionCol: column containing predictions, defaults to "prediction"
-        :param labelCol: column containing labels, defaults to "label"
         """
         super(Rounder, self).__init__()
         self.labelCol = labelCol
@@ -473,6 +497,7 @@ class Rounder(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, Def
     def _transform(self, dataset):
         """
         Rounds the predictions to the nearest integer value, and also clips them at the max/min value observed in label
+        
         :param dataset: dataframe with predictions to be rounded
         :return: DataFrame with rounded predictions
         """
@@ -494,8 +519,9 @@ class Rounder(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, Def
 
 class OneHotDummies(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
     """
-    Transformer to generate dummy columns for categorical variables as a part of a preprocessing pipeline
+    Transformer to generate dummy columns for categorical variables as a part of a preprocessing pipeline\n
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+    
     :param Transformer: Inherited Classes
     :param HasInputCol: Inherited Classes
     :param HasOutputCol: Inherited Classes
@@ -559,7 +585,7 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadabl
 
 
 class IndReconstructer(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
-    """Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect
+    """Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect\n
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
     :param Transformer: Inherited Class
     :param HasInputCol: Inherited Class
@@ -607,46 +633,53 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol, DefaultParamsRead
 
 
 class OverSampler(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
-    """Transformer to oversample datapoints with minority labels
+    """
+    Transformer to oversample datapoints with minority labels\n
+    
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+    
     :param Transformer: Inherited Class
     :param HasInputCol: Inherited Class
     :param HasOutputCol: Inherited Class
     :return: PySpark Dataframe with labels in approximately equal ratios
-    Example:
-    -------
-    >>> from pyspark.sql import functions as F
-    >>> from pyspark.sql.session import SparkSession
-    >>> from pyspark.stats.linalg import Vectors
-    >>> from splicemachine.stats.stats import OverSampler
-    >>> spark = SparkSession.builder.getOrCreate()
-    >>> df = spark.createDataFrame(
-    ...      [(Vectors.dense([0.0]), 0.0),
-    ...       (Vectors.dense([0.5]), 0.0),
-    ...       (Vectors.dense([0.4]), 1.0),
-    ...       (Vectors.dense([0.6]), 1.0),
-    ...       (Vectors.dense([1.0]), 1.0)] * 10,
-    ...      ["features", "Class"])
-    >>> df.groupBy(F.col("Class")).count().orderBy("count").show()
-    +-----+-----+
-    |Class|count|
-    +-----+-----+
-    |  0.0|   20|
-    |  1.0|   30|
-    +-----+-----+
-    >>> oversampler = OverSampler(labelCol = "Class", strategy = "auto")
-    >>> oversampler.transform(df).groupBy("Class").count().show()
-    +-----+-----+
-    |Class|count|
-    +-----+-----+
-    |  0.0|   29|
-    |  1.0|   30|
-    +-----+-----+
+    
+    :Example:
+        .. code-block:: python
+
+            >>> from pyspark.sql import functions as F
+            >>> from pyspark.sql.session import SparkSession
+            >>> from pyspark.stats.linalg import Vectors
+            >>> from splicemachine.stats.stats import OverSampler
+            >>> spark = SparkSession.builder.getOrCreate()
+            >>> df = spark.createDataFrame(
+            ...      [(Vectors.dense([0.0]), 0.0),
+            ...       (Vectors.dense([0.5]), 0.0),
+            ...       (Vectors.dense([0.4]), 1.0),
+            ...       (Vectors.dense([0.6]), 1.0),
+            ...       (Vectors.dense([1.0]), 1.0)] * 10,
+            ...      ["features", "Class"])
+            >>> df.groupBy(F.col("Class")).count().orderBy("count").show()
+            +-----+-----+
+            |Class|count|
+            +-----+-----+
+            |  0.0|   20|
+            |  1.0|   30|
+            +-----+-----+
+            >>> oversampler = OverSampler(labelCol = "Class", strategy = "auto")
+            >>> oversampler.transform(df).groupBy("Class").count().show()
+            +-----+-----+
+            |Class|count|
+            +-----+-----+
+            |  0.0|   29|
+            |  1.0|   30|
+            +-----+-----+
     """
 
     @keyword_only
     def __init__(self, labelCol=None, strategy="auto", randomState=None):
-        """Initialize self
+        """
+        Initialize self
+
         :param labelCol: Label Column name, defaults to None
         :param strategy: defaults to "auto", strategy to resample the dataset:
                         • Only currently supported for "auto" Corresponds to random samples with repleaement
@@ -666,6 +699,7 @@ class OverSampler(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable,
     def _transform(self, dataset):
         """
         Oversamples
+
         :param dataset: dataframe to be oversampled
         :return: DataFrame with the resampled data points
         """
@@ -716,38 +750,47 @@ class OverSampler(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable,
 
 
 class OverSampleCrossValidator(CrossValidator):
-    """Class to perform Cross Validation model evaluation while over-sampling minority labels.
-    Example:
-    -------
-    >>> from pyspark.sql.session import SparkSession
-    >>> from pyspark.stats.classification import LogisticRegression
-    >>> from pyspark.stats.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
-    >>> from pyspark.stats.linalg import Vectors
-    >>> from splicemachine.stats.stats import OverSampleCrossValidator
-    >>> spark = SparkSession.builder.getOrCreate()
-    >>> dataset = spark.createDataFrame(
-    ...      [(Vectors.dense([0.0]), 0.0),
-    ...       (Vectors.dense([0.5]), 0.0),
-    ...       (Vectors.dense([0.4]), 1.0),
-    ...       (Vectors.dense([0.6]), 1.0),
-    ...       (Vectors.dense([1.0]), 1.0)] * 10,
-    ...      ["features", "label"])
-    >>> lr = LogisticRegression()
-    >>> grid = ParamGridBuilder().addGrid(lr.maxIter, [0, 1]).build()
-    >>> PRevaluator = BinaryClassificationEvaluator(metricName = 'areaUnderPR')
-    >>> AUCevaluator = BinaryClassificationEvaluator(metricName = 'areaUnderROC')
-    >>> ACCevaluator = MulticlassClassificationEvaluator(metricName="accuracy")
-    >>> cv = OverSampleCrossValidator(estimator=lr, estimatorParamMaps=grid, evaluator=AUCevaluator, altEvaluators = [PRevaluator, ACCevaluator],parallelism=2,seed = 1234)
-    >>> cvModel = cv.fit(dataset)
-    >>> print(cvModel.avgMetrics)
-    [(0.5, [0.5888888888888888, 0.3888888888888889]), (0.806878306878307, [0.8556863149300125, 0.7055555555555556])]
-    >>> print(AUCevaluator.evaluate(cvModel.transform(dataset)))
-    0.8333333333333333
     """
+    Class to perform Cross Validation model evaluation while over-sampling minority labels.
+    
+    :Example:
+        .. code-block:: python
+            
+            >>> from pyspark.sql.session import SparkSession
+            >>> from pyspark.stats.classification import LogisticRegression
+            >>> from pyspark.stats.evaluation import BinaryClassificationEvaluator,\n
+             MulticlassClassificationEvaluator
+            >>> from pyspark.stats.linalg import Vectors
+            >>> from splicemachine.stats.stats import OverSampleCrossValidator
+            >>> spark = SparkSession.builder.getOrCreate()
+            >>> dataset = spark.createDataFrame(
+            ...      [(Vectors.dense([0.0]), 0.0),
+            ...       (Vectors.dense([0.5]), 0.0),
+            ...       (Vectors.dense([0.4]), 1.0),
+            ...       (Vectors.dense([0.6]), 1.0),
+            ...       (Vectors.dense([1.0]), 1.0)] * 10,
+            ...      ["features", "label"])
+            >>> lr = LogisticRegression()
+            >>> grid = ParamGridBuilder().addGrid(lr.maxIter, [0, 1]).build()
+            >>> PRevaluator = BinaryClassificationEvaluator(metricName = 'areaUnderPR')
+            >>> AUCevaluator = BinaryClassificationEvaluator(metricName = 'areaUnderROC')
+            >>> ACCevaluator = MulticlassClassificationEvaluator(metricName="accuracy")
+            >>> cv = OverSampleCrossValidator(estimator=lr, estimatorParamMaps=grid,
+                    evaluator=AUCevaluator, altEvaluators = [PRevaluator, ACCevaluator],
+                    parallelism=2,seed = 1234)
+            >>> cvModel = cv.fit(dataset)
+            >>> print(cvModel.avgMetrics)
+            [(0.5, [0.5888888888888888, 0.3888888888888889]), (0.806878306878307,
+                [0.8556863149300125, 0.7055555555555556])]
+            >>> print(AUCevaluator.evaluate(cvModel.transform(dataset)))
+            0.8333333333333333
+            """
 
     def __init__(self, estimator, estimatorParamMaps, evaluator, numFolds=3, seed=None, parallelism=3,
                  collectSubModels=False, labelCol='label', altEvaluators=None, overSample=True):
-        """ Initialize Self
+        """ 
+        Initialize Self
+
         :param estimator: Machine Learning Model, defaults to None
         :param estimatorParamMaps: paramMap to search, defaults to None
         :param evaluator: primary model evaluation metric, defaults to None
@@ -780,6 +823,7 @@ class OverSampleCrossValidator(CrossValidator):
         """
         Creates a list of callables which can be called from different threads to fit and evaluate
         an estimator in parallel. Each callable returns an `(index, metric)` pair if altEvaluators, (index, metric, [alt_metrics]).
+        
         :param est: Estimator, the estimator to be fit.
         :param train: DataFrame, training data set, used for fitting.
         :param eva: Evaluator, used to compute `metric`
@@ -801,7 +845,9 @@ class OverSampleCrossValidator(CrossValidator):
         return [singleTask] * len(epm)
 
     def _fit(self, dataset):
-        """Performs k-fold crossvaldidation on simple oversampled dataset
+        """
+        Performs k-fold crossvaldidation on simple oversampled dataset
+        
         :param dataset: full dataset
         :return: CrossValidatorModel containing the fitted BestModel with the average of the primary and alternate metrics in a list of tuples in the format: [(paramComb1_average_primary_metric, [paramComb1_average_altmetric1,paramComb1_average_altmetric2]), (paramComb2_average_primary_metric, [paramComb2_average_altmetric1,paramComb2_average_altmetric2])]
         """
@@ -867,7 +913,9 @@ class OverSampleCrossValidator(CrossValidator):
 
 ## Pipeline Functions
 def get_string_pipeline(df, cols_to_exclude, steps=['StringIndexer', 'OneHotEncoder', 'OneHotDummies']):
-    """Generates a list of preprocessing stages
+    """
+    Generates a list of preprocessing stages
+    
     :param df: DataFrame including only the training data
     :param cols_to_exclude: Column names we don't want to to include in the preprocessing (i.e. SUBJECT/ target column)
     :param stages: preprocessing steps to take
@@ -919,8 +967,10 @@ def get_string_pipeline(df, cols_to_exclude, steps=['StringIndexer', 'OneHotEnco
 
 
 def vector_assembler_pipeline(df, columns, doPCA=False, k=10):
-    """After preprocessing String Columns, this function can be used to assemble a feature vector to be used for learning
+    """
+    After preprocessing String Columns, this function can be used to assemble a feature vector to be used for learning
     creates the following stages: VectorAssembler -> Standard Scalar [{ -> PCA}]
+    
     :param df: DataFrame containing preprocessed Columns
     :param columns: list of Column names of the preprocessed columns
     :param doPCA:  Do you want to do PCA as part of the vector assembler? defaults to False
@@ -941,7 +991,9 @@ def vector_assembler_pipeline(df, columns, doPCA=False, k=10):
 
 
 def postprocessing_pipeline(df, cols_to_exclude):
-    """Assemble postprocessing pipeline to reconstruct original categorical indexed values from OneHotDummy Columns
+    """
+    Assemble postprocessing pipeline to reconstruct original categorical indexed values from OneHotDummy Columns
+    
     :param df: DataFrame Including the original string Columns
     :param cols_to_exclude: list of columns to exclude
     :return: (reconstructers, String_Columns)
@@ -968,7 +1020,9 @@ def postprocessing_pipeline(df, cols_to_exclude):
 
 # Distribution fitting Functions
 def make_pdf(dist, params, size=10000):
-    """Generate distributions's Probability Distribution Function
+    """
+    Generate distributions's Probability Distribution Function
+    
     :param dist: scipy.stats distribution object: https://docs.scipy.org/doc/scipy/reference/stats.html
     :param params: distribution parameters
     :param size: how many data points to generate , defaults to 10000
@@ -992,7 +1046,9 @@ def make_pdf(dist, params, size=10000):
 
 
 def best_fit_distribution(data, col_name, bins, ax):
-    """Model data by finding best fit distribution to data
+    """
+    Model data by finding best fit distribution to data
+    
     :param data: DataFrame with one column containing the feature whose distribution is to be investigated
     :param col_name: column name for feature
     :param bins: number of bins to use in generating the histogram of this data
@@ -1085,11 +1141,16 @@ def best_fit_distribution(data, col_name, bins, ax):
 ## PCA Functions
 
 def estimateCovariance(df, features_col='features'):
-    """Compute the covariance matrix for a given dataframe.
-        Note: The multi-dimensional covariance array should be calculated using outer products.  Don't forget to normalize the data by first subtracting the mean.
+    """
+    Compute the covariance matrix for a given dataframe.
+        
+    
     :param df: PySpark dataframe
     :param features_col: name of the column with the features, defaults to 'features'
     :return: np.ndarray: A multi-dimensional array where the number of rows and columns both equal the length of the arrays in the input dataframe.
+
+    :Note: 
+        The multi-dimensional covariance array should be calculated using outer products.  Don't forget to normalize the data by first subtracting the mean.
     """
     m = df.select(df[features_col]).rdd.map(lambda x: x[0]).mean()
 
@@ -1100,16 +1161,18 @@ def estimateCovariance(df, features_col='features'):
 
 def pca_with_scores(df, k=10):
     """Computes the top `k` principal components, corresponding scores, and all eigenvalues.
-    Note:
-        All eigenvalues should be returned in sorted order (largest to smallest). `eigh` returns
-        each eigenvectors as a column.  This function should also return eigenvectors as columns.
+
     :param df:  A Spark dataframe with a 'features' column, which (column) consists of DenseVectors.
     :param k: The number of principal components to return., defaults to 10
-    :return:(eigenvectors, `RDD` of scores, eigenvalues).
-        Eigenvectors: multi-dimensional array where the number of
-        rows equals the length of the arrays in the input `RDD` and the number of columns equals`k`.
-        `RDD` of scores: has the same number of rows as `data` and consists of arrays of length `k`.
-        Eigenvalues is an array of length d (the number of features).
+    :return:(eigenvectors, `RDD` of scores, eigenvalues)\n
+        * Eigenvectors: multi-dimensional array where the number of\
+            rows equals the length of the arrays in the input `RDD` and the number of columns equals`k`.
+        * `RDD` of scores: has the same number of rows as `data` and consists of arrays of length `k`.
+        * Eigenvalues is an array of length d (the number of features).
+    
+    :Note:
+        All eigenvalues should be returned in sorted order (largest to smallest). `eigh` returns
+        each eigenvectors as a column.  This function should also return eigenvectors as columns.
     """
     cov = estimateCovariance(df)
     col = cov.shape[1]
@@ -1125,7 +1188,9 @@ def pca_with_scores(df, k=10):
 
 
 def varianceExplained(df, k=10):
-    """returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure
+    """
+    returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure
+    
     :param df: PySpark DataFrame
     :param k: number of principal components , defaults to 10
     :return: (proportion, principal_components, scores, eigenvalues)
@@ -1137,7 +1202,9 @@ def varianceExplained(df, k=10):
 # PCA reconstruction Functions
 
 def reconstructPCA(sql, df, pc, mean, std, originalColumns, fits, pcaColumn='pcaFeatures'):
-    """Reconstruct data from lower dimensional space after performing PCA
+    """
+    Reconstruct data from lower dimensional space after performing PCA
+    
     :param sql: SQLContext
     :param df: PySpark DataFrame: inputted PySpark DataFrame
     :param pc: numpy.ndarray: principal components projected onto
@@ -1193,12 +1260,11 @@ class MarkovChain(object):
     def __init__(self, transition_prob):
         """
         Initialize the MarkovChain instance.
-        Parameters
-        ----------
-        transition_prob: dict
-            A dict object representing the transition
-            probabilities in Markov Chain.
-            Should be of the form:
+
+        :param: transition_prob: dict\
+            A dict object representing the transition\
+            probabilities in Markov Chain.\
+            Should be of the form:\
                 {'state1': {'state1': 0.1, 'state2': 0.4},
                  'state2': {...}}
         """
@@ -1211,8 +1277,10 @@ class MarkovChain(object):
         return self.max_num_steps
 
     def next_state(self, current_state):
-        """Returns the state of the random variable at the next time
+        """
+        Returns the state of the random variable at the next time
         instance.
+        
         :param current_state: The current state of the system.
         :raises: Exception if random choice fails
         :return: next state
@@ -1238,12 +1306,9 @@ class MarkovChain(object):
         Generates the next states of the system.
         Parameters
         ----------
-        current_state: str
-            The state of the current random variable.
-        no: int
-            The number of future states to generate.
-        last: bool
-            Do we want to return just the last value
+        :param current_state: (str) The state of the current random variable.
+        :param no: (int) The number of future states to generate.
+        :param last: (bool) Do we want to return just the last value
         """
         try:
             if no > self.max_num_steps:
@@ -1266,11 +1331,12 @@ class MarkovChain(object):
             raise e
 
     def rep_states(self, current_state, no=10, num_reps=10):
-        """running generate states a bunch of times and returning the final state that happens the most
-        Arguments:
-            current_state str -- The state of the current random variable
-            no int -- number of time steps in the future to run
-            num_reps int -- number of times to run the simultion forward
+        """
+        Running generate states a bunch of times and returning the final state that happens the most
+
+        :param current_state: (str) -- The state of the current random variable
+        no int -- number of time steps in the future to run
+        num_reps int -- number of times to run the simultion forward
         Returns:
             state -- the most commonly reached state at the end of these runs
         """
