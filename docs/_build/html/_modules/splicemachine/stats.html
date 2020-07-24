@@ -504,7 +504,6 @@
 
         <span class="n">block</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">while</span> <span class="n">lines</span><span class="p">:</span>
-
             <span class="k">if</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;If&#39;</span><span class="p">):</span>
                 <span class="n">bl</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
                                                                 <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;)&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
@@ -689,6 +688,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputCol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outputCol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Assigns variables to parameters passed</span>
+
 <span class="sd">        :param inputCol: Sparse vector returned by OneHotEncoders, defaults to None</span>
 <span class="sd">        :param outputCol: string base to append to output columns names, defaults to None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -705,9 +705,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-
-        <span class="sd">&quot;&quot;&quot;iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories</span>
 <span class="sd">        For a string categorical column, include this transformer in the following workflow: StringIndexer -&gt; OneHotEncoder -&gt; OneHotDummies -&gt; PCA/ Learning Algorithm</span>
+
 <span class="sd">        :param dataset: PySpark DataFrame where inputCol is the column  returned by by OneHotEncoders</span>
 <span class="sd">        :return: original DataFrame with M additional columns where M = # of categories for this variable</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -742,8 +743,10 @@
 
 
 <div class="viewcode-block" id="IndReconstructer"><a class="viewcode-back" href="../../splicemachine.stats.html#splicemachine.stats.IndReconstructer">[docs]</a><span class="k">class</span> <span class="nc">IndReconstructer</span><span class="p">(</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">HasInputCol</span><span class="p">,</span> <span class="n">HasOutputCol</span><span class="p">,</span> <span class="n">DefaultParamsReadable</span><span class="p">,</span> <span class="n">DefaultParamsWritable</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect\n</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect\n</span>
 <span class="sd">    Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers</span>
+
 <span class="sd">    :param Transformer: Inherited Class</span>
 <span class="sd">    :param HasInputCol: Inherited Class</span>
 <span class="sd">    :param HasOutputCol: Inherited Class</span>
@@ -765,7 +768,8 @@
 
     <span class="k">def</span> <span class="nf">_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.</span>
+<span class="sd">        Iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.</span>
+
 <span class="sd">        :param dataset: dataset with OneHotDummy columns</span>
 <span class="sd">        :return: DataFrame with column corresponding to a categorical indexed column</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1321,7 +1325,7 @@
 
 <span class="sd">    :param df:  A Spark dataframe with a &#39;features&#39; column, which (column) consists of DenseVectors.</span>
 <span class="sd">    :param k: The number of principal components to return., defaults to 10</span>
-<span class="sd">    :return:(eigenvectors, `RDD` of scores, eigenvalues)\n</span>
+<span class="sd">    :return: (eigenvectors, `RDD` of scores, eigenvalues)\n</span>
 <span class="sd">        * Eigenvectors: multi-dimensional array where the number of\</span>
 <span class="sd">            rows equals the length of the arrays in the input `RDD` and the number of columns equals`k`.</span>
 <span class="sd">        * `RDD` of scores: has the same number of rows as `data` and consists of arrays of length `k`.</span>
@@ -1346,7 +1350,7 @@
 
 <div class="viewcode-block" id="varianceExplained"><a class="viewcode-back" href="../../splicemachine.stats.html#splicemachine.stats.varianceExplained">[docs]</a><span class="k">def</span> <span class="nf">varianceExplained</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure</span>
+<span class="sd">    Returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure</span>
 <span class="sd">    </span>
 <span class="sd">    :param df: PySpark DataFrame</span>
 <span class="sd">    :param k: number of principal components , defaults to 10</span>
@@ -1461,8 +1465,7 @@
     <span class="k">def</span> <span class="nf">generate_states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_state</span><span class="p">,</span> <span class="n">no</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">last</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates the next states of the system.</span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
+
 <span class="sd">        :param current_state: (str) The state of the current random variable.</span>
 <span class="sd">        :param no: (int) The number of future states to generate.</span>
 <span class="sd">        :param last: (bool) Do we want to return just the last value</span>
@@ -1491,11 +1494,10 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Running generate states a bunch of times and returning the final state that happens the most</span>
 
-<span class="sd">        :param current_state: (str) -- The state of the current random variable</span>
-<span class="sd">        no int -- number of time steps in the future to run</span>
-<span class="sd">        num_reps int -- number of times to run the simultion forward</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            state -- the most commonly reached state at the end of these runs</span>
+<span class="sd">        :param current_state: (str) The state of the current random variable</span>
+<span class="sd">        :param no: (int) number of time steps in the future to run</span>
+<span class="sd">        num_reps int number of times to run the simpca_with_scoresultion forward</span>
+<span class="sd">        :return state: the most commonly reached state at the end of these runs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">no</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_num_steps</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of steps exceeds the max number of possible next steps&#39;</span><span class="p">)</span>

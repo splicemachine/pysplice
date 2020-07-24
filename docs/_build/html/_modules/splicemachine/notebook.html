@@ -162,9 +162,9 @@
 <div class="viewcode-block" id="hide_toggle"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.hide_toggle">[docs]</a><span class="k">def</span> <span class="nf">hide_toggle</span><span class="p">(</span><span class="n">toggle_next</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.</span>
-<span class="sd">    :param toggle_next: Bool determine if the toggle should affect the current cell or the next cell</span>
-<span class="sd">    Usage: from splicemachine.stats.utilities import hide_toggle</span>
-<span class="sd">           hide_toggle()</span>
+<span class="sd">    </span>
+<span class="sd">    :param toggle_next: Bool determine if the toggle should hide the current cell or the next cell</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">this_cell</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;$(&#39;div.cell.code_cell.rendered.selected&#39;)&quot;&quot;&quot;</span>
     <span class="n">next_cell</span> <span class="o">=</span> <span class="n">this_cell</span> <span class="o">+</span> <span class="s1">&#39;.next()&#39;</span>
@@ -197,14 +197,27 @@
 
     <span class="k">return</span> <span class="n">HTML</span><span class="p">(</span><span class="n">html</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="get_mlflow_ui"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.get_mlflow_ui">[docs]</a><span class="k">def</span> <span class="nf">get_mlflow_ui</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Display the MLflow UI as an IFrame&quot;&quot;&quot;</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s1">&#39;&lt;font size=</span><span class="se">\&quot;</span><span class="s1">+1</span><span class="se">\&quot;</span><span class="s1">&gt;&lt;a target=</span><span class="se">\&quot;</span><span class="s1">_blank</span><span class="se">\&quot;</span><span class="s1"> href=/mlflow&gt;MLFlow UI&lt;/a&gt;&lt;/font&gt;&#39;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s1">&#39;/mlflow&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;500px&#39;</span><span class="p">)</span></div>
-  
+<div class="viewcode-block" id="get_mlflow_ui"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.get_mlflow_ui">[docs]</a><span class="k">def</span> <span class="nf">get_mlflow_ui</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Display the MLFlow UI as an IFrame</span>
+
+<span class="sd">    :param experiment_id: (int or str) Optionally the experiment id to load into view</span>
+<span class="sd">    :param run_id: (str) Optionally the run_id to load into view. If you pass in a run_id you must pass an experiment_id</span>
+<span class="sd">    :return: (IFrame) An IFrame of the MLFlow UI</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">run_id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">experiment_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;If you are passing in a run id, you must also provide an experiment id!&#39;</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">experiment_id</span> <span class="ow">or</span> <span class="mi">0</span>
+    <span class="n">mlflow_url</span> <span class="o">=</span> <span class="s1">&#39;/mlflow/#/experiments/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">run_id</span><span class="p">:</span>
+        <span class="n">mlflow_url</span> <span class="o">+=</span> <span class="s1">&#39;/runs/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s1">&#39;&lt;font size=</span><span class="se">\&quot;</span><span class="s1">+1</span><span class="se">\&quot;</span><span class="s1">&gt;&lt;a target=</span><span class="se">\&quot;</span><span class="s1">_blank</span><span class="se">\&quot;</span><span class="s1"> href=</span><span class="si">{}</span><span class="s1">&gt;MLFlow UI&lt;/a&gt;&lt;/font&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mlflow_url</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">mlflow_url</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;700px&#39;</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="get_spark_ui"><a class="viewcode-back" href="../../splicemachine.notebook.html#splicemachine.notebook.get_spark_ui">[docs]</a><span class="k">def</span> <span class="nf">get_spark_ui</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spark_session</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Display the Spark Jobs UI as an IFrame at a specific port</span>
+
 <span class="sd">    :param port: (int or str) The port of the desired spark session</span>
 <span class="sd">    :param spark_session: (SparkSession) Optionally the Spark Session associated with the desired UI</span>
 <span class="sd">    :return:</span>
@@ -221,7 +234,7 @@
                         <span class="s1">&#39;You can find the port by running spark.sparkContext.uiWebUrl and taking the number after the </span><span class="se">\&#39;</span><span class="s1">:</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">env_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;JUPYTERHUB_USER&#39;</span><span class="p">,</span><span class="s1">&#39;user&#39;</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;font size=</span><span class="se">\&quot;</span><span class="s1">+1</span><span class="se">\&quot;</span><span class="s1">&gt;&lt;a target=</span><span class="se">\&quot;</span><span class="s1">_blank</span><span class="se">\&quot;</span><span class="s1"> href=/splicejupyter/user/</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s1">/sparkmonitor/</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&gt;Spark UI&lt;/a&gt;&lt;/font&gt;&#39;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;/splicejupyter/user/</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s1">/sparkmonitor/</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;500px&#39;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;/splicejupyter/user/</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s1">/sparkmonitor/</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;100%&#39;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s1">&#39;700px&#39;</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

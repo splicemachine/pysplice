@@ -278,11 +278,19 @@ You can access these feature names by using your VectorAssembler (in PySpark) an
 <dt id="splicemachine.stats.IndReconstructer">
 <em class="property">class </em><code class="sig-name descname">IndReconstructer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/stats.html#IndReconstructer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.stats.IndReconstructer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect</p>
-<p>Follows: <a class="reference external" href="https://spark.apache.org/docs/latest/ml-pipeline.html#transformers">https://spark.apache.org/docs/latest/ml-pipeline.html#transformers</a>
-:param Transformer: Inherited Class
-:param HasInputCol: Inherited Class
-:param HasOutputCol: Inherited Class
-:return: Transformed PySpark Dataframe With Original String Indexed Variables</p>
+<p>Follows: <a class="reference external" href="https://spark.apache.org/docs/latest/ml-pipeline.html#transformers">https://spark.apache.org/docs/latest/ml-pipeline.html#transformers</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Transformer</strong> – Inherited Class</p></li>
+<li><p><strong>HasInputCol</strong> – Inherited Class</p></li>
+<li><p><strong>HasOutputCol</strong> – Inherited Class</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed PySpark Dataframe With Original String Indexed Variables</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -670,16 +678,15 @@ Numeric_Columns: list of columns that contain numeric features</p>
 <li><p><strong>k</strong> – The number of principal components to return., defaults to 10</p></li>
 </ul>
 </dd>
-</dl>
-<p>:return:(eigenvectors, <cite>RDD</cite> of scores, eigenvalues)</p>
-<blockquote>
-<div><ul class="simple">
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>(eigenvectors, <cite>RDD</cite> of scores, eigenvalues)</p>
+<ul class="simple">
 <li><p>Eigenvectors: multi-dimensional array where the number of            rows equals the length of the arrays in the input <cite>RDD</cite> and the number of columns equals`k`.</p></li>
 <li><p><cite>RDD</cite> of scores: has the same number of rows as <cite>data</cite> and consists of arrays of length <cite>k</cite>.</p></li>
 <li><p>Eigenvalues is an array of length d (the number of features).</p></li>
 </ul>
-</div></blockquote>
-<dl class="field-list simple">
+</p>
+</dd>
 <dt class="field-odd">Note</dt>
 <dd class="field-odd"><p>All eigenvalues should be returned in sorted order (largest to smallest). <cite>eigh</cite> returns
 each eigenvectors as a column.  This function should also return eigenvectors as columns.</p>
@@ -732,7 +739,7 @@ String_Columns: list of columns that are being reconstructed</p>
 <dl class="py function">
 <dt id="splicemachine.stats.varianceExplained">
 <code class="sig-name descname">varianceExplained</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">k</span><span class="o">=</span><span class="default_value">10</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/stats.html#varianceExplained"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.stats.varianceExplained" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns the proportion of variance explained by <cite>k</cite> principal componenets. Calls the above PCA procedure</p>
+<dd><p>Returns the proportion of variance explained by <cite>k</cite> principal componenets. Calls the above PCA procedure</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
