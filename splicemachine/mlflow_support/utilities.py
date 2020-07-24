@@ -277,8 +277,8 @@ class SKUtils:
                 raise SpliceMachineException('Could not find class labels from model. Please pass in class labels using'
                                              'the classes parameter.')
 
-            if sklearn_args.get('predict_call') == 'predict_proba': # We need to add a column for the actual prediction
-                classes = ['prediction'] + classes
+        if sklearn_args.get('predict_call') == 'predict_proba': # We need to add a column for the actual prediction
+            classes = ['prediction'] + classes
         if classes:
             print(f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
 
