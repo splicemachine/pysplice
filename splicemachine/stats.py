@@ -532,6 +532,7 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadabl
     def __init__(self, inputCol=None, outputCol=None):
         """
         Assigns variables to parameters passed
+
         :param inputCol: Sparse vector returned by OneHotEncoders, defaults to None
         :param outputCol: string base to append to output columns names, defaults to None
         """
@@ -548,9 +549,10 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadabl
         return self._set(**kwargs)
 
     def _transform(self, dataset):
-
-        """iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories
+        """
+        Iterates through the number of categorical values of a categorical variable and adds dummy columns for each of those categories
         For a string categorical column, include this transformer in the following workflow: StringIndexer -> OneHotEncoder -> OneHotDummies -> PCA/ Learning Algorithm
+
         :param dataset: PySpark DataFrame where inputCol is the column  returned by by OneHotEncoders
         :return: original DataFrame with M additional columns where M = # of categories for this variable
         """
@@ -585,8 +587,10 @@ class OneHotDummies(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadabl
 
 
 class IndReconstructer(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
-    """Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect\n
+    """
+    Transformer to reconstruct String Index from OneHotDummy Columns. This can be used as a part of a Pipeline Ojbect\n
     Follows: https://spark.apache.org/docs/latest/ml-pipeline.html#transformers
+
     :param Transformer: Inherited Class
     :param HasInputCol: Inherited Class
     :param HasOutputCol: Inherited Class
@@ -608,7 +612,8 @@ class IndReconstructer(Transformer, HasInputCol, HasOutputCol, DefaultParamsRead
 
     def _transform(self, dataset):
         """
-        iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.
+        Iterates through the oneHotDummy columns for a categorical variable and returns the index of the column that is closest to one. This corresponds to the stringIndexed value of this feature for this row.
+
         :param dataset: dataset with OneHotDummy columns
         :return: DataFrame with column corresponding to a categorical indexed column
         """
@@ -1189,7 +1194,7 @@ def pca_with_scores(df, k=10):
 
 def varianceExplained(df, k=10):
     """
-    returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure
+    Returns the proportion of variance explained by `k` principal componenets. Calls the above PCA procedure
     
     :param df: PySpark DataFrame
     :param k: number of principal components , defaults to 10
@@ -1304,8 +1309,7 @@ class MarkovChain(object):
     def generate_states(self, current_state, no=10, last=True):
         """
         Generates the next states of the system.
-        Parameters
-        ----------
+
         :param current_state: (str) The state of the current random variable.
         :param no: (int) The number of future states to generate.
         :param last: (bool) Do we want to return just the last value
@@ -1334,11 +1338,10 @@ class MarkovChain(object):
         """
         Running generate states a bunch of times and returning the final state that happens the most
 
-        :param current_state: (str) -- The state of the current random variable
-        no int -- number of time steps in the future to run
-        num_reps int -- number of times to run the simultion forward
-        Returns:
-            state -- the most commonly reached state at the end of these runs
+        :param current_state: (str) The state of the current random variable
+        :param no: (int) number of time steps in the future to run
+        num_reps int number of times to run the simultion forward
+        :return state: the most commonly reached state at the end of these runs
         """
         if no > self.max_num_steps:
             print('Number of steps exceeds the max number of possible next steps')
