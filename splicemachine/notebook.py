@@ -49,7 +49,7 @@ def get_mlflow_ui(experiment_id=None, run_id=None):
     if run_id:
         mlflow_url += '/runs/{}'.format(run_id)
     display(HTML('<font size=\"+1\"><a target=\"_blank\" href={}>MLFlow UI</a></font>'.format(mlflow_url)))
-    return IFrame(src=mlflow_url, width='100%', height='500px')
+    return IFrame(src=mlflow_url, width='100%', height='700px')
   
 def get_spark_ui(port=None, spark_session=None):
     if port:
@@ -64,4 +64,4 @@ def get_spark_ui(port=None, spark_session=None):
                         'You can find the port by running spark.sparkContext.uiWebUrl and taking the number after the \':\'')
     user = env_vars.get('JUPYTERHUB_USER','user')
     display(HTML(f'<font size=\"+1\"><a target=\"_blank\" href=/splicejupyter/user/{user}/sparkmonitor/{port}>Spark UI</a></font>'))
-    return IFrame(src=f'/splicejupyter/user/{user}/sparkmonitor/{port}', width='100%', height='500px')
+    return IFrame(src=f'/splicejupyter/user/{user}/sparkmonitor/{port}', width='100%', height='700px')
