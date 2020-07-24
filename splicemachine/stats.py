@@ -1169,7 +1169,7 @@ def pca_with_scores(df, k=10):
 
     :param df:  A Spark dataframe with a 'features' column, which (column) consists of DenseVectors.
     :param k: The number of principal components to return., defaults to 10
-    :return:(eigenvectors, `RDD` of scores, eigenvalues)\n
+    :return: (eigenvectors, `RDD` of scores, eigenvalues)\n
         * Eigenvectors: multi-dimensional array where the number of\
             rows equals the length of the arrays in the input `RDD` and the number of columns equals`k`.
         * `RDD` of scores: has the same number of rows as `data` and consists of arrays of length `k`.
@@ -1340,7 +1340,7 @@ class MarkovChain(object):
 
         :param current_state: (str) The state of the current random variable
         :param no: (int) number of time steps in the future to run
-        num_reps int number of times to run the simultion forward
+        num_reps int number of times to run the simpca_with_scoresultion forward
         :return state: the most commonly reached state at the end of these runs
         """
         if no > self.max_num_steps:
