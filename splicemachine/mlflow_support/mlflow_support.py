@@ -644,7 +644,9 @@ def _deploy_db(db_schema_name,
     # Create the schema of the table (we use this a few times)
     schema_str = ''
     for i in feature_columns:
-        schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},'
+        spark_data_type = schema_types[str(i)]
+        assert spark_data_type in CONVERSIONS, f'Type {spark_data_type} not supported for table creation. Remove column and try again'
+        schema_str += f'\t{i} {CONVERSIONS[spark_data_type]},'
 
     try:
         # Create/Alter table 1: DATA

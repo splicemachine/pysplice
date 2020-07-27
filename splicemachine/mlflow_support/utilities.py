@@ -638,6 +638,12 @@ class SparkUtils:
         :param classes:
         :return:
         """
+
+        # Check if model is not a pipeline. This would occur when user logs a Pipeline with 1 stage
+        if not SparkUtils.is_spark_pipeline(fittedPipe):
+            print('You are deploying a singular Spark Model. It will be deployed as a Pipeline with 1 stage. This will'
+                  'not affect expected behavior or outcomes.')
+            fittedPipe = PipelineModel(stages=[fittedPipe])
         # Get model type
         model_type = SparkUtils.get_model_type(fittedPipe)
         # See if the labels are in an IndexToString stage. Will either return List[str] or empty []
