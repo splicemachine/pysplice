@@ -560,9 +560,11 @@ def _deploy_db(db_schema_name,
                 that will be used to create the table.
     :param create_model_table: Whether or not to create the table from the dataframe. Default false. This
                                 Will ONLY be used if the table does not exist and a dataframe is passed in
-    :param predictor_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
+    :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
-                                        IN THAT ORDER. The columns passed here must exist in the table.
+                                        IN THAT ORDER. The columns passed here must exist in the table. If creating the
+                                        table from a dataframe, the table will be created from the columns in the DF, not
+                                        model_cols. model_cols is only used at prediction time
     :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
                     NOTE: If not supplied, the table will have default column names for each class
     :param sklearn_args: (dict{str: str}) Prediction options for sklearn models
@@ -657,10 +659,10 @@ def _deploy_db(db_schema_name,
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
         if model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
-            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, model_cols, schema_types,
                                           schema_str, primary_key, classes, model_type, sklearn_args, pred_threshold, verbose)
         else:
-            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, model_cols, schema_types,
                                     schema_str, primary_key, model_type, verbose)
         print('Done.')
 

@@ -13,6 +13,8 @@ from ..spark.context import PySpliceContext
 from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.feature import IndexToString
 from pyspark.ml.wrapper import JavaModel
+from pyspark.ml import classification as spark_classification, regression as spark_regression, \
+    clustering as spark_clustering, recommendation as spark_recommendation
 from pyspark.sql.types import StructType
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from pandas.core.frame import DataFrame as PandasDF
@@ -406,6 +408,8 @@ class KerasUtils:
 
 
 class SparkUtils:
+    MODEL_MODULES = [spark_classification.__name__, spark_recommendation.__name__, spark_clustering.__name__,
+                       spark_regression.__name__]
     @staticmethod
     def get_stages(pipeline):
         """
@@ -482,9 +486,10 @@ class SparkUtils:
         for i in SparkUtils.get_stages(pipeline):
             # StandardScaler is also implemented as a base Model and JavaModel for some reason but that's not a model
             # So we need to make sure the stage isn't a feature
-            if isinstance(i, SparkModel) and isinstance(i, JavaModel) and 'feature' not in i.__module__:
+            if getattr(i, '__module__', None) in SparkUtils.MODEL_MODULES:
                 return i
-        raise AttributeError('Could not find model stage in Pipeline! Is this a fitted spark Pipeline?')
+        raise AttributeError("It looks like you're trying to deploy a pipeline without a supported Spark Model. Supported Spark models "
+                             "are listed here: https://mleap-docs.combust.ml/core-concepts/transformers/support.html")
 
     @staticmethod
     def try_get_class_labels(pipeline):
@@ -799,7 +804,13 @@ def get_mleap_model(splice_context, fittedPipe, df, run_id: str):
     # Serialize the Spark model into Mleap format
     if f'{run_id}.zip' in rbash('ls /tmp').read():
         remove(f'/tmp/{run_id}.zip')
-    fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
+
+    try:
+        fittedPipe.serializeToBundle(f"jar:file:///tmp/{run_id}.zip", df)
+    except:
+        m = getattr(fittedPipe, '__class__', 'UnknownModel')
+        raise SpliceMachineException(f'It look like your model type {m} is not supported. Supported models are listed'
+                                     f'here https://mleap-docs.combust.ml/core-concepts/transformers/support.html')
 
     jvm = splice_context.jvm
     java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
@@ -1160,8 +1171,6 @@ def get_feature_columns_and_types(splice_ctx: PySpliceContext,
         assert type(df) in (SparkDF, PandasDF), "Dataframe must be a PySpark or Pandas dataframe!"
         if type(df) == PandasDF:
             df = splice_ctx.spark_session.createDataFrame(df)
-        if model_cols:
-            df = df.select(*model_cols)
         feature_columns = df.columns
         # Get the datatype of each column in the dataframe
         schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in df.schema}
