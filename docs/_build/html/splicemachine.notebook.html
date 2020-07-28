@@ -1,0 +1,268 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>splicemachine.notebook module &mdash; Splice MLManager  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="splicemachine.stats module" href="splicemachine.stats.html" />
+    <link rel="prev" title="splicemachine.mlflow_support package" href="splicemachine.mlflow_support.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Splice MLManager
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="splicemachine.html">Splicemachine package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.spark.html">splicemachine.spark package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html">splicemachine.mlflow_support package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">splicemachine.notebook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.stats.html">splicemachine.stats module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Splice MLManager</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="splicemachine.html">Splicemachine package</a> &raquo;</li>
+        
+      <li>splicemachine.notebook module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/splicemachine.notebook.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="splicemachine-notebook-module">
+<h1>splicemachine.notebook module<a class="headerlink" href="#splicemachine-notebook-module" title="Permalink to this headline">¶</a></h1>
+<p>This module contains helper functions and tools for use inside of a Jupyter Notebook</p>
+<span class="target" id="module-splicemachine.notebook"></span><dl class="py function">
+<dt id="splicemachine.notebook.get_mlflow_ui">
+<code class="sig-name descname">get_mlflow_ui</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">experiment_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#get_mlflow_ui"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.get_mlflow_ui" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the MLFlow UI as an IFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_id</strong> – (int or str) Optionally the experiment id to load into view</p></li>
+<li><p><strong>run_id</strong> – (str) Optionally the run_id to load into view. If you pass in a run_id you must pass an experiment_id</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(IFrame) An IFrame of the MLFlow UI</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.notebook.get_spark_ui">
+<code class="sig-name descname">get_spark_ui</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">spark_session</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#get_spark_ui"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.get_spark_ui" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the Spark Jobs UI as an IFrame at a specific port</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>port</strong> – (int or str) The port of the desired spark session</p></li>
+<li><p><strong>spark_session</strong> – (SparkSession) Optionally the Spark Session associated with the desired UI</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="splicemachine.notebook.hide_toggle">
+<code class="sig-name descname">hide_toggle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">toggle_next</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/notebook.html#hide_toggle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.notebook.hide_toggle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>toggle_next</strong> – Bool determine if the toggle should hide the current cell or the next cell</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="splicemachine.stats.html" class="btn btn-neutral float-right" title="splicemachine.stats module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="splicemachine.mlflow_support.html" class="btn btn-neutral float-left" title="splicemachine.mlflow_support package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Splice Machine
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

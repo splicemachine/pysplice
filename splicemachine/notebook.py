@@ -6,9 +6,9 @@ from os import environ as env_vars
 def hide_toggle(toggle_next=False):
     """
     Function to add a toggle at the bottom of Jupyter Notebook cells to allow the entire cell to be collapsed.
-    :param toggle_next: Bool determine if the toggle should affect the current cell or the next cell
-    Usage: from splicemachine.stats.utilities import hide_toggle
-           hide_toggle()
+    
+    :param toggle_next: Bool determine if the toggle should hide the current cell or the next cell
+    
     """
     this_cell = """$('div.cell.code_cell.rendered.selected')"""
     next_cell = this_cell + '.next()'
@@ -42,6 +42,13 @@ def hide_toggle(toggle_next=False):
     return HTML(html)
 
 def get_mlflow_ui(experiment_id=None, run_id=None):
+    """
+    Display the MLFlow UI as an IFrame
+
+    :param experiment_id: (int or str) Optionally the experiment id to load into view
+    :param run_id: (str) Optionally the run_id to load into view. If you pass in a run_id you must pass an experiment_id
+    :return: (IFrame) An IFrame of the MLFlow UI
+    """
     if run_id and not experiment_id:
         raise Exception('If you are passing in a run id, you must also provide an experiment id!')
     experiment_id = experiment_id or 0
@@ -50,8 +57,15 @@ def get_mlflow_ui(experiment_id=None, run_id=None):
         mlflow_url += '/runs/{}'.format(run_id)
     display(HTML('<font size=\"+1\"><a target=\"_blank\" href={}>MLFlow UI</a></font>'.format(mlflow_url)))
     return IFrame(src=mlflow_url, width='100%', height='700px')
-  
+
 def get_spark_ui(port=None, spark_session=None):
+    """
+    Display the Spark Jobs UI as an IFrame at a specific port
+
+    :param port: (int or str) The port of the desired spark session
+    :param spark_session: (SparkSession) Optionally the Spark Session associated with the desired UI
+    :return:
+    """
     if port:
         pass
     elif spark_session:

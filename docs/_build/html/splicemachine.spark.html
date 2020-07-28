@@ -1,0 +1,1508 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>splicemachine.spark package &mdash; Splice MLManager  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="splicemachine.mlflow_support package" href="splicemachine.mlflow_support.html" />
+    <link rel="prev" title="Splicemachine package" href="splicemachine.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Splice MLManager
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="splicemachine.html">Splicemachine package</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">splicemachine.spark package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.mlflow_support.html">splicemachine.mlflow_support package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.notebook.html">splicemachine.notebook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="splicemachine.stats.html">splicemachine.stats module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Splice MLManager</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="splicemachine.html">Splicemachine package</a> &raquo;</li>
+        
+      <li>splicemachine.spark package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/splicemachine.spark.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="splicemachine-spark-package">
+<h1>splicemachine.spark package<a class="headerlink" href="#splicemachine-spark-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="splicemachine-spark-context-module">
+<h2>splicemachine.spark.context module<a class="headerlink" href="#splicemachine-spark-context-module" title="Permalink to this headline">¶</a></h2>
+<p>This Module contains the classes for interacting with the Database via our NSDS. For installation instructions, please see the Getting Started guide. For use inside the K8s cluster, see <a class="reference external" href="#splicemachine.spark.context.PySpliceContext">PySpliceContext</a>. For use outside of the K8s cluster, see <a class="reference external" href="#splicemachine.spark.context.ExtPySpliceContext">ExtPySpliceContext</a></p>
+<span class="target" id="module-splicemachine.spark.context"></span><p>Copyright 2020 Splice Machine, Inc.</p>
+<p>Licensed under the Apache License, Version 2.0 (the “License”);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+<blockquote>
+<div><p><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
+</div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an “AS IS” BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+<dl class="py class">
+<dt id="splicemachine.spark.context.ExtPySpliceContext">
+<em class="property">class </em><code class="sig-name descname">ExtPySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kafkaServers</span><span class="o">=</span><span class="default_value">'localhost:9092'</span></em>, <em class="sig-param"><span class="n">kafkaPollTimeout</span><span class="o">=</span><span class="default_value">20000</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#ExtPySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#splicemachine.spark.context.PySpliceContext" title="splicemachine.spark.context.PySpliceContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">splicemachine.spark.context.PySpliceContext</span></code></a></p>
+<p>This class implements a SplicemachineContext object from com.splicemachine.spark2 for use outside of the K8s Cloud Service</p>
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.analyzeSchema">
+<code class="sig-name descname">analyzeSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.analyzeSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyze the schema</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_name</strong> – (str) schema name which stats info will be collected</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.analyzeTable">
+<code class="sig-name descname">analyzeTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">estimateStatistics</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">samplePercent</span><span class="o">=</span><span class="default_value">10.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.analyzeTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect stats info on a table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – full table name in the format of ‘schema.table’</p></li>
+<li><p><strong>estimateStatistics</strong> – will use estimate statistics if True</p></li>
+<li><p><strong>samplePercent</strong> – the percentage or rows to be sampled.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.bulkImportHFile">
+<code class="sig-name descname">bulkImportHFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">options</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.bulkImportHFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bulk Import HFile from a dataframe into a schema.table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>options</strong> – (Dict) Dictionary of options to be passed to –splice-properties; bulkImportDirectory is required</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.bulkImportHFileWithRdd">
+<code class="sig-name descname">bulkImportHFileWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">options</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.bulkImportHFileWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bulk Import HFile from an rdd into a schema.table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) Input data</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>options</strong> – (Dict) Dictionary of options to be passed to –splice-properties; bulkImportDirectory is required</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.createDataFrame">
+<code class="sig-name descname">createDataFrame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.createDataFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a dataframe from a given rdd and schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) Input data</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) The Spark DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.createTable">
+<code class="sig-name descname">createTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">primary_keys</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_table_options</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">to_upper</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">drop_table</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.createTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a schema.table (schema_table_name) from a dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – The Spark DataFrame to base the table off</p></li>
+<li><p><strong>schema_table_name</strong> – str The schema.table to create</p></li>
+<li><p><strong>primary_keys</strong> – List[str] the primary keys. Default None</p></li>
+<li><p><strong>create_table_options</strong> – str The additional table-level SQL options default None</p></li>
+<li><p><strong>to_upper</strong> – bool If the dataframe columns should be converted to uppercase before table creation.             If False, the table will be created with lower case columns. Default False</p></li>
+<li><p><strong>drop_table</strong> – bool whether to drop the table if it exists. Default False. If False and the table exists, the function will throw an exception</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.createTableWithSchema">
+<code class="sig-name descname">createTableWithSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">keys</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_table_options</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.createTableWithSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a schema.table from a schema</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – str The schema.table to create</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema that describes the columns of the table</p></li>
+<li><p><strong>keys</strong> – (List[str]) The primary keys. Default None</p></li>
+<li><p><strong>create_table_options</strong> – (str) The additional table-level SQL options. Default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete records in a dataframe based on joining by primary keys from the data frame.
+Be careful with column naming and case sensitivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to delete</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.deleteWithRdd">
+<code class="sig-name descname">deleteWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.deleteWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete records using an rdd based on joining by primary keys from the rdd.
+Be careful with column naming and case sensitivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD containing the primary keys you would like to delete from the table</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.df">
+<code class="sig-name descname">df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sql</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Spark Dataframe from the results of a Splice Machine SQL Query</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(Dataframe) A Spark DataFrame containing the results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.dropTable">
+<code class="sig-name descname">dropTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.dropTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop a specified table.</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.dropTableIfExists">
+<code class="sig-name descname">dropTableIfExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.dropTableIfExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops a table if exists</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.execute">
+<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>execute a query over JDBC</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.executeUpdate">
+<code class="sig-name descname">executeUpdate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.executeUpdate" title="Permalink to this definition">¶</a></dt>
+<dd><p>execute a dml query:(update,delete,drop,etc)</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">location</span></em>, <em class="sig-param"><span class="n">compression</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">replicationCount</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">fileEncoding</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fieldSeparator</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">quoteCharacter</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export a dataFrame in CSV</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>location</strong> – (str) Destination directory</p></li>
+<li><p><strong>compression</strong> – (bool) Whether to compress the output or not</p></li>
+<li><p><strong>replicationCount</strong> – (int) Replication used for HDFS write</p></li>
+<li><p><strong>fileEncoding</strong> – (str) fileEncoding or None, defaults to UTF-8</p></li>
+<li><p><strong>fieldSeparator</strong> – (str) fieldSeparator or None, defaults to ‘,’</p></li>
+<li><p><strong>quoteCharacter</strong> – (str) quoteCharacter or None, defaults to ‘”’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.exportBinary">
+<code class="sig-name descname">exportBinary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">location</span></em>, <em class="sig-param"><span class="n">compression</span></em>, <em class="sig-param"><span class="n">e_format</span><span class="o">=</span><span class="default_value">'parquet'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.exportBinary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export a dataFrame in binary format</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>location</strong> – (str) Destination directory</p></li>
+<li><p><strong>compression</strong> – (bool) Whether to compress the output or not</p></li>
+<li><p><strong>e_format</strong> – (str) Binary format to be used, currently only ‘parquet’ is supported. [Default ‘parquet’]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.getConnection">
+<code class="sig-name descname">getConnection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.getConnection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a connection to the database</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.getSchema">
+<code class="sig-name descname">getSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.getSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the schema via JDBC.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_table_name</strong> – (str) Table name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(StructType) PySpark StructType representation of the table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.insert">
+<code class="sig-name descname">insert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">to_upper</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.insert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a dataframe into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to insert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the DF</p></li>
+<li><p><strong>to_upper</strong> – (bool) If the dataframe columns should be converted to uppercase before table creation
+If False, the table will be created with lower case columns. [Default False]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.insertRdd">
+<code class="sig-name descname">insertRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.insertRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert an rdd into a table (schema.table)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to insert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.insertRddWithStatus">
+<code class="sig-name descname">insertRddWithStatus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">statusDirectory</span></em>, <em class="sig-param"><span class="n">badRecordsAllowed</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.insertRddWithStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert an rdd into a table (schema.table) while tracking and limiting records that fail to insert.         The status directory and number of badRecordsAllowed allow for duplicate primary keys to be         written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written         to the status directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to insert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the dataframe</p></li>
+<li><p><strong>statusDirectory</strong> – (str) The status directory where bad records file will be created</p></li>
+<li><p><strong>badRecordsAllowed</strong> – (int) The number of bad records are allowed. -1 for unlimited</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.insertWithStatus">
+<code class="sig-name descname">insertWithStatus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">statusDirectory</span></em>, <em class="sig-param"><span class="n">badRecordsAllowed</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.insertWithStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a dataframe into a table (schema.table) while tracking and limiting records that fail to insert.
+The status directory and number of badRecordsAllowed allow for duplicate primary keys to be
+written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written
+to the status directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to insert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the dataframe</p></li>
+<li><p><strong>statusDirectory</strong> – (str) The status directory where bad records file will be created</p></li>
+<li><p><strong>badRecordsAllowed</strong> – (int) The number of bad records are allowed. -1 for unlimited</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.internalDf">
+<code class="sig-name descname">internalDf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.internalDf" title="Permalink to this definition">¶</a></dt>
+<dd><p>SQL to Dataframe translation (Lazy). Runs the query inside Splice Machine and sends the results to the Spark Adapter app</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) pyspark dataframe contains the result of query_string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.internalRdd">
+<code class="sig-name descname">internalRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">column_projection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.internalRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Table with projections in Splice mapped to an RDD.
+Runs the projection inside Splice Machine and sends the results to the Spark Adapter app as an rdd</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (str) Accessed table</p></li>
+<li><p><strong>column_projection</strong> – (list of strings) Names of selected columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(RDD[Row]) the result of the projection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.rdd">
+<code class="sig-name descname">rdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">column_projection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.rdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Table with projections in Splice mapped to an RDD.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (string) Accessed table</p></li>
+<li><p><strong>column_projection</strong> – (list of strings) Names of selected columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(RDD[Row]) the result of the projection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.replaceDataframeSchema">
+<code class="sig-name descname">replaceDataframeSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.replaceDataframeSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dataframe with all column names replaced with the proper string case from the DB table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) A dataframe with column names to convert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The schema.table with the correct column cases to pull from the database</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) A Spark DataFrame with the replaced schema</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.splitAndInsert">
+<code class="sig-name descname">splitAndInsert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">sample_fraction</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.splitAndInsert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample the dataframe, split the table, and insert a dataFrame into a schema.table.
+This corresponds to an insert into from select statement</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame) Input data</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>sample_fraction</strong> – (float) A value between 0 and 1 that specifies the percentage of data in the dataFrame         that should be sampled to determine the splits.         For example, specify 0.005 if you want 0.5% of the data sampled.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.tableExists">
+<code class="sig-name descname">tableExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.tableExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether or not a table exists</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) whether or not the table exists</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.toUpper">
+<code class="sig-name descname">toUpper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.toUpper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dataframe with all of the columns in uppercase</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataframe</strong> – (Dataframe) The dataframe to convert to uppercase</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.truncateTable">
+<code class="sig-name descname">truncateTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.truncateTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncate a table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_table_name</strong> – (str) the full table name in the format “schema.table_name” which will be truncated</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update data from a dataframe for a specified schema_table_name (schema.table).
+The keys are required for the update and any other columns provided will be updated
+in the rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to update</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.updateWithRdd">
+<code class="sig-name descname">updateWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.updateWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update data from an rdd for a specified schema_table_name (schema.table).
+The keys are required for the update and any other columns provided will be updated
+in the rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to use for updating the table</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.upsert">
+<code class="sig-name descname">upsert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.upsert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upsert the data from a dataframe into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to upsert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to upsert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.ExtPySpliceContext.upsertWithRdd">
+<code class="sig-name descname">upsertWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#splicemachine.spark.context.ExtPySpliceContext.upsertWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upsert the data from an RDD into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to upsert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to upsert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="splicemachine.spark.context.PySpliceContext">
+<em class="property">class </em><code class="sig-name descname">PySpliceContext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sparkSession</span></em>, <em class="sig-param"><span class="n">JDBC_URL</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">_unit_testing</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class implements a SpliceMachineContext object (similar to the SparkContext object)</p>
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.analyzeSchema">
+<code class="sig-name descname">analyzeSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.analyzeSchema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.analyzeSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyze the schema</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_name</strong> – (str) schema name which stats info will be collected</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.analyzeTable">
+<code class="sig-name descname">analyzeTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">estimateStatistics</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">samplePercent</span><span class="o">=</span><span class="default_value">10.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.analyzeTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.analyzeTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect stats info on a table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – full table name in the format of ‘schema.table’</p></li>
+<li><p><strong>estimateStatistics</strong> – will use estimate statistics if True</p></li>
+<li><p><strong>samplePercent</strong> – the percentage or rows to be sampled.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.bulkImportHFile">
+<code class="sig-name descname">bulkImportHFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">options</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.bulkImportHFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.bulkImportHFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bulk Import HFile from a dataframe into a schema.table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>options</strong> – (Dict) Dictionary of options to be passed to –splice-properties; bulkImportDirectory is required</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.bulkImportHFileWithRdd">
+<code class="sig-name descname">bulkImportHFileWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">options</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.bulkImportHFileWithRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.bulkImportHFileWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bulk Import HFile from an rdd into a schema.table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) Input data</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>options</strong> – (Dict) Dictionary of options to be passed to –splice-properties; bulkImportDirectory is required</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.createDataFrame">
+<code class="sig-name descname">createDataFrame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.createDataFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.createDataFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a dataframe from a given rdd and schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) Input data</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) The Spark DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.createTable">
+<code class="sig-name descname">createTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">primary_keys</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_table_options</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">to_upper</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">drop_table</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.createTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.createTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a schema.table (schema_table_name) from a dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – The Spark DataFrame to base the table off</p></li>
+<li><p><strong>schema_table_name</strong> – str The schema.table to create</p></li>
+<li><p><strong>primary_keys</strong> – List[str] the primary keys. Default None</p></li>
+<li><p><strong>create_table_options</strong> – str The additional table-level SQL options default None</p></li>
+<li><p><strong>to_upper</strong> – bool If the dataframe columns should be converted to uppercase before table creation.             If False, the table will be created with lower case columns. Default False</p></li>
+<li><p><strong>drop_table</strong> – bool whether to drop the table if it exists. Default False. If False and the table exists, the function will throw an exception</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.createTableWithSchema">
+<code class="sig-name descname">createTableWithSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">keys</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_table_options</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.createTableWithSchema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.createTableWithSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a schema.table from a schema</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – str The schema.table to create</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema that describes the columns of the table</p></li>
+<li><p><strong>keys</strong> – (List[str]) The primary keys. Default None</p></li>
+<li><p><strong>create_table_options</strong> – (str) The additional table-level SQL options. Default None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete records in a dataframe based on joining by primary keys from the data frame.
+Be careful with column naming and case sensitivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to delete</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.deleteWithRdd">
+<code class="sig-name descname">deleteWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.deleteWithRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.deleteWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete records using an rdd based on joining by primary keys from the rdd.
+Be careful with column naming and case sensitivity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD containing the primary keys you would like to delete from the table</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.df">
+<code class="sig-name descname">df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sql</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Spark Dataframe from the results of a Splice Machine SQL Query</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">splice</span><span class="o">.</span><span class="n">df</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 &gt; 3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>sql</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(Dataframe) A Spark DataFrame containing the results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.dropTable">
+<code class="sig-name descname">dropTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.dropTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.dropTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop a specified table.</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">dropTable</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.dropTableIfExists">
+<code class="sig-name descname">dropTableIfExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.dropTableIfExists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.dropTableIfExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops a table if exists</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span> 
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">dropTableIfExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.execute">
+<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>execute a query over JDBC</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM TABLE1 WHERE col2 &gt; 3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.executeUpdate">
+<code class="sig-name descname">executeUpdate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.executeUpdate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.executeUpdate" title="Permalink to this definition">¶</a></dt>
+<dd><p>execute a dml query:(update,delete,drop,etc)</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">executeUpdate</span><span class="p">(</span><span class="s1">&#39;DROP TABLE table1&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>query_string</strong> – (string) SQL Query (eg. DROP TABLE table1)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">location</span></em>, <em class="sig-param"><span class="n">compression</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">replicationCount</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">fileEncoding</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fieldSeparator</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">quoteCharacter</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export a dataFrame in CSV</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>location</strong> – (str) Destination directory</p></li>
+<li><p><strong>compression</strong> – (bool) Whether to compress the output or not</p></li>
+<li><p><strong>replicationCount</strong> – (int) Replication used for HDFS write</p></li>
+<li><p><strong>fileEncoding</strong> – (str) fileEncoding or None, defaults to UTF-8</p></li>
+<li><p><strong>fieldSeparator</strong> – (str) fieldSeparator or None, defaults to ‘,’</p></li>
+<li><p><strong>quoteCharacter</strong> – (str) quoteCharacter or None, defaults to ‘”’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.exportBinary">
+<code class="sig-name descname">exportBinary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">location</span></em>, <em class="sig-param"><span class="n">compression</span></em>, <em class="sig-param"><span class="n">e_format</span><span class="o">=</span><span class="default_value">'parquet'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.exportBinary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.exportBinary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export a dataFrame in binary format</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame)</p></li>
+<li><p><strong>location</strong> – (str) Destination directory</p></li>
+<li><p><strong>compression</strong> – (bool) Whether to compress the output or not</p></li>
+<li><p><strong>e_format</strong> – (str) Binary format to be used, currently only ‘parquet’ is supported. [Default ‘parquet’]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.getConnection">
+<code class="sig-name descname">getConnection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.getConnection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.getConnection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a connection to the database</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.getSchema">
+<code class="sig-name descname">getSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.getSchema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.getSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the schema via JDBC.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_table_name</strong> – (str) Table name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(StructType) PySpark StructType representation of the table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.insert">
+<code class="sig-name descname">insert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">to_upper</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.insert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.insert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a dataframe into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to insert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the DF</p></li>
+<li><p><strong>to_upper</strong> – (bool) If the dataframe columns should be converted to uppercase before table creation
+If False, the table will be created with lower case columns. [Default False]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.insertRdd">
+<code class="sig-name descname">insertRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.insertRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.insertRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert an rdd into a table (schema.table)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to insert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.insertRddWithStatus">
+<code class="sig-name descname">insertRddWithStatus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">statusDirectory</span></em>, <em class="sig-param"><span class="n">badRecordsAllowed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.insertRddWithStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.insertRddWithStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert an rdd into a table (schema.table) while tracking and limiting records that fail to insert.         The status directory and number of badRecordsAllowed allow for duplicate primary keys to be         written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written         to the status directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to insert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the dataframe</p></li>
+<li><p><strong>statusDirectory</strong> – (str) The status directory where bad records file will be created</p></li>
+<li><p><strong>badRecordsAllowed</strong> – (int) The number of bad records are allowed. -1 for unlimited</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.insertWithStatus">
+<code class="sig-name descname">insertWithStatus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">statusDirectory</span></em>, <em class="sig-param"><span class="n">badRecordsAllowed</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.insertWithStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.insertWithStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert a dataframe into a table (schema.table) while tracking and limiting records that fail to insert.
+The status directory and number of badRecordsAllowed allow for duplicate primary keys to be
+written to a bad records file.  If badRecordsAllowed is set to -1, all bad records will be written
+to the status directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to insert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to insert the dataframe</p></li>
+<li><p><strong>statusDirectory</strong> – (str) The status directory where bad records file will be created</p></li>
+<li><p><strong>badRecordsAllowed</strong> – (int) The number of bad records are allowed. -1 for unlimited</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.internalDf">
+<code class="sig-name descname">internalDf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">query_string</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.internalDf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.internalDf" title="Permalink to this definition">¶</a></dt>
+<dd><p>SQL to Dataframe translation (Lazy). Runs the query inside Splice Machine and sends the results to the Spark Adapter app</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>query_string</strong> – (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 &gt; 3)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) pyspark dataframe contains the result of query_string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.internalRdd">
+<code class="sig-name descname">internalRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">column_projection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.internalRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.internalRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Table with projections in Splice mapped to an RDD.
+Runs the projection inside Splice Machine and sends the results to the Spark Adapter app as an rdd</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (str) Accessed table</p></li>
+<li><p><strong>column_projection</strong> – (list of strings) Names of selected columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(RDD[Row]) the result of the projection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.rdd">
+<code class="sig-name descname">rdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">column_projection</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.rdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.rdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Table with projections in Splice mapped to an RDD.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_table_name</strong> – (string) Accessed table</p></li>
+<li><p><strong>column_projection</strong> – (list of strings) Names of selected columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(RDD[Row]) the result of the projection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.replaceDataframeSchema">
+<code class="sig-name descname">replaceDataframeSchema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.replaceDataframeSchema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.replaceDataframeSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dataframe with all column names replaced with the proper string case from the DB table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) A dataframe with column names to convert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The schema.table with the correct column cases to pull from the database</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(DataFrame) A Spark DataFrame with the replaced schema</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.splitAndInsert">
+<code class="sig-name descname">splitAndInsert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em>, <em class="sig-param"><span class="n">sample_fraction</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.splitAndInsert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.splitAndInsert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample the dataframe, split the table, and insert a dataFrame into a schema.table.
+This corresponds to an insert into from select statement</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (DataFrame) Input data</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Full table name in the format of “schema.table”</p></li>
+<li><p><strong>sample_fraction</strong> – (float) A value between 0 and 1 that specifies the percentage of data in the dataFrame         that should be sampled to determine the splits.         For example, specify 0.005 if you want 0.5% of the data sampled.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.tableExists">
+<code class="sig-name descname">tableExists</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_and_or_table_name</span></em>, <em class="sig-param"><span class="n">table_name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.tableExists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.tableExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether or not a table exists</p>
+<dl class="field-list">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName.tableName&#39;</span><span class="p">)</span>
+
+<span class="c1"># or</span>
+
+<span class="n">splice</span><span class="o">.</span><span class="n">tableExists</span><span class="p">(</span><span class="s1">&#39;schemaName&#39;</span><span class="p">,</span> <span class="s1">&#39;tableName&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>schema_and_or_table_name</strong> – (str) Pass the schema name in this param when passing the table_name param,
+or pass schemaName.tableName in this param without passing the table_name param</p></li>
+<li><p><strong>table_name</strong> – (optional) (str) Table Name, used when schema_and_or_table_name contains only the schema name</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) whether or not the table exists</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.toUpper">
+<code class="sig-name descname">toUpper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.toUpper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.toUpper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dataframe with all of the columns in uppercase</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataframe</strong> – (Dataframe) The dataframe to convert to uppercase</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.truncateTable">
+<code class="sig-name descname">truncateTable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.truncateTable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.truncateTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Truncate a table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_table_name</strong> – (str) the full table name in the format “schema.table_name” which will be truncated</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update data from a dataframe for a specified schema_table_name (schema.table).
+The keys are required for the update and any other columns provided will be updated
+in the rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to update</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.updateWithRdd">
+<code class="sig-name descname">updateWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.updateWithRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.updateWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update data from an rdd for a specified schema_table_name (schema.table).
+The keys are required for the update and any other columns provided will be updated
+in the rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to use for updating the table</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) Splice Machine Table</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.upsert">
+<code class="sig-name descname">upsert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.upsert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.upsert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upsert the data from a dataframe into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> – (Dataframe) The dataframe you would like to upsert</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to upsert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="splicemachine.spark.context.PySpliceContext.upsertWithRdd">
+<code class="sig-name descname">upsertWithRdd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rdd</span></em>, <em class="sig-param"><span class="n">schema</span></em>, <em class="sig-param"><span class="n">schema_table_name</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/spark/context.html#PySpliceContext.upsertWithRdd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.spark.context.PySpliceContext.upsertWithRdd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upsert the data from an RDD into a table (schema.table).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rdd</strong> – (RDD) The RDD you would like to upsert</p></li>
+<li><p><strong>schema</strong> – (StructType) The schema of the rows in the RDD</p></li>
+<li><p><strong>schema_table_name</strong> – (str) The table in which you would like to upsert the RDD</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-splicemachine.spark">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-splicemachine.spark" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="splicemachine.mlflow_support.html" class="btn btn-neutral float-right" title="splicemachine.mlflow_support package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="splicemachine.html" class="btn btn-neutral float-left" title="Splicemachine package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Splice Machine
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,1021 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>splicemachine.mlflow_support.mlflow_support &mdash; Splice MLManager  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sphinx_tabs/tabs.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script src="../../../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.js"></script>
+        <script src="../../../_static/sphinx_tabs/tabs.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> Splice MLManager
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../splicemachine.html">Splicemachine package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Splice MLManager</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>splicemachine.mlflow_support.mlflow_support</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for splicemachine.mlflow_support.mlflow_support</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Copyright 2020 Splice Machine, Inc.</span>
+
+<span class="sd">Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">you may not use this file except in compliance with the License.</span>
+<span class="sd">You may obtain a copy of the License at</span>
+
+<span class="sd">    http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">See the License for the specific language governing permissions and</span>
+<span class="sd">limitations under the License.\n</span>
+
+<span class="sd">======================================================================================================================================================================================\n</span>
+
+<span class="sd">All functions in this module are accessible through the mlflow object and are to be referenced without the leading underscore as \n</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    mlflow.function_name()</span>
+
+<span class="sd">For example, the function _current_exp_id() is accessible via\n</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    mlflow.current_exp_id()</span>
+
+
+<span class="sd">All functions are accessible after running the following import\n</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from splicemachine.mlflow_support import *</span>
+
+<span class="sd">Importing anything directly from mlflow before running the above statement will cause problems. After running the above import, you can import additional mlflow submodules as normal\n</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from splicemachine.mlflow_support import *</span>
+<span class="sd">    from mlflow.tensorflow import autolog</span>
+
+<span class="sd">======================================================================================================================================================================================\n</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">version</span> <span class="k">as</span> <span class="n">py_version</span>
+
+<span class="kn">import</span> <span class="nn">gorilla</span>
+<span class="kn">import</span> <span class="nn">mlflow</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">requests.auth</span> <span class="kn">import</span> <span class="n">HTTPBasicAuth</span>
+<span class="kn">from</span> <span class="nn">mleap.pyspark</span> <span class="kn">import</span> <span class="n">spark_support</span>
+<span class="kn">import</span> <span class="nn">pyspark</span>
+<span class="kn">import</span> <span class="nn">sklearn</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span> <span class="k">as</span> <span class="n">ScikitModel</span>
+<span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">tf_version</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">keras_version</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">Model</span> <span class="k">as</span> <span class="n">KerasModel</span>
+
+<span class="kn">from</span> <span class="nn">splicemachine.mlflow_support.constants</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">splicemachine.mlflow_support.utilities</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">splicemachine.spark.context</span> <span class="kn">import</span> <span class="n">PySpliceContext</span>
+<span class="kn">from</span> <span class="nn">splicemachine.spark.constants</span> <span class="kn">import</span> <span class="n">CONVERSIONS</span>
+<span class="kn">from</span> <span class="nn">pyspark.sql.dataframe</span> <span class="kn">import</span> <span class="n">DataFrame</span> <span class="k">as</span> <span class="n">SparkDF</span>
+<span class="kn">from</span> <span class="nn">pandas.core.frame</span> <span class="kn">import</span> <span class="n">DataFrame</span> <span class="k">as</span> <span class="n">PandasDF</span>
+
+<span class="n">_TESTING</span> <span class="o">=</span> <span class="n">env_vars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;TESTING&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">_TRACKING_URL</span> <span class="o">=</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s2">&quot;mlflow&quot;</span><span class="p">,</span> <span class="s2">&quot;5001&quot;</span><span class="p">,</span> <span class="n">_TESTING</span><span class="p">)</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;It looks like you&#39;re running outside the Splice K8s Cloud Service. You must run set_mlflow_uri() and pass in the URL to the MLFlow UI&quot;</span><span class="p">)</span>
+    <span class="n">_TRACKING_URL</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+<span class="n">_CLIENT</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">(</span><span class="n">tracking_uri</span><span class="o">=</span><span class="n">_TRACKING_URL</span><span class="p">)</span>
+<span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span>
+
+<span class="n">_GORILLA_SETTINGS</span> <span class="o">=</span> <span class="n">gorilla</span><span class="o">.</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_hit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_hit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">_PYTHON_VERSION</span> <span class="o">=</span> <span class="n">py_version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<div class="viewcode-block" id="_mlflow_patch"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._mlflow_patch">[docs]</a><span class="k">def</span> <span class="nf">_mlflow_patch</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a MLFlow Patch that applies the default gorilla settings</span>
+
+<span class="sd">    :param name: destination name under mlflow package</span>
+<span class="sd">    :return: decorator for patched function</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">gorilla</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">_GORILLA_SETTINGS</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_get_current_run_data"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_current_run_data">[docs]</a><span class="k">def</span> <span class="nf">_get_current_run_data</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the data associated with the current run.</span>
+<span class="sd">    As of MLFLow 1.6, it currently does not support getting run info from the mlflow.active_run object, so we need it</span>
+<span class="sd">    to be retrieved via the tracking client.</span>
+
+<span class="sd">    :return: active run data object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="_get_run_ids_by_name"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_run_ids_by_name">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;get_run_ids_by_name&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_get_run_ids_by_name</span><span class="p">(</span><span class="n">run_name</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets a run id from the run name. If there are multiple runs with the same name, all run IDs are returned</span>
+
+<span class="sd">    :param run_name: (str) The name of the run</span>
+<span class="sd">    :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]</span>
+<span class="sd">    :return: (List[str]) List of run ids</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">exps</span> <span class="o">=</span> <span class="p">[</span><span class="n">experiment_id</span><span class="p">]</span> <span class="k">if</span> <span class="n">experiment_id</span> <span class="k">else</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">list_experiments</span><span class="p">()</span>
+    <span class="n">run_ids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="n">exps</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">run_name</span> <span class="o">==</span> <span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mlflow.runName&#39;</span><span class="p">]:</span>
+                <span class="n">run_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;Run ID&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">run_ids</span></div>
+
+
+<div class="viewcode-block" id="_register_splice_context"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._register_splice_context">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;register_splice_context&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_register_splice_context</span><span class="p">(</span><span class="n">splice_context</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Register a Splice Context for Spark/Database operations (artifact storage, for example)</span>
+
+<span class="sd">    :param splice_context: (PySpliceContext) splice context to input</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">splice_context</span><span class="p">,</span> <span class="n">PySpliceContext</span><span class="p">),</span> <span class="s2">&quot;You must pass in a PySpliceContext to this method&quot;</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span> <span class="o">=</span> <span class="n">splice_context</span></div>
+
+
+<span class="k">def</span> <span class="nf">_check_for_splice_ctx</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check to make sure that the user has registered</span>
+<span class="sd">    a PySpliceContext with the mlflow object before allowing</span>
+<span class="sd">    spark operations to take place</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="s1">&#39;_splice_context&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span>
+            <span class="s2">&quot;You must run `mlflow.register_splice_context(pysplice_context) before &quot;</span>
+            <span class="s2">&quot;you can run this mlflow operation!&quot;</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="_current_run_id"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._current_run_id">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;current_run_id&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_current_run_id</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the current run id</span>
+
+<span class="sd">    :return: (str) the current run id</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span></div>
+
+
+<div class="viewcode-block" id="_current_exp_id"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._current_exp_id">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;current_exp_id&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_current_exp_id</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the current exp id</span>
+
+<span class="sd">    :return: (int) the current experiment id</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">experiment_id</span></div>
+
+
+<div class="viewcode-block" id="_lp"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._lp">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;lp&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_lp</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a shortcut for logging parameters in MLFlow.</span>
+
+<span class="sd">    :param key: (str) key for the parameter</span>
+<span class="sd">    :param value: (str) value for the parameter</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">250</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;It seems your parameter input is too long. The max length is 250 characters.&#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39;Your key is length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="si">}</span><span class="s1"> and your value is length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_lm"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._lm">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;lm&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_lm</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a shortcut for logging metrics in MLFlow.</span>
+
+<span class="sd">    :param key: (str) key for the parameter</span>
+<span class="sd">    :param value: (str or int) value for the parameter</span>
+<span class="sd">    :param step: (int) A single integer step at which to log the specified Metrics. If unspecified, each metric is logged at step zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;It seems your metric key is too long. The max length is 250 characters,&#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39;but yours is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_log_model"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_model">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_model&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log a trained machine learning model</span>
+
+<span class="sd">    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model</span>
+<span class="sd">        with the current run</span>
+<span class="sd">    :param name: (str) the run relative name to store the model under. [Deault &#39;model&#39;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">_get_current_run_data</span><span class="p">()</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">):</span>  <span class="c1"># this function has already run</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;Only one model is permitted per run.&quot;</span><span class="p">)</span>
+
+    <span class="n">model_class</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_type&#39;</span><span class="p">,</span> <span class="n">model_class</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_py_version&#39;</span><span class="p">,</span> <span class="n">_PYTHON_VERSION</span><span class="p">)</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">H2OModel</span><span class="p">):</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.h2o_version&#39;</span><span class="p">,</span> <span class="n">h2o</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+        <span class="n">H2OUtils</span><span class="o">.</span><span class="n">log_h2o_model</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">SparkModel</span><span class="p">):</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.spark_version&#39;</span><span class="p">,</span> <span class="n">pyspark</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+        <span class="n">SparkUtils</span><span class="o">.</span><span class="n">log_spark_model</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ScikitModel</span><span class="p">):</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.sklearn_version&#39;</span><span class="p">,</span> <span class="n">sklearn</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+        <span class="n">SKUtils</span><span class="o">.</span><span class="n">log_sklearn_model</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">KerasModel</span><span class="p">):</span> <span class="c1"># We can&#39;t handle keras models with a different backend</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.keras_version&#39;</span><span class="p">,</span> <span class="n">keras_version</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.tf_version&#39;</span><span class="p">,</span> <span class="n">tf_version</span><span class="p">)</span>
+        <span class="n">KerasUtils</span><span class="o">.</span><span class="n">log_keras_model</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s1">&#39;Model type not supported for logging.&#39;</span>
+                                     <span class="s1">&#39;Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.&#39;</span>
+                                     <span class="s1">&#39;You can save your model to disk, zip it and run mlflow.log_artifact to save.&#39;</span><span class="p">)</span>
+
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># read in backend for deployment</span></div>
+
+<div class="viewcode-block" id="_start_run"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._start_run">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;start_run&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_start_run</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Start a new run</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">            mlflow.start_run(run_name=&#39;my_run&#39;)\n</span>
+<span class="sd">            # or\n</span>
+<span class="sd">            with mlflow.start_run(run_name=&#39;my_run&#39;):</span>
+<span class="sd">                ...</span>
+
+
+<span class="sd">    :param tags: a dictionary containing metadata about the current run. \</span>
+<span class="sd">        For example: \</span>
+<span class="sd">            { \</span>
+<span class="sd">                &#39;team&#39;: &#39;pd&#39;, \</span>
+<span class="sd">                &#39;purpose&#39;: &#39;r&amp;d&#39; \</span>
+<span class="sd">            }</span>
+<span class="sd">    :param run_name: (str) an optional name for the run to show up in the MLFlow UI. [Default None]</span>
+<span class="sd">    :param run_id: (str) if you want to reincarnate an existing run, pass in the run id [Default None]</span>
+<span class="sd">    :param experiment_id: (int) if you would like to create an experiment/use one for this run [Default None]</span>
+<span class="sd">    :param nested: (bool) Controls whether run is nested in parent run. True creates a nest run [Default False]</span>
+<span class="sd">    :return: (ActiveRun) the mlflow active run object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the current running transaction ID for time travel/data governance</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="n">db_connection</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="o">.</span><span class="n">getConnection</span><span class="p">()</span>
+    <span class="n">prepared_statement</span> <span class="o">=</span> <span class="n">db_connection</span><span class="o">.</span><span class="n">prepareStatement</span><span class="p">(</span><span class="s1">&#39;CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()&#39;</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">prepared_statement</span><span class="o">.</span><span class="n">executeQuery</span><span class="p">()</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">getLong</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">prepared_statement</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span> <span class="k">if</span> <span class="n">tags</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mlflow.user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_user</span><span class="p">()</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;DB Transaction ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timestamp</span>
+
+    <span class="n">orig</span> <span class="o">=</span> <span class="n">gorilla</span><span class="o">.</span><span class="n">get_original_attribute</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="s2">&quot;start_run&quot;</span><span class="p">)</span>
+    <span class="n">active_run</span> <span class="o">=</span> <span class="n">orig</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">run_name</span><span class="o">=</span><span class="n">run_name</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="n">nested</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">run_id</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;Run ID&#39;</span><span class="p">,</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">run_name</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;mlflow.runName&#39;</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">active_run</span></div>
+
+
+<div class="viewcode-block" id="_log_pipeline_stages"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_pipeline_stages">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_pipeline_stages&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_pipeline_stages</span><span class="p">(</span><span class="n">pipeline</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log the pipeline stages of a Spark Pipeline as params for the run</span>
+
+<span class="sd">    :param pipeline: (PipelineModel) fitted/unitted pipeline</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">stage_number</span><span class="p">,</span> <span class="n">pipeline_stage</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">SparkUtils</span><span class="o">.</span><span class="n">get_stages</span><span class="p">(</span><span class="n">pipeline</span><span class="p">)):</span>
+        <span class="n">readable_stage_name</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">readable_pipeline_stage</span><span class="p">(</span><span class="n">pipeline_stage</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s1">&#39;Stage&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">stage_number</span><span class="p">),</span> <span class="n">readable_stage_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_log_feature_transformations"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_feature_transformations">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_feature_transformations&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_feature_transformations</span><span class="p">(</span><span class="n">unfit_pipeline</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log feature transformations for an unfit spark pipeline</span>
+<span class="sd">    Logs --&gt; feature movement through the pipeline</span>
+
+<span class="sd">    :param unfit_pipeline: (PipelineModel) unfit spark pipeline to log</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">transformations</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[[],</span> <span class="kc">None</span><span class="p">])</span>  <span class="c1"># transformations, outputColumn</span>
+
+    <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">get_stages</span><span class="p">(</span><span class="n">unfit_pipeline</span><span class="p">):</span>
+        <span class="n">input_cols</span><span class="p">,</span> <span class="n">output_col</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">get_cols</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">get_input</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">get_cols</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">get_input</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">input_cols</span> <span class="ow">and</span> <span class="n">output_col</span><span class="p">:</span>  <span class="c1"># make sure it could parse transformer</span>
+            <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">input_cols</span><span class="p">:</span>
+                <span class="n">first_column_found</span> <span class="o">=</span> <span class="n">find_inputs_by_output</span><span class="p">(</span><span class="n">transformations</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">first_column_found</span><span class="p">:</span>  <span class="c1"># column is not original</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">first_column_found</span><span class="p">:</span>
+                        <span class="n">transformations</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_col</span>
+                        <span class="n">transformations</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">SparkUtils</span><span class="o">.</span><span class="n">readable_pipeline_stage</span><span class="p">(</span><span class="n">stage</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">transformations</span><span class="p">[</span><span class="n">column</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_col</span>
+                    <span class="n">transformations</span><span class="p">[</span><span class="n">column</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SparkUtils</span><span class="o">.</span><span class="n">readable_pipeline_stage</span><span class="p">(</span><span class="n">stage</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">transformations</span><span class="p">:</span>
+        <span class="n">param_value</span> <span class="o">=</span> <span class="s1">&#39; -&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">column</span><span class="p">]</span> <span class="o">+</span> <span class="n">transformations</span><span class="p">[</span><span class="n">column</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                                  <span class="p">[</span><span class="n">transformations</span><span class="p">[</span><span class="n">column</span><span class="p">][</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s1">&#39;Column- &#39;</span> <span class="o">+</span> <span class="n">column</span><span class="p">,</span> <span class="n">param_value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_log_model_params"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_model_params">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_model_params&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_model_params</span><span class="p">(</span><span class="n">pipeline_or_model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log the parameters of a fitted spark model or a model stage of a fitted spark pipeline</span>
+
+<span class="sd">    :param pipeline_or_model: fitted spark pipeline/fitted spark model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">get_model_stage</span><span class="p">(</span><span class="n">pipeline_or_model</span><span class="p">)</span>
+
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">readable_pipeline_stage</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;_java_obj&#39;</span><span class="p">):</span>
+        <span class="n">verbose_parameters</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">parse_string_parameters</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_java_obj</span><span class="o">.</span><span class="n">extractParamMap</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;getClassifier&#39;</span><span class="p">):</span>
+        <span class="n">verbose_parameters</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">parse_string_parameters</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">getClassifier</span><span class="p">()</span><span class="o">.</span><span class="n">_java_obj</span><span class="o">.</span><span class="n">extractParamMap</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Could not parse model type: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">verbose_parameters</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">verbose_parameters</span><span class="p">[</span><span class="n">param</span><span class="p">])</span>
+            <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">verbose_parameters</span><span class="p">[</span><span class="n">param</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="_timer"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._timer">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;timer&#39;</span><span class="p">)</span>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">_timer</span><span class="p">(</span><span class="n">timer_name</span><span class="p">,</span> <span class="n">param</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Context manager for logging</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">            with mlflow.timer(&#39;my_timer&#39;): \n</span>
+<span class="sd">                ...</span>
+
+<span class="sd">    :param timer_name: (str) the name of the timer</span>
+<span class="sd">    :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Starting Code Block </span><span class="si">{</span><span class="n">timer_name</span><span class="si">}</span><span class="s1">...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+        <span class="c1"># Syntactic Sugar</span>
+        <span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span> <span class="k">if</span> <span class="n">param</span> <span class="k">else</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">)(</span><span class="n">timer_name</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Code Block </span><span class="si">{</span><span class="n">timer_name</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">Ran in </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> secs</span><span class="se">\n</span><span class="s2">Ran in </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">t1</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2"> mins&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_download_artifact"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._download_artifact">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;download_artifact&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_download_artifact</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">local_path</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Download the artifact at the given run id (active default) + name to the local path</span>
+
+<span class="sd">    :param name: (str) artifact name to load (with respect to the run)</span>
+<span class="sd">    :param local_path: (str) local path to download the model to. This path MUST include the file extension</span>
+<span class="sd">    :param run_id: (str) the run id to download the artifact from. Defaults to active run</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="n">file_ext</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">local_path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">blob_data</span><span class="p">,</span> <span class="n">f_ext</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">retrieve_artifact_stream</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">file_ext</span><span class="p">:</span> <span class="c1"># If the user didn&#39;t provide the file (ie entered . as the local_path), fill it in for them</span>
+        <span class="n">local_path</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">f_ext</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">artifact_file</span><span class="p">:</span>
+            <span class="n">artifact_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">blob_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_get_model_name"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_model_name">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;get_model_name&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_get_model_name</span><span class="p">(</span><span class="n">run_id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets the model name associated with a run or None</span>
+
+<span class="sd">    :param run_id: (str) the run_id that the model is stored under</span>
+<span class="sd">    :return: (str or None) The model name if it exists</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_load_model"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._load_model">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;load_model&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_load_model</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Download and deserialize a serialized model</span>
+
+<span class="sd">    :param run_id: the id of the run to get a model from</span>
+<span class="sd">        (the run must have an associated model with it named spark_model)</span>
+<span class="sd">    :param name: the name of the model in the database</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">_get_model_name</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Uh Oh! Looks like there isn&#39;t a model logged with this run (</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">)!&quot;</span>
+                                     <span class="s2">&quot;If there is, pass in the name= parameter to this function&quot;</span><span class="p">)</span>
+    <span class="n">model_blob</span><span class="p">,</span> <span class="n">file_ext</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">retrieve_artifact_stream</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">file_ext</span> <span class="o">==</span> <span class="n">FileExtensions</span><span class="o">.</span><span class="n">spark</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">load_spark_model</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">model_blob</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">file_ext</span> <span class="o">==</span> <span class="n">FileExtensions</span><span class="o">.</span><span class="n">h2o</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">H2OUtils</span><span class="o">.</span><span class="n">load_h2o_model</span><span class="p">(</span><span class="n">model_blob</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">file_ext</span> <span class="o">==</span> <span class="n">FileExtensions</span><span class="o">.</span><span class="n">sklearn</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SKUtils</span><span class="o">.</span><span class="n">load_sklearn_model</span><span class="p">(</span><span class="n">model_blob</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">file_ext</span> <span class="o">==</span> <span class="n">FileExtensions</span><span class="o">.</span><span class="n">keras</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">KerasUtils</span><span class="o">.</span><span class="n">load_keras_model</span><span class="p">(</span><span class="n">model_blob</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Model extension </span><span class="si">{</span><span class="n">file_ext</span><span class="si">}</span><span class="s1"> was not a supported model type. &#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39;Supported model extensions are </span><span class="si">{</span><span class="n">FileExtensions</span><span class="o">.</span><span class="n">get_valid</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+<div class="viewcode-block" id="_log_artifact"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_artifact">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_artifact&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_artifact</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log an artifact for the active run</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            with mlflow.start_run():\n</span>
+<span class="sd">                mlflow.log_artifact(&#39;my_image.png&#39;)</span>
+
+<span class="sd">    :param file_name: (str) the name of the file name to log</span>
+<span class="sd">    :param name: (str) the name of the run relative name to store the model under</span>
+<span class="sd">    :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    </span>
+<span class="sd">    :NOTE: </span>
+<span class="sd">        We do not currently support logging directories. If you would like to log a directory, please zip it first and log the zip file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="n">file_ext</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">artifact</span><span class="p">:</span>
+        <span class="n">byte_stream</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_uuid</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">file_name</span>
+    <span class="n">insert_artifact</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">byte_stream</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="o">=</span><span class="n">file_ext</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_login_director"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._login_director">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;login_director&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_login_director</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Authenticate into the MLManager Director</span>
+
+<span class="sd">    :param username: (str) database username</span>
+<span class="sd">    :param password: (str) database password</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span> <span class="o">=</span> <span class="n">HTTPBasicAuth</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_initiate_job"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._initiate_job">[docs]</a><span class="k">def</span> <span class="nf">_initiate_job</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Send a job to the initiation endpoint</span>
+
+<span class="sd">    :param payload: (dict) JSON payload for POST request</span>
+<span class="sd">    :param endpoint: (str) REST endpoint to target</span>
+<span class="sd">    :return: (str) Response text from request</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="s1">&#39;_basic_auth&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="s2">&quot;You have not logged into MLManager director.&quot;</span>
+            <span class="s2">&quot; Please run mlflow.login_director(username, password)&quot;</span>
+        <span class="p">)</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">)</span> <span class="o">+</span> <span class="n">endpoint</span><span class="p">,</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">,</span>
+        <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Your Job has been submitted. View its status on port 5003 (Job Dashboard)&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error! An error occurred while submitting your job&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="_deploy_aws"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._deploy_aws">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;deploy_aws&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_deploy_aws</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="s1">&#39;us-east-2&#39;</span><span class="p">,</span> <span class="n">instance_type</span><span class="o">=</span><span class="s1">&#39;ml.m5.xlarge&#39;</span><span class="p">,</span>
+                <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">instance_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">deployment_mode</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Queue Job to deploy a run to sagemaker with the</span>
+<span class="sd">    given run id (found in MLFlow UI or through search API)</span>
+
+<span class="sd">    :param run_id: the id of the run to deploy. Will default to the current</span>
+<span class="sd">        run id.</span>
+<span class="sd">    :param app_name: the name of the app in sagemaker once deployed</span>
+<span class="sd">    :param region: the sagemaker region to deploy to (us-east-2,</span>
+<span class="sd">        us-west-1, us-west-2, eu-central-1 supported)</span>
+<span class="sd">    :param instance_type: the EC2 Sagemaker instance type to deploy on</span>
+<span class="sd">        (ml.m4.xlarge supported)</span>
+<span class="sd">    :param instance_count: the number of instances to load balance predictions</span>
+<span class="sd">        on</span>
+<span class="sd">    :param deployment_mode: the method to deploy; create=application will fail</span>
+<span class="sd">        if an app with the name specified already exists; replace=application</span>
+<span class="sd">        in sagemaker will be replaced with this one if app already exists;</span>
+<span class="sd">        add=add the specified model to a prexisting application (not recommended)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get run from mlflow</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing...&quot;</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># give the mlflow server time to register the artifact, if necessary</span>
+
+    <span class="n">supported_aws_regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;us-east-2&#39;</span><span class="p">,</span> <span class="s1">&#39;us-west-1&#39;</span><span class="p">,</span> <span class="s1">&#39;us-west-2&#39;</span><span class="p">,</span> <span class="s1">&#39;eu-central-1&#39;</span><span class="p">]</span>
+    <span class="n">supported_instance_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ml.m5.xlarge&#39;</span><span class="p">]</span>
+    <span class="n">supported_deployment_modes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span> <span class="s1">&#39;add&#39;</span><span class="p">]</span>
+
+    <span class="c1"># data validation</span>
+    <span class="k">if</span> <span class="n">region</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_aws_regions</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Region must be in list: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">supported_aws_regions</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">instance_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_instance_types</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Instance type must be in list: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">instance_type</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">deployment_mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_deployment_modes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Deployment mode must be in list: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">supported_deployment_modes</span><span class="p">))</span>
+
+    <span class="n">request_payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;handler_name&#39;</span><span class="p">:</span> <span class="s1">&#39;DEPLOY_AWS&#39;</span><span class="p">,</span> <span class="s1">&#39;run_id&#39;</span><span class="p">:</span> <span class="n">run_id</span> <span class="k">if</span> <span class="n">run_id</span> <span class="k">else</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span><span class="p">,</span>
+        <span class="s1">&#39;region&#39;</span><span class="p">:</span> <span class="n">region</span><span class="p">,</span> <span class="s1">&#39;user&#39;</span><span class="p">:</span> <span class="n">get_user</span><span class="p">(),</span>
+        <span class="s1">&#39;instance_type&#39;</span><span class="p">:</span> <span class="n">instance_type</span><span class="p">,</span> <span class="s1">&#39;instance_count&#39;</span><span class="p">:</span> <span class="n">instance_count</span><span class="p">,</span>
+        <span class="s1">&#39;deployment_mode&#39;</span><span class="p">:</span> <span class="n">deployment_mode</span><span class="p">,</span> <span class="s1">&#39;app_name&#39;</span><span class="p">:</span> <span class="n">app_name</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">_initiate_job</span><span class="p">(</span><span class="n">request_payload</span><span class="p">,</span> <span class="s1">&#39;/api/rest/initiate&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_deploy_azure"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._deploy_azure">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;deploy_azure&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_deploy_azure</span><span class="p">(</span><span class="n">endpoint_name</span><span class="p">,</span> <span class="n">resource_group</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="s1">&#39;East US&#39;</span><span class="p">,</span>
+                  <span class="n">cpu_cores</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">allocated_ram</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">model_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deploy a given run to AzureML.</span>
+
+<span class="sd">    :param endpoint_name: (str) the name of the endpoint in AzureML when deployed to</span>
+<span class="sd">        Azure Container Services. Must be unique.</span>
+<span class="sd">    :param resource_group: (str) Azure Resource Group for model. Automatically created if</span>
+<span class="sd">        it doesn&#39;t exist.</span>
+<span class="sd">    :param workspace: (str) the AzureML workspace to deploy the model under.</span>
+<span class="sd">        Will be created if it doesn&#39;t exist</span>
+<span class="sd">    :param run_id: (str) if specified, will deploy a previous run (</span>
+<span class="sd">        must have an spark model logged). Otherwise, will default to the active run</span>
+<span class="sd">    :param region: (str) AzureML Region to deploy to: Can be East US, East US 2, Central US,</span>
+<span class="sd">        West US 2, North Europe, West Europe or Japan East</span>
+<span class="sd">    :param cpu_cores: (float) Number of CPU Cores to allocate to the instance.</span>
+<span class="sd">        Can be fractional. Default=0.1</span>
+<span class="sd">    :param allocated_ram: (float) amount of RAM, in GB, allocated to the container.</span>
+<span class="sd">        Default=0.5</span>
+<span class="sd">    :param model_name: (str) If specified, this will be the name of the model in AzureML.</span>
+<span class="sd">        Otherwise, the model name will be randomly generated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">supported_regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;East US&#39;</span><span class="p">,</span> <span class="s1">&#39;East US 2&#39;</span><span class="p">,</span> <span class="s1">&#39;Central US&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;West US 2&#39;</span><span class="p">,</span> <span class="s1">&#39;North Europe&#39;</span><span class="p">,</span> <span class="s1">&#39;West Europe&#39;</span><span class="p">,</span> <span class="s1">&#39;Japan East&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">region</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_regions</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Region must be in list: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">supported_regions</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">cpu_cores</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid CPU Count&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">allocated_ram</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid Allocated RAM&quot;</span><span class="p">)</span>
+
+    <span class="n">request_payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;handler_name&#39;</span><span class="p">:</span> <span class="s1">&#39;DEPLOY_AZURE&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;endpoint_name&#39;</span><span class="p">:</span> <span class="n">endpoint_name</span><span class="p">,</span>
+        <span class="s1">&#39;resource_group&#39;</span><span class="p">:</span> <span class="n">resource_group</span><span class="p">,</span>
+        <span class="s1">&#39;workspace&#39;</span><span class="p">:</span> <span class="n">workspace</span><span class="p">,</span>
+        <span class="s1">&#39;run_id&#39;</span><span class="p">:</span> <span class="n">run_id</span> <span class="k">if</span> <span class="n">run_id</span> <span class="k">else</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span><span class="p">,</span>
+        <span class="s1">&#39;cpu_cores&#39;</span><span class="p">:</span> <span class="n">cpu_cores</span><span class="p">,</span>
+        <span class="s1">&#39;allocated_ram&#39;</span><span class="p">:</span> <span class="n">allocated_ram</span><span class="p">,</span>
+        <span class="s1">&#39;model_name&#39;</span><span class="p">:</span> <span class="n">model_name</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">_initiate_job</span><span class="p">(</span><span class="n">request_payload</span><span class="p">,</span> <span class="s1">&#39;/api/rest/initiate&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_deploy_db"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._deploy_db">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;deploy_database&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_deploy_db</span><span class="p">(</span><span class="n">db_schema_name</span><span class="p">,</span>
+               <span class="n">db_table_name</span><span class="p">,</span>
+               <span class="n">run_id</span><span class="p">,</span>
+               <span class="n">primary_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">df</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">create_model_table</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">model_cols</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">sklearn_args</span><span class="o">=</span><span class="p">{},</span>
+               <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">pred_threshold</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.</span>
+<span class="sd">    This either creates a new table or alters an existing table in the database (depending on parameters passed)</span>
+
+<span class="sd">    :param db_schema_name: (str) the schema name to deploy to.</span>
+<span class="sd">    :param db_table_name: (str) the table name to deploy to.</span>
+<span class="sd">    :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed</span>
+<span class="sd">    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key. \n</span>
+<span class="sd">        * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n</span>
+<span class="sd">        * If you are creating the table in this function, you MUST pass in a primary key </span>
+<span class="sd">    :param df: (Spark or Pandas DF) The dataframe used to train the model \n</span>
+<span class="sd">                | NOTE: The columns in this df are the ones that will be used to create the table unless specified by model_cols</span>
+<span class="sd">    :param create_model_table: Whether or not to create the table from the dataframe. Default false. This</span>
+<span class="sd">                                Will ONLY be used if the table does not exist and a dataframe is passed in</span>
+<span class="sd">    :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table</span>
+<span class="sd">                                        will be passed to the model. If specified, the columns will be passed to the model</span>
+<span class="sd">                                        IN THAT ORDER. The columns passed here must exist in the table.</span>
+<span class="sd">    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.\n</span>
+<span class="sd">                    NOTE: If not supplied, the table will have default column names for each class</span>
+<span class="sd">    :param sklearn_args: (dict{str: str}) Prediction options for sklearn models: \n</span>
+<span class="sd">        * Available key value options: \n</span>
+<span class="sd">            * &#39;predict_call&#39;: &#39;predict&#39;, &#39;predict_proba&#39;, or &#39;transform&#39; \n</span>
+<span class="sd">                * Determines the function call for the model \n</span>
+<span class="sd">                        * If blank, predict will be used (or transform if model doesn&#39;t have predict) \n</span>
+<span class="sd">            * &#39;predict_args&#39;: &#39;return_std&#39; or &#39;return_cov&#39; - For Bayesian and Gaussian models \n</span>
+<span class="sd">                * Only one can be specified \n</span>
+<span class="sd">                    * If the model does not have the option specified, it will be ignored.</span>
+<span class="sd">    :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging</span>
+<span class="sd">    :param pred_threshold: (double) A prediction threshold for *Keras* binary classification models \n</span>
+<span class="sd">        * If the model type isn&#39;t Keras, this parameter will be ignored \n</span>
+<span class="sd">        NOTE: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, \</span>
+<span class="sd">                you will NOT receive a class prediction, only the output of the final layer (like model.predict()). \</span>
+<span class="sd">                If you want a class prediction \</span>
+<span class="sd">                for your binary classification problem, you MUST pass in a threshold.</span>
+<span class="sd">    :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work</span>
+<span class="sd">    :return: None\n</span>
+<span class="sd">    </span>
+<span class="sd">    This function creates the following IF you are creating a table from the dataframe \n</span>
+<span class="sd">        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n</span>
+<span class="sd">            * USER which is the current user who made the request</span>
+<span class="sd">            * EVAL_TIME which is the CURRENT_TIMESTAMP</span>
+<span class="sd">            * the PRIMARY KEY column(s) passed in</span>
+<span class="sd">            * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models</span>
+<span class="sd">            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n</span>
+<span class="sd">    IF you are deploying to an existing table, the table will be altered to include the columns above. \n</span>
+<span class="sd">    :NOTE:</span>
+<span class="sd">        .. code-block:: text</span>
+<span class="sd">    </span>
+<span class="sd">            The columns listed above are default value columns.\n </span>
+<span class="sd">            This means that on a SQL insert into the table, \n</span>
+<span class="sd">            you do not need to reference or insert values into them.\n</span>
+<span class="sd">            They are automatically taken care of.\n</span>
+<span class="sd">            Set verbose=True in the function call for more information</span>
+
+<span class="sd">    The following will also be created for all deployments: \n</span>
+<span class="sd">        * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \</span>
+<span class="sd">            calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n</span>
+<span class="sd">        * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \</span>
+<span class="sd">            parsing the prediction probabilities and filling in proper column values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+
+    <span class="c1"># Get the model</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span> <span class="k">if</span> <span class="n">run_id</span> <span class="k">else</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">fitted_model</span> <span class="o">=</span> <span class="n">_load_model</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+
+    <span class="c1"># Param checking. Can&#39;t create model table without a dataframe</span>
+    <span class="k">if</span> <span class="n">create_model_table</span> <span class="ow">and</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># Need to compare to None, truth value of df is ambiguous</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;If you&#39;d like to create the model table as part of this deployment, you must pass in a dataframe&quot;</span><span class="p">)</span>
+    <span class="c1"># Make sure primary_key is valid format</span>
+    <span class="k">if</span> <span class="n">create_model_table</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">primary_key</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;If you&#39;d like to create the model table as part of this deployment must provide the primary key(s)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># FIXME: We need to use the dbConnection so we can set a savepoint and rollback on failure</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">classes</span> <span class="k">if</span> <span class="n">classes</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="n">schema_table_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">db_schema_name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">db_table_name</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="n">feature_columns</span><span class="p">,</span> <span class="n">schema_types</span> <span class="o">=</span> <span class="n">get_feature_columns_and_types</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">create_model_table</span><span class="p">,</span>
+                                                                   <span class="n">model_cols</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span>
+
+
+    <span class="c1"># Validate primary key is correct, or that provided table has primary keys</span>
+    <span class="n">primary_key</span> <span class="o">=</span> <span class="n">validate_primary_key</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">db_schema_name</span><span class="p">,</span> <span class="n">db_table_name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">primary_key</span>
+
+    <span class="n">library</span> <span class="o">=</span> <span class="n">get_model_library</span><span class="p">(</span><span class="n">fitted_model</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">library</span> <span class="o">==</span> <span class="n">DBLibraries</span><span class="o">.</span><span class="n">MLeap</span><span class="p">:</span>
+        <span class="c1"># Mleap needs a dataframe in order to serialize the model</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">get_df_for_mleap</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+
+    <span class="n">model_type</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">model_already_exists</span> <span class="o">=</span> <span class="n">ModelUtils</span><span class="p">[</span><span class="n">library</span><span class="p">]</span><span class="o">.</span><span class="n">prep_model_for_deployment</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span>
+                                                                                              <span class="n">fitted_model</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span>
+                                                                                              <span class="n">df</span><span class="p">,</span> <span class="n">pred_threshold</span><span class="p">,</span> <span class="n">sklearn_args</span><span class="p">)</span>
+
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Deploying model </span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s1"> to table </span><span class="si">{</span><span class="n">schema_table_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Create the schema of the table (we use this a few times)</span>
+    <span class="n">schema_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">feature_columns</span><span class="p">:</span>
+        <span class="n">schema_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">CONVERSIONS</span><span class="p">[</span><span class="n">schema_types</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]]</span><span class="si">}</span><span class="s1">,&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Create/Alter table 1: DATA</span>
+        <span class="k">if</span> <span class="n">create_model_table</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating model table ...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">create_model_deployment_table</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">schema_str</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">model_type</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Altering provided table for deployment&#39;</span><span class="p">)</span>
+            <span class="n">alter_model_table</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">model_type</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+        <span class="c1"># Create Trigger 1: model prediction</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating model prediction trigger ...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">H2OModelType</span><span class="o">.</span><span class="n">KEY_VALUE</span><span class="p">,</span> <span class="n">SklearnModelType</span><span class="o">.</span><span class="n">KEY_VALUE</span><span class="p">,</span> <span class="n">KerasModelType</span><span class="o">.</span><span class="n">KEY_VALUE</span><span class="p">):</span>
+            <span class="n">create_vti_prediction_trigger</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">feature_columns</span><span class="p">,</span> <span class="n">schema_types</span><span class="p">,</span>
+                                          <span class="n">schema_str</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">model_type</span><span class="p">,</span> <span class="n">sklearn_args</span><span class="p">,</span> <span class="n">pred_threshold</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">create_prediction_trigger</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">feature_columns</span><span class="p">,</span> <span class="n">schema_types</span><span class="p">,</span>
+                                    <span class="n">schema_str</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">model_type</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">model_type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SparkModelType</span><span class="o">.</span><span class="n">CLASSIFICATION</span><span class="p">,</span> <span class="n">SparkModelType</span><span class="o">.</span><span class="n">CLUSTERING_WITH_PROB</span><span class="p">,</span>
+                         <span class="n">H2OModelType</span><span class="o">.</span><span class="n">CLASSIFICATION</span><span class="p">):</span>
+            <span class="c1"># Create Trigger 2: model parsing</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating parsing trigger ...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">create_parsing_trigger</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">primary_key</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">model_type</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span>
+
+        <span class="n">add_model_to_metadata</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">)</span>
+
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">traceback</span>
+        <span class="n">exc</span> <span class="o">=</span> <span class="s1">&#39;Model deployment failed. Rolling back transactions.</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="n">drop_tables_on_failure</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">schema_table_name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">model_already_exists</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">exc</span> <span class="o">+=</span> <span class="s1">&#39;For more insight into the SQL statement that generated this error, rerun with verbose=True&#39;</span>
+        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model Deployed.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_get_deployed_models"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_deployed_models">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;get_deployed_models&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_get_deployed_models</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PandasDF</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the currently deployed models in the database</span>
+<span class="sd">    :return: Pandas df</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        SELECT * FROM MLMANAGER.LIVE_MODEL_STATUS</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">toPandas</span><span class="p">()</span></div>
+
+
+<span class="k">def</span> <span class="nf">apply_patches</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply all the Gorilla Patches; \</span>
+<span class="sd">    All Gorilla Patched MUST be predixed with &#39;_&#39; before their destination in MLflow</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="p">[</span><span class="n">_register_splice_context</span><span class="p">,</span> <span class="n">_lp</span><span class="p">,</span> <span class="n">_lm</span><span class="p">,</span> <span class="n">_timer</span><span class="p">,</span> <span class="n">_log_artifact</span><span class="p">,</span> <span class="n">_log_feature_transformations</span><span class="p">,</span>
+               <span class="n">_log_model_params</span><span class="p">,</span> <span class="n">_log_pipeline_stages</span><span class="p">,</span> <span class="n">_log_model</span><span class="p">,</span> <span class="n">_load_model</span><span class="p">,</span> <span class="n">_download_artifact</span><span class="p">,</span>
+               <span class="n">_start_run</span><span class="p">,</span> <span class="n">_current_run_id</span><span class="p">,</span> <span class="n">_current_exp_id</span><span class="p">,</span> <span class="n">_deploy_aws</span><span class="p">,</span> <span class="n">_deploy_azure</span><span class="p">,</span> <span class="n">_deploy_db</span><span class="p">,</span> <span class="n">_login_director</span><span class="p">,</span>
+               <span class="n">_get_run_ids_by_name</span><span class="p">,</span> <span class="n">_get_deployed_models</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+        <span class="n">gorilla</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">gorilla</span><span class="o">.</span><span class="n">Patch</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">),</span> <span class="n">target</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">_GORILLA_SETTINGS</span><span class="p">))</span>
+
+<div class="viewcode-block" id="set_mlflow_uri"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.set_mlflow_uri">[docs]</a><span class="k">def</span> <span class="nf">set_mlflow_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service</span>
+
+<span class="sd">    :param uri: (str) the URL of your mlflow UI.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_CLIENT</span> <span class="o">=</span> <span class="n">uri</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span> 
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="n">_TRACKING_URL</span><span class="p">)</span>
+    <span class="n">apply_patches</span><span class="p">()</span>
+
+
+<span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Splice Machine
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
