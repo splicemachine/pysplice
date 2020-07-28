@@ -41,9 +41,15 @@ def hide_toggle(toggle_next=False):
 
     return HTML(html)
 
-def get_mlflow_ui():
-    display(HTML('<font size=\"+1\"><a target=\"_blank\" href=/mlflow>MLFlow UI</a></font>'))
-    return IFrame(src='/mlflow', width='100%', height='500px')
+def get_mlflow_ui(experiment_id=None, run_id=None):
+    if run_id and not experiment_id:
+        raise Exception('If you are passing in a run id, you must also provide an experiment id!')
+    experiment_id = experiment_id or 0
+    mlflow_url = '/mlflow/#/experiments/{}'.format(experiment_id)
+    if run_id:
+        mlflow_url += '/runs/{}'.format(run_id)
+    display(HTML('<font size=\"+1\"><a target=\"_blank\" href={}>MLFlow UI</a></font>'.format(mlflow_url)))
+    return IFrame(src=mlflow_url, width='100%', height='700px')
   
 def get_spark_ui(port=None, spark_session=None):
     if port:
@@ -58,4 +64,4 @@ def get_spark_ui(port=None, spark_session=None):
                         'You can find the port by running spark.sparkContext.uiWebUrl and taking the number after the \':\'')
     user = env_vars.get('JUPYTERHUB_USER','user')
     display(HTML(f'<font size=\"+1\"><a target=\"_blank\" href=/splicejupyter/user/{user}/sparkmonitor/{port}>Spark UI</a></font>'))
-    return IFrame(src=f'/splicejupyter/user/{user}/sparkmonitor/{port}', width='100%', height='500px')
+    return IFrame(src=f'/splicejupyter/user/{user}/sparkmonitor/{port}', width='100%', height='700px')
