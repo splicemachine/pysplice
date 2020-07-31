@@ -622,6 +622,8 @@ def _deploy_db(db_schema_name,
 
     schema_table_name = f'{db_schema_name}.{db_table_name}'
 
+    # Feature columns are all of the columns of the table, model_cols are the subset of feature columns that are used \
+    # in predictions. schema_types contains all columns from feature_columns
     feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
                                                                    model_cols, schema_table_name)
 
@@ -660,6 +662,8 @@ def _deploy_db(db_schema_name,
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
+        # If model_cols were passed in, we'll use them here. Otherwise, use all of the columns (stored in feature_columns)
+        model_cols = model_cols or feature_columns
         if model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
             create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, model_cols, schema_types,
                                           schema_str, primary_key, classes, model_type, sklearn_args, pred_threshold, verbose)
