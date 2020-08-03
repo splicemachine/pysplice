@@ -909,7 +909,7 @@ def get_mleap_model(splice_context: PySpliceContext,
     except:
         m = getattr(fittedPipe, '__class__', 'UnknownModel')
         raise SpliceMachineException(f'It look like your model type {m} is not supported. Supported models are listed'
-                                     f'here https://mleap-docs.combust.ml/core-concepts/transformers/support.html')
+                                     f'here https://mleap-docs.combust.ml/core-concepts/transformers/support.html') from None
 
     jvm = splice_context.jvm
     java_import(jvm, "com.splicemachine.mlrunner.FileRetriever")
