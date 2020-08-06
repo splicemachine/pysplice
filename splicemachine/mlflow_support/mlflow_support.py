@@ -48,6 +48,7 @@ from os import path
 from sys import version as py_version, stderr
 from zipfile import ZipFile, ZIP_DEFLATED
 from io import BytesIO
+import glob
 
 import gorilla
 import mlflow
@@ -219,39 +220,42 @@ def __get_serialized_mlmodel(model, conda_env=None):
           with the current run
     :param conda_env: [optional] specified conda environment
     """
-    zip_buffer = ZipFile(BytesIO(), mode="a", compression=ZIP_DEFLATED, allowZip64=False)
+    buffer = BytesIO()
+    zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
 
     with TemporaryDirectory() as tempdir:
+        mlmodel_dir = f'{tempdir}/model'
+        os.system('ls ' + mlmodel_dir)
         if isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
-            mlflow.h2o.save_model(model, tempdir, conda_env=conda_env)
+            mlflow.h2o.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.h2o
         elif isinstance(model, SparkModel):
             import mlflow.spark
             mlflow.set_tag('splice.spark_version', pyspark.__version__)
-            mlflow.spark.save_model(model, tempdir, conda_env=conda_env)
+            mlflow.spark.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.spark
         elif isinstance(model, ScikitModel):
             import mlflow.sklearn
             mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
-            mlflow.sklearn.save_model(model, tempdir, conda_env=conda_env)
+            mlflow.sklearn.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.sklearn
         elif isinstance(model, KerasModel):  # We can't handle keras models with a different backend
             import mlflow.keras
             mlflow.set_tag('splice.keras_version', keras_version)
             mlflow.set_tag('splice.tf_version', tf_version)
-            mlflow.keras.save_model(model, tempdir, conda_env=conda_env)
+            mlflow.keras.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.keras
         else:
             raise SpliceMachineException('Model type not supported for logging.'
                                          'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
                                          'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
 
-        for root, dirs, files in os.walk(tempdir.name):
-            for file in files:
-                zip_buffer.write(path.join(root, file))
-        return zip_buffer, file_ext
+        for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
+            zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
+
+        return buffer, file_ext
 
 
 @_mlflow_patch('log_model')
