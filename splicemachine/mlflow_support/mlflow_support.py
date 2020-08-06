@@ -225,23 +225,23 @@ def __get_serialized_mlmodel(model, conda_env=None):
         if isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
-            mlflow.h2o.save_model(model, tempdir.name, conda_env=conda_env)
+            mlflow.h2o.save_model(model, tempdir, conda_env=conda_env)
             file_ext = FileExtensions.h2o
         elif isinstance(model, SparkModel):
             import mlflow.spark
             mlflow.set_tag('splice.spark_version', pyspark.__version__)
-            mlflow.spark.save_model(model, tempdir.name, conda_env=conda_env)
+            mlflow.spark.save_model(model, tempdir, conda_env=conda_env)
             file_ext = FileExtensions.spark
         elif isinstance(model, ScikitModel):
             import mlflow.sklearn
             mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
-            mlflow.sklearn.save_model(model, tempdir.name, conda_env=conda_env)
+            mlflow.sklearn.save_model(model, tempdir, conda_env=conda_env)
             file_ext = FileExtensions.sklearn
         elif isinstance(model, KerasModel):  # We can't handle keras models with a different backend
             import mlflow.keras
             mlflow.set_tag('splice.keras_version', keras_version)
             mlflow.set_tag('splice.tf_version', tf_version)
-            mlflow.keras.save_model(model, tempdir.name, conda_env=conda_env)
+            mlflow.keras.save_model(model, tempdir, conda_env=conda_env)
             file_ext = FileExtensions.keras
         else:
             raise SpliceMachineException('Model type not supported for logging.'
