@@ -21,6 +21,7 @@
 # that Spark may have been installed on the system with pip.
 
 from __future__ import print_function
+
 import os
 import sys
 

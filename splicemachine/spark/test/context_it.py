@@ -1,10 +1,12 @@
-import unittest
-import time
-from pyspark.sql import SparkSession
-from splicemachine.spark.context import PySpliceContext
-import uuid
-import tempfile
 import os
+import tempfile
+import time
+import unittest
+import uuid
+
+from pyspark.sql import SparkSession
+
+from splicemachine.spark.context import PySpliceContext
 
 
 class PySpliceTest(unittest.TestCase):

@@ -49,14 +49,16 @@ which contains two batches of two objects:
 >>> sc.stop()
 """
 
-import sys
-from itertools import chain, product
+import collections
+import itertools
 import marshal
 import struct
+import sys
 import types
-import collections
 import zlib
-import itertools
+from itertools import chain, product
+
+from pyspark import cloudpickle
 
 if sys.version < '3':
     import cPickle as pickle
@@ -67,7 +69,6 @@ else:
     protocol = 3
     xrange = range
 
-from pyspark import cloudpickle
 
 
 __all__ = ["PickleSerializer", "MarshalSerializer", "UTF8Deserializer"]

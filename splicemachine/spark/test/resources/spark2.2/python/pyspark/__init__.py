@@ -39,20 +39,22 @@ Public classes:
 
 """
 
-from functools import wraps
 import types
+from functools import wraps
 
-from pyspark.conf import SparkConf
-from pyspark.context import SparkContext
-from pyspark.rdd import RDD
-from pyspark.files import SparkFiles
-from pyspark.storagelevel import StorageLevel
 from pyspark.accumulators import Accumulator, AccumulatorParam
 from pyspark.broadcast import Broadcast
+from pyspark.conf import SparkConf
+from pyspark.context import SparkContext
+from pyspark.files import SparkFiles
+from pyspark.profiler import BasicProfiler, Profiler
+from pyspark.rdd import RDD
 from pyspark.serializers import MarshalSerializer, PickleSerializer
+# for back compatibility
+from pyspark.sql import HiveContext, Row, SQLContext
 from pyspark.status import *
+from pyspark.storagelevel import StorageLevel
 from pyspark.taskcontext import TaskContext
-from pyspark.profiler import Profiler, BasicProfiler
 from pyspark.version import __version__
 
 
@@ -105,8 +107,6 @@ def keyword_only(func):
     return wrapper
 
 
-# for back compatibility
-from pyspark.sql import SQLContext, HiveContext, Row
 
 __all__ = [
     "SparkConf", "SparkContext", "SparkFiles", "RDD", "StorageLevel", "Broadcast",

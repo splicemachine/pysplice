@@ -15,21 +15,21 @@
 # limitations under the License.
 #
 
+import gc
 import numbers
 import os
-import signal
 import select
+import signal
 import socket
 import sys
-import traceback
 import time
-import gc
-from errno import EINTR, EAGAIN
+import traceback
+from errno import EAGAIN, EINTR
+from signal import SIG_DFL, SIG_IGN, SIGCHLD, SIGHUP, SIGINT, SIGTERM
 from socket import AF_INET, SOCK_STREAM, SOMAXCONN
-from signal import SIGHUP, SIGTERM, SIGCHLD, SIG_DFL, SIG_IGN, SIGINT
 
-from pyspark.worker import main as worker_main
 from pyspark.serializers import read_int, write_int
+from pyspark.worker import main as worker_main
 
 
 def compute_real_exit_code(exit_code):

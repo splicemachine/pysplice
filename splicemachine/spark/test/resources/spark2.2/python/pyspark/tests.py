@@ -20,21 +20,36 @@ Unit tests for PySpark; additional tests are implemented as doctests in
 individual modules.
 """
 
-from array import array
-from glob import glob
+import hashlib
 import os
+import random
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import zipfile
-import random
-import threading
-import hashlib
+from array import array
+from glob import glob
 
 from py4j.protocol import Py4JJavaError
+from pyspark import keyword_only, shuffle
+from pyspark.conf import SparkConf
+from pyspark.context import SparkContext
+from pyspark.files import SparkFiles
+from pyspark.profiler import BasicProfiler
+from pyspark.rdd import RDD
+from pyspark.serializers import (AutoBatchedSerializer, AutoSerializer,
+                                 BatchedSerializer, CartesianDeserializer,
+                                 CloudPickleSerializer, CompressedSerializer,
+                                 FlattenedValuesSerializer, MarshalSerializer,
+                                 NoOpSerializer, PairDeserializer,
+                                 PickleSerializer, UTF8Deserializer, read_int)
+from pyspark.shuffle import Aggregator, ExternalMerger, ExternalSorter
+from pyspark.taskcontext import TaskContext
+
 try:
     import xmlrunner
 except ImportError:
@@ -58,19 +73,6 @@ else:
     from StringIO import StringIO
 
 
-from pyspark import keyword_only
-from pyspark.conf import SparkConf
-from pyspark.context import SparkContext
-from pyspark.rdd import RDD
-from pyspark.files import SparkFiles
-from pyspark.serializers import read_int, BatchedSerializer, MarshalSerializer, PickleSerializer, \
-    CloudPickleSerializer, CompressedSerializer, UTF8Deserializer, NoOpSerializer, \
-    PairDeserializer, CartesianDeserializer, AutoBatchedSerializer, AutoSerializer, \
-    FlattenedValuesSerializer
-from pyspark.shuffle import Aggregator, ExternalMerger, ExternalSorter
-from pyspark import shuffle
-from pyspark.profiler import BasicProfiler
-from pyspark.taskcontext import TaskContext
 
 _have_scipy = False
 _have_numpy = False

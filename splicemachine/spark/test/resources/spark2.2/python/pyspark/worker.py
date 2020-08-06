@@ -19,19 +19,22 @@
 Worker that receives input from Piped RDD.
 """
 from __future__ import print_function
+
 import os
+import socket
 import sys
 import time
-import socket
 import traceback
 
+from pyspark import shuffle
 from pyspark.accumulators import _accumulatorRegistry
 from pyspark.broadcast import Broadcast, _broadcastRegistry
-from pyspark.taskcontext import TaskContext
 from pyspark.files import SparkFiles
-from pyspark.serializers import write_with_length, write_int, read_long, \
-    write_long, read_int, SpecialLengths, UTF8Deserializer, PickleSerializer, BatchedSerializer
-from pyspark import shuffle
+from pyspark.serializers import (BatchedSerializer, PickleSerializer,
+                                 SpecialLengths, UTF8Deserializer, read_int,
+                                 read_long, write_int, write_long,
+                                 write_with_length)
+from pyspark.taskcontext import TaskContext
 
 pickleSer = PickleSerializer()
 utf8_deserializer = UTF8Deserializer()

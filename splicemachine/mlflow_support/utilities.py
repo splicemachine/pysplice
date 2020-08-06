@@ -1,39 +1,44 @@
-from os import environ as env_vars, popen as rbash, system as bash, remove
-from sys import getsizeof
-from shutil import rmtree
-from cloudpickle import dumps as save_pickle_string, loads as load_pickle_string
-from io import BytesIO
-from h5py import File as h5_file
-from py4j.java_gateway import java_import
-from inspect import signature as get_model_params
 import re
+from enum import Enum
+from inspect import signature as get_model_params
+from io import BytesIO
+from os import environ as env_vars
+from os import popen as rbash
+from os import remove
+from os import system as bash
+from shutil import rmtree
+from sys import getsizeof
+from typing import Dict, List, Tuple
+
+import h2o
+import sklearn.base
+from cloudpickle import dumps as save_pickle_string
+from cloudpickle import loads as load_pickle_string
+from h5py import File as h5_file
+from mleap.pyspark.spark_support import SimpleSparkSerializer
+from mleap.version import __version__ as MLEAP_VERSION
+from pandas.core.frame import DataFrame as PandasDF
+from py4j.java_gateway import java_import
+from pyspark.ml.base import Model as SparkModel
+from pyspark.ml.feature import IndexToString
+from pyspark.ml.pipeline import PipelineModel
+from pyspark.ml.wrapper import JavaModel
+from pyspark.sql.dataframe import DataFrame as SparkDF
+from sklearn import __version__ as sklearn_version
+from sklearn.base import BaseEstimator as ScikitModel
+from sklearn.pipeline import Pipeline as SKPipeline
+from tensorflow.keras import __version__ as KERAS_VERSION
+from tensorflow.keras.models import load_model as load_kr_model
+from h2o.estimators.estimator_base import ModelBase as H2OModel
+
+from tensorflow.keras import Model as KerasModel
+
+from splicemachine.mlflow_support.constants import KerasModelType, SparkModelType, DBLibraries, \
+    SklearnModelType, H2OModelType
+from splicemachine.spark.constants import SQL_TYPES
 
 from ..spark.context import PySpliceContext
 
-from pyspark.ml.base import Model as SparkModel
-from pyspark.ml.feature import IndexToString
-from pyspark.ml.wrapper import JavaModel
-from pyspark.sql.types import StructType
-from pyspark.sql.dataframe import DataFrame as SparkDF
-from pandas.core.frame import DataFrame as PandasDF
-
-from splicemachine.spark.constants import SQL_TYPES
-from splicemachine.mlflow_support.constants import *
-from mleap.pyspark.spark_support import SimpleSparkSerializer
-from mleap.version import __version__ as MLEAP_VERSION
-
-import sklearn.base
-from sklearn import __version__ as sklearn_version
-from sklearn.pipeline import Pipeline as SKPipeline
-from sklearn.base import BaseEstimator as ScikitModel
-from tensorflow.keras.models import load_model as load_kr_model
-from tensorflow.keras import Model as KerasModel
-from tensorflow.keras import __version__ as KERAS_VERSION
-
-import h2o
-from h2o.estimators.estimator_base import ModelBase as H2OModel
-from pyspark.ml.pipeline import PipelineModel
-from typing import List, Dict, Tuple
 
 class SpliceMachineException(Exception):
     pass
@@ -56,7 +61,7 @@ class H2OUtils:
                                   run_id: str,
                                   df: SparkDF or None,
                                   pred_threshold: float or None,
-                                  sklearn_args: Dict[str,str] or None) -> (H2OModelType, List[str]):
+                                  sklearn_args: Dict[str, str] or None) -> (H2OModelType, List[str]):
         """
         Gets the H2O mojo model
         Gets the model type
@@ -123,7 +128,8 @@ class H2OUtils:
         elif cat in ('AutoEncoder', 'TargetEncoder', 'DimReduction', 'WordEmbedding', 'AnomalyDetection'):
             model_type = H2OModelType.KEY_VALUE
         else:
-            raise SpliceMachineException(f"H2O model {cat} is not supported! Only models with MOJOs are currently supported.")
+            raise SpliceMachineException(
+                f"H2O model {cat} is not supported! Only models with MOJOs are currently supported.")
         return model_type, cat
 
     @staticmethod
@@ -138,14 +144,6 @@ class H2OUtils:
         java_mojo = jvm.EasyPredictModelWrapper(java_mojo_c)
         remove('/tmp/model.zip')
         return java_mojo, raw_mojo
-
-    @staticmethod
-    def log_h2o_model(splice_context: PySpliceContext, model: object, name: str, run_id: str) -> None:
-        model_path = h2o.save_model(model=model, path='/tmp/model', force=True)
-        with open(model_path, 'rb') as artifact:
-            byte_stream = bytearray(bytes(artifact.read()))
-        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.h2o)
-        rmtree('/tmp/model')
 
     @staticmethod
     def load_h2o_model(model_blob: bytes) -> H2OModel:
@@ -167,11 +165,6 @@ class H2OUtils:
 
 
 class SKUtils:
-    @staticmethod
-    def log_sklearn_model(splice_context: PySpliceContext, model: ScikitModel, name: str, run_id: str):
-        byte_stream = save_pickle_string(model)
-        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.sklearn)
-
     @staticmethod
     def load_sklearn_model(model_blob: bytes):
         return load_pickle_string(model_blob)
@@ -198,7 +191,7 @@ class SKUtils:
         if keys - {'predict_call', 'predict_args'} != set():
             exc = "You've passed in an sklearn_args key that is not valid. Valid keys are ('predict_call', 'predict_args')"
         elif len(sklearn_args) > 2:
-            exc ='Only predict_call and predict_args are allowed in sklearn_args!'
+            exc = 'Only predict_call and predict_args are allowed in sklearn_args!'
         elif 'predict_call' in sklearn_args:
             p = sklearn_args['predict_call']
             if not hasattr(model, p):
@@ -207,19 +200,23 @@ class SKUtils:
                 exc = f'predict_args passed in but predict_call is {p}. This combination is not allowed'
         if 'predict_args' in sklearn_args:
             p = sklearn_args['predict_args']
-            if p not in ('return_std', 'return_cov') and not isinstance(model, SKPipeline): # Pipelines have difference rules for params
+            if p not in ('return_std', 'return_cov') and not isinstance(model,
+                                                                        SKPipeline):  # Pipelines have difference rules for params
                 t = ('return_std', 'return_cov')
                 exc = f'predict_args value is invalid. Available options are {t}'
             else:
-                if isinstance(model, SKPipeline): # If we are working with a Pipeline, we want to check the last step for arguments
+                if isinstance(model,
+                              SKPipeline):  # If we are working with a Pipeline, we want to check the last step for arguments
                     m = model.steps[-1][-1]
-                    model_params = get_model_params(m.predict) if hasattr(m, 'predict') else get_model_params(m.transform)
+                    model_params = get_model_params(m.predict) if hasattr(m, 'predict') else get_model_params(
+                        m.transform)
                 else:
-                    model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(model.transform)
+                    model_params = get_model_params(model.predict) if hasattr(model, 'predict') else get_model_params(
+                        model.transform)
                 if p not in model_params.parameters:
                     exc = f'predict_args set to {p} but that parameter is not available for this model!'
         elif sklearn_args and 'predict_args' not in sklearn_args and 'predict_call' not in sklearn_args:
-                exc = f"predict_args contains invalid arguments. Valid arguments are 'predict_call' and 'predict_args'"
+            exc = f"predict_args contains invalid arguments. Valid arguments are 'predict_call' and 'predict_args'"
         if exc:
             raise SpliceMachineException(exc)
         if sklearn_args.get('predict_call') == 'predict' and 'predict_args' not in sklearn_args:
@@ -234,7 +231,7 @@ class SKUtils:
                                   run_id: str,
                                   df: SparkDF or None,
                                   pred_threshold: float or None,
-                                  sklearn_args: Dict[str,str] or None) -> (SklearnModelType, List[str], bool):
+                                  sklearn_args: Dict[str, str] or None) -> (SklearnModelType, List[str], bool):
         """
         Preperatory steps to deploy a scikit-learn model
 
@@ -269,7 +266,7 @@ class SKUtils:
                 classes = ['prediction', sklearn_args.get('predict_args').lstrip('return_')]
             elif hasattr(model, 'classes_') and model.classes_.size != 0:
                 classes = [f'C{i}' for i in model.classes_]
-            elif hasattr(model, 'get_params') and ( hasattr(model,'n_components') or hasattr(model,'n_components') ):
+            elif hasattr(model, 'get_params') and (hasattr(model, 'n_components') or hasattr(model, 'n_components')):
                 params = model.get_params()
                 nclasses = params.get('n_clusters') or params.get('n_components')
                 classes = [f'C{i}' for i in range(nclasses)]
@@ -277,10 +274,11 @@ class SKUtils:
                 raise SpliceMachineException('Could not find class labels from model. Please pass in class labels using'
                                              'the classes parameter.')
 
-        if sklearn_args.get('predict_call') == 'predict_proba': # We need to add a column for the actual prediction
+        if sklearn_args.get('predict_call') == 'predict_proba':  # We need to add a column for the actual prediction
             classes = ['prediction'] + classes
         if classes:
-            print(f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
+            print(
+                f'Prediction labels found. Using {classes} as labels for predictions {list(range(0, len(classes)))} respectively')
 
         return model_type, classes, model_already_exists
 
@@ -293,7 +291,7 @@ class SKUtils:
         :return: SKlearnModelType
         """
         model_type = None
-        for _, step in pipeline.steps[::-1]: # Go through steps backwards because model likely last step
+        for _, step in pipeline.steps[::-1]:  # Go through steps backwards because model likely last step
             if isinstance(step, (sklearn.base.ClusterMixin, sklearn.base.ClassifierMixin)):
                 model_type = SklearnModelType.POINT_PREDICTION_CLF
                 break
@@ -302,9 +300,8 @@ class SKUtils:
                 break
         if not model_type:
             raise SpliceMachineException('Could not determine the type of Pipeline! Model stage is not of '
-                                             'classification, regression or clustering.')
+                                         'classification, regression or clustering.')
         return model_type
-            
 
     @staticmethod
     def get_model_type(model: ScikitModel, sklearn_args: Dict[str, str]) -> SklearnModelType:
@@ -328,33 +325,16 @@ class SKUtils:
                     model_type = SklearnModelType.POINT_PREDICTION_CLF
                 else:
                     raise SpliceMachineException(f'Unknown Sklearn Model Type {type(model)}')
-            elif hasattr(model, 'transform'): # Transform functions create more than a single point prediction
+            elif hasattr(model, 'transform'):  # Transform functions create more than a single point prediction
                 model_type = SklearnModelType.KEY_VALUE
             else:
                 raise SpliceMachineException(f'Model {type(model)} does not have predict or transform function!')
-        else: # If sklearn_args have been passed in, the model must be returning multiple key values
+        else:  # If sklearn_args have been passed in, the model must be returning multiple key values
             model_type = SklearnModelType.KEY_VALUE
         return model_type
 
 
 class KerasUtils:
-    @staticmethod
-    def log_keras_model(splice_context: PySpliceContext, model: KerasModel, name: str, run_id: str) -> None:
-        """
-        Logs the Keras Model in the MLManager Aritfacts table
-
-        :param splice_context: (PySpliceContext)
-        :param model: (KerasModel)
-        :param name: (str) The name to give the model
-        :param run_id: (str) The mlflow run id
-        :return: None
-        """
-        model.save('/tmp/model.h5')
-        with open('/tmp/model.h5', 'rb') as f:
-            byte_stream = bytearray(bytes(f.read()))
-        insert_artifact(splice_context, name, byte_stream, run_id, file_ext=FileExtensions.keras)
-        remove('/tmp/model.h5')
-
     @staticmethod
     def load_keras_model(model_blob: object) -> KerasModel:
         """
@@ -421,7 +401,7 @@ class KerasUtils:
                                   run_id: str,
                                   df: SparkDF or None,
                                   pred_threshold: float or None,
-                                  sklearn_args: Dict[str,str] or None)-> (KerasModelType, List[str]):
+                                  sklearn_args: Dict[str, str] or None) -> (KerasModelType, List[str]):
         """
         Inserts the model into the MODELS table for deployment
         Gets the Keras model type
@@ -448,7 +428,6 @@ class KerasUtils:
             if len(classes) > 2 and pred_threshold:
                 print(f"Found multiclass model with pred_threshold {pred_threshold}. Ignoring threshold.")
         return model_type, classes, model_already_exists
-
 
 
 class SparkUtils:
@@ -556,7 +535,7 @@ class SparkUtils:
         return labels
 
     @staticmethod
-    def parse_string_parameters(string_parameters: str) -> Dict[str,str]:
+    def parse_string_parameters(string_parameters: str) -> Dict[str, str]:
         """
         Parse string rendering of extractParamMap
 
@@ -591,6 +570,21 @@ class SparkUtils:
             ).collect()[0]
         except IndexError as e:
             raise Exception(f"Unable to find the artifact with the given run id {run_id} and name {name}")
+
+    @staticmethod
+    def find_spark_transformer_inputs_by_output(dictionary, value):
+        """
+        Find the input columns for a given output column
+
+        :param dictionary: dictionary to search
+        :param value: column
+        :return: None if not found, otherwise first column
+        """
+        keys = []
+        for key in dictionary:
+            if dictionary[key][1] == value:  # output column is always the last one
+                keys.append(key)
+        return keys
 
     @staticmethod
     def get_feature_vector_columns(fittedPipe: PipelineModel) -> List[str]:
@@ -644,33 +638,6 @@ class SparkUtils:
         return m_type
 
     @staticmethod
-    def log_spark_model(splice_context: PySpliceContext, model: SparkModel, name: str, run_id: str) -> None:
-        """
-        Inserts a Serialized spark model into the database as an artifact
-
-        :param splice_context: (PySpliceContext) The PySpliceContext
-        :param model: (SparkModel) the trained Spark model
-        :param name: (str) the name to give the saved model
-        :param run_id: (str) the run id associated to associate to this model
-        :return: (None)
-        """
-        jvm = splice_context.jvm
-        java_import(jvm, "java.io.{BinaryOutputStream, ObjectOutputStream, ByteArrayInputStream}")
-
-        if not SparkUtils.is_spark_pipeline(model):
-            model = PipelineModel(
-                stages=[model]
-            )  # create a pipeline with only the model if a model is passed in
-
-        baos = jvm.java.io.ByteArrayOutputStream()  # serialize the PipelineModel to a byte array
-        oos = jvm.java.io.ObjectOutputStream(baos)
-        oos.writeObject(model._to_java())
-        oos.flush()
-        oos.close()
-        insert_artifact(splice_context, name, baos.toByteArray(), run_id,
-                        file_ext='spark')  # write the byte stream to the db as a BLOB
-
-    @staticmethod
     def load_spark_model(splice_ctx: PySpliceContext, spark_pipeline_blob: object) -> SparkModel:
         """
         Loads a Serialized Spark Model into a Spark Pipeline
@@ -683,7 +650,7 @@ class SparkUtils:
         bis = jvm.java.io.ByteArrayInputStream(spark_pipeline_blob)
         ois = jvm.java.io.ObjectInputStream(bis)
         pipeline = PipelineModel._from_java(ois.readObject())  # convert object from Java
-                                                               # PipelineModel to Python PipelineModel
+        # PipelineModel to Python PipelineModel
         ois.close()
 
         if len(pipeline.stages) == 1 and not SparkUtils.is_spark_pipeline(pipeline.stages[0]):
@@ -698,7 +665,7 @@ class SparkUtils:
                                   run_id: str,
                                   df: SparkDF,
                                   pred_threshold: float or None,
-                                  sklearn_args: Dict[str,str] or None) -> (SparkModelType, List[str]):
+                                  sklearn_args: Dict[str, str] or None) -> (SparkModelType, List[str]):
         """
         All preprocessing steps to prepare for in DB deployment. Get the mleap model, get class labels
 
@@ -736,41 +703,6 @@ class SparkUtils:
         return model_type, classes, model_already_exists
 
 
-def get_model_library(model: object) -> DBLibraries:
-    """
-    Gets the model library of a trained model
-
-    :param model: The trained model
-    :return: DBLibraries
-    """
-    if isinstance(model, H2OModel):
-        lib = DBLibraries.H2OMOJO
-    elif isinstance(model, SparkModel):
-        lib = DBLibraries.MLeap
-    elif isinstance(model, ScikitModel):
-        lib = DBLibraries.SKLearn
-    elif isinstance(model, KerasModel):
-        lib = DBLibraries.Keras
-    else:
-        raise SpliceMachineException(f"Submitted Model is not valid for database deployment! Valid models are {DBLibraries.SUPPORTED_LIBRARIES}")
-    return lib
-
-
-def find_inputs_by_output(dictionary, value):
-    """
-    Find the input columns for a given output column
-
-    :param dictionary: dictionary to search
-    :param value: column
-    :return: None if not found, otherwise first column
-    """
-    keys = []
-    for key in dictionary:
-        if dictionary[key][1] == value:  # output column is always the last one
-            keys.append(key)
-    return keys
-
-
 def get_user():
     """
     Get the current logged in user to Jupyter
@@ -786,7 +718,8 @@ def get_user():
             " Cloud Jupyter is currently unsupported")
 
 
-def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str, version: str) -> bool:
+def insert_model(splice_context: PySpliceContext, run_id: str, byte_array: bytearray, library: str,
+                 version: str) -> bool:
     """
     Insert a serialized model into the Mlmanager models table for in database model deployment
 
@@ -827,7 +760,7 @@ def insert_artifact(splice_context: PySpliceContext,
                     name: str,
                     byte_array: bytearray,
                     run_uuid: str,
-                    file_ext: str=None):
+                    file_ext: str = None):
     """
     Insert a serialized object into the Mlmanager artifacts table
 
@@ -852,7 +785,7 @@ def insert_artifact(splice_context: PySpliceContext,
     prepared_statement.close()
 
 
-def get_pod_uri(pod: str, port: str or int, _testing: bool=False):
+def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
     """
     Get address of MLFlow Container for Kubernetes
 
@@ -875,7 +808,7 @@ def get_pod_uri(pod: str, port: str or int, _testing: bool=False):
 
 
 def get_mleap_model(splice_context: PySpliceContext,
-                    fittedPipe:PipelineModel,
+                    fittedPipe: PipelineModel,
                     df: SparkDF,
                     run_id: str) -> object:
     """
@@ -925,7 +858,7 @@ def insert_mleap_model(splice_context: PySpliceContext,
 
 
 def validate_primary_key(splice_ctx: PySpliceContext,
-                         primary_key: List[Tuple[str,str]] or None,
+                         primary_key: List[Tuple[str, str]] or None,
                          schema: str or None,
                          table: str or None) -> List[str] or None:
     """
@@ -946,13 +879,15 @@ def validate_primary_key(splice_ctx: PySpliceContext,
                 raise ValueError(f'Primary key parameter {i} does not conform to SQL type.'
                                  f'Value {i[1]} should be a SQL type but isn\'t')
     else:
-        ps = splice_ctx.getConnection().prepareStatement(f"CALL sysibm.sqlprimarykeys('splicedb','{schema}','{table}','')")
+        ps = splice_ctx.getConnection().prepareStatement(
+            f"CALL sysibm.sqlprimarykeys('splicedb','{schema}','{table}','')")
         rs = ps.executeQuery()
         pks = []
         while rs.next(): pks.append(rs.getString(4).lower())
         if not pks:
-            raise SpliceMachineException('The provided table has no primary keys. It must have a primary key before deployment')
-        pks = [(i,None) for i in pks]
+            raise SpliceMachineException(
+                'The provided table has no primary keys. It must have a primary key before deployment')
+        pks = [(i, None) for i in pks]
         return pks
 
 
@@ -961,7 +896,7 @@ def create_model_deployment_table(splice_context: PySpliceContext,
                                   schema_table_name: str,
                                   schema_str: str,
                                   classes: List[str],
-                                  primary_key: List[Tuple[str,str]],
+                                  primary_key: List[Tuple[str, str]],
                                   model_type: Enum,
                                   verbose: bool) -> None:
     """
@@ -995,13 +930,12 @@ def create_model_deployment_table(splice_context: PySpliceContext,
             SQL_TABLE += f'\t{i[0]} {i[1]},\n'
         pk_cols += f'{i[0]},'
 
-
     if model_type in (SparkModelType.REGRESSION, H2OModelType.REGRESSION, SklearnModelType.REGRESSION,
                       KerasModelType.REGRESSION):
         SQL_TABLE += '\tPREDICTION DOUBLE,\n'
 
     elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
-                       H2OModelType.CLASSIFICATION):
+                        H2OModelType.CLASSIFICATION):
         SQL_TABLE += '\tPREDICTION VARCHAR(5000),\n'
         for i in classes:
             SQL_TABLE += f'\t"{i}" DOUBLE,\n'
@@ -1009,13 +943,15 @@ def create_model_deployment_table(splice_context: PySpliceContext,
         for i in classes:
             SQL_TABLE += f'\t"{i}" DOUBLE,\n'
 
-    elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
+    elif model_type in (
+            SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
         SQL_TABLE += '\tPREDICTION INT,\n'
 
     SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
 
     if verbose: print('\n', SQL_TABLE, end='\n\n')
     splice_context.execute(SQL_TABLE)
+
 
 def alter_model_table(splice_context: PySpliceContext,
                       run_id: str,
@@ -1048,9 +984,10 @@ def alter_model_table(splice_context: PySpliceContext,
     reserved_fields = set(['CUR_USER', 'EVAL_TIME', 'RUN_ID', 'PREDICTION'] + classes)
     for field in schema:
         if field.name in reserved_fields:
-            raise SpliceMachineException(f'The table {schema_table_name} looks like it already has values associated with '
-                                         f'a deployed model. Only 1 model can be deployed to a table currently.'
-                                         f'The table cannot have the following fields: {reserved_fields}')
+            raise SpliceMachineException(
+                f'The table {schema_table_name} looks like it already has values associated with '
+                f'a deployed model. Only 1 model can be deployed to a table currently.'
+                f'The table cannot have the following fields: {reserved_fields}')
 
     # Splice cannot currently add multiple columns in an alter statement so we need to make a bunch and execute all of them
     SQL_ALTER_TABLE = []
@@ -1065,7 +1002,7 @@ def alter_model_table(splice_context: PySpliceContext,
         SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION DOUBLE')
 
     elif model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
-                       H2OModelType.CLASSIFICATION):
+                        H2OModelType.CLASSIFICATION):
         SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION VARCHAR(5000)')
         for i in classes:
             SQL_ALTER_TABLE.append(f'{alter_table_syntax} "{i}" DOUBLE')
@@ -1074,7 +1011,8 @@ def alter_model_table(splice_context: PySpliceContext,
         for i in classes:
             SQL_ALTER_TABLE.append(f'{alter_table_syntax} "{i}" DOUBLE')
 
-    elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
+    elif model_type in (
+            SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
         SQL_ALTER_TABLE.append(f'{alter_table_syntax} PREDICTION INT')
 
     # SQL_TABLE += f'\tPRIMARY KEY({pk_cols.rstrip(",")})\n)'
@@ -1082,11 +1020,12 @@ def alter_model_table(splice_context: PySpliceContext,
         if verbose: print(sql)
         splice_context.execute(sql)
 
+
 def create_vti_prediction_trigger(splice_context: PySpliceContext,
                                   schema_table_name: str,
                                   run_id: str,
                                   feature_columns: List[str],
-                                  schema_types: Dict[str,str],
+                                  schema_types: Dict[str, str],
                                   schema_str: str,
                                   primary_key: List[Tuple[str, str]],
                                   classes: List[str],
@@ -1115,7 +1054,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     prediction_call = "new com.splicemachine.mlrunner.MLRunner('key_value', '{run_id}', {raw_data}, '{schema_str}'"
 
     if model_type == SklearnModelType.KEY_VALUE:
-        if not sklearn_args: # This must be a .transform call
+        if not sklearn_args:  # This must be a .transform call
             predict_call, predict_args = 'transform', None
         elif 'predict_call' in sklearn_args and 'predict_args' in sklearn_args:
             predict_call, predict_args = sklearn_args['predict_call'], sklearn_args['predict_args']
@@ -1124,12 +1063,13 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
         elif 'predict_call' in sklearn_args:
             predict_call, predict_args = sklearn_args['predict_call'], None
         else:
-            raise SpliceMachineException('You had an invalid key in your sklearn_args. Valid keys (predict_call, predict_args)')
+            raise SpliceMachineException(
+                'You had an invalid key in your sklearn_args. Valid keys (predict_call, predict_args)')
 
         prediction_call += f", '{predict_call}', '{predict_args}'"
 
     elif model_type == KerasModelType.KEY_VALUE and len(classes) == 2 and pred_threshold:
-        prediction_call +=  f", '{pred_threshold}'"
+        prediction_call += f", '{pred_threshold}'"
 
     prediction_call += ')'
     schema = schema_table_name.split('.')[0]
@@ -1143,7 +1083,7 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     for i in classes:
         output_column_names += f'"{i}",'
         output_cols_VTI_reference += f'b."{i}",'
-        output_cols_schema += f'"{i}" DOUBLE,' if i != 'prediction' else f'"{i}" INT,' #for sklearn predict_proba
+        output_cols_schema += f'"{i}" DOUBLE,' if i != 'prediction' else f'"{i}" INT,'  # for sklearn predict_proba
 
     raw_data = ''
     for i, col in enumerate(feature_columns):
@@ -1151,8 +1091,9 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
         if schema_types[str(col)] == 'StringType':
             raw_data += f'NEWROW.{col}||\',\''
         else:
-            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
-                                                                                           'DecimalType'} else f'NEWROW.{col}'
+            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType',
+                                                                                               'DoubleType',
+                                                                                               'DecimalType'} else f'NEWROW.{col}'
             raw_data += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
 
     # Cleanup + schema for PREDICT call
@@ -1160,7 +1101,6 @@ def create_vti_prediction_trigger(splice_context: PySpliceContext,
     schema_str_pred_call = schema_str.replace('\t', '').replace('\n', '').rstrip(',')
 
     prediction_call = prediction_call.format(run_id=run_id, raw_data=raw_data, schema_str=schema_str_pred_call)
-
 
     SQL_PRED_TRIGGER += f'{output_column_names[:-1]}) = ('
     SQL_PRED_TRIGGER += f'SELECT {output_cols_VTI_reference[:-1]} FROM {prediction_call}' \
@@ -1181,7 +1121,7 @@ def create_prediction_trigger(splice_context: PySpliceContext,
                               schema_table_name: str,
                               run_id: str,
                               feature_columns: List[str],
-                              schema_types: Dict[str,str],
+                              schema_types: Dict[str, str],
                               schema_str: str,
                               primary_key: str,
                               model_type: Enum,
@@ -1209,7 +1149,8 @@ def create_prediction_trigger(splice_context: PySpliceContext,
         prediction_call = 'MLMANAGER.PREDICT_REGRESSION'
     elif model_type == SparkModelType.CLUSTERING_WITH_PROB:
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER_PROBABILITIES'
-    elif model_type in (SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
+    elif model_type in (
+            SparkModelType.CLUSTERING_WO_PROB, H2OModelType.SINGULAR, SklearnModelType.POINT_PREDICTION_CLF):
         prediction_call = 'MLMANAGER.PREDICT_CLUSTER'
     elif model_type == H2OModelType.KEY_VALUE:
         prediction_call = 'MLMANAGER.PREDICT_KEY_VALUE'
@@ -1226,7 +1167,8 @@ def create_prediction_trigger(splice_context: PySpliceContext,
         if schema_types[str(col)] == 'StringType':
             SQL_PRED_TRIGGER += f'NEWROW.{col}||\',\''
         else:
-            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType', 'DoubleType',
+            inner_cast = f'CAST(NEWROW.{col} as DECIMAL(38,10))' if schema_types[str(col)] in {'FloatType',
+                                                                                               'DoubleType',
                                                                                                'DecimalType'} else f'NEWROW.{col}'
             SQL_PRED_TRIGGER += f'TRIM(CAST({inner_cast} as CHAR(41)))||\',\''
 
@@ -1274,11 +1216,12 @@ def create_parsing_trigger(splice_context: PySpliceContext, schema_table_name: s
         print(SQL_PARSE_TRIGGER, end='\n\n')
     splice_context.execute(SQL_PARSE_TRIGGER.replace('\n', ' ').replace('\t', ' '))
 
+
 def get_feature_columns_and_types(splice_ctx: PySpliceContext,
-                                   df: SparkDF or None,
-                                   create_model_table: bool,
-                                   model_cols: List[str] or None,
-                                   schema_table_name: str) -> Tuple[List[str], Dict[str,str]]:
+                                  df: SparkDF or None,
+                                  create_model_table: bool,
+                                  model_cols: List[str] or None,
+                                  schema_table_name: str) -> Tuple[List[str], Dict[str, str]]:
     """
     Gets the features and their data types for the table of the deployed model
 
@@ -1305,8 +1248,9 @@ def get_feature_columns_and_types(splice_ctx: PySpliceContext,
                                          "and set create_model_table=True")
         schema_from_table = splice_ctx.getSchema(schema_table_name)
         if model_cols:
-            m = set([c.upper() for c in model_cols]) # set is O(1) lookup
-            schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table if i.name.upper() in m}
+            m = set([c.upper() for c in model_cols])  # set is O(1) lookup
+            schema_types = {str(i.name): re.sub("[0-9,()]", "", str(i.dataType)) for i in schema_from_table if
+                            i.name.upper() in m}
             feature_columns = [i.name for i in schema_from_table if i.name.upper() in m]
         else:
             feature_columns = [i.name for i in schema_from_table]
@@ -1314,9 +1258,10 @@ def get_feature_columns_and_types(splice_ctx: PySpliceContext,
 
     return feature_columns, schema_types
 
+
 def get_df_for_mleap(splice_ctx: PySpliceContext,
-                      schema_table_name: str,
-                      df: SparkDF or PandasDF or None) -> SparkDF:
+                     schema_table_name: str,
+                     df: SparkDF or PandasDF or None) -> SparkDF:
     """
     Get the dataframe for the deployment if the deployment is of a Spark model
     MLeap needs a dataframe in order to serialize the model. If it's not passed in, we need to get it from an existing table
@@ -1340,6 +1285,7 @@ def get_df_for_mleap(splice_ctx: PySpliceContext,
 
     return df
 
+
 def add_model_to_metadata(splice_context: PySpliceContext,
                           run_id: str,
                           schema_table_name: str) -> None:
@@ -1356,13 +1302,15 @@ def add_model_to_metadata(splice_context: PySpliceContext,
         schema_table_name = schema_table_name.upper()
         schema, table = schema_table_name.split('.')
 
-        table_id = splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid "
-                                          f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
+        table_id = \
+            splice_context.df(f"select a.tableid from sys.systables a join sys.sysschemas b on a.schemaid=b.schemaid "
+                              f"where a.tablename='{table}' and b.schemaname='{schema}'").collect()[0][0]
 
-        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.','_')}_{run_id}".upper()
-        trigger_id_1, create_ts = splice_context.df(f"select triggerid, varchar(creationtimestamp) from sys.systriggers "
-                                                    f"where triggername='{trigger_name_1}' and tableid='{table_id}'")\
-                                                    .collect()[0]
+        trigger_name_1 = f"RUNMODEL_{schema_table_name.replace('.', '_')}_{run_id}".upper()
+        trigger_id_1, create_ts = \
+            splice_context.df(f"select triggerid, varchar(creationtimestamp) from sys.systriggers "
+                              f"where triggername='{trigger_name_1}' and tableid='{table_id}'") \
+                .collect()[0]
 
         # Not all models will have a second trigger
         trigger_name_2 = f"PARSERESULT_{schema_table_name.replace('.', '_')}_{run_id}".upper()
@@ -1377,7 +1325,6 @@ def add_model_to_metadata(splice_context: PySpliceContext,
                                f"(RUN_UUID, ACTION, TABLEID, TRIGGER_TYPE, TRIGGERID, TRIGGERID_2, DB_ENV, DB_USER, ACTION_DATE)"
                                f"values ('{run_id}', 'DEPLOYED', '{table_id}', 'INSERT', '{trigger_id_1}', {trigger_id_2},"
                                f"'PROD', '{get_user()}', '{create_ts}')")
-
 
 
 def drop_tables_on_failure(splice_context: PySpliceContext,
@@ -1397,6 +1344,28 @@ def drop_tables_on_failure(splice_context: PySpliceContext,
     # splice_context.execute(f'DROP TABLE IF EXISTS {schema_table_name}')
     if not model_already_exists:
         splice_context.execute(f'DELETE FROM {SQL.MLMANAGER_SCHEMA}.MODELS WHERE RUN_UUID=\'{run_id}\'')
+
+
+def get_model_library(model: object) -> DBLibraries:
+    """
+    Gets the model library of a trained model
+
+    :param model: The trained model
+    :return: DBLibraries
+    """
+    if isinstance(model, H2OModel):
+        lib = DBLibraries.H2OMOJO
+    elif isinstance(model, SparkModel):
+        lib = DBLibraries.MLeap
+    elif isinstance(model, ScikitModel):
+        lib = DBLibraries.SKLearn
+    elif isinstance(model, KerasModel):
+        lib = DBLibraries.Keras
+    else:
+        raise SpliceMachineException(
+            f"Submitted Model is not valid for database deployment! Valid models are {DBLibraries.SUPPORTED_LIBRARIES}")
+    return lib
+
 
 ModelUtils = {
     DBLibraries.MLeap: SparkUtils,

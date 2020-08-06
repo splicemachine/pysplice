@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-import sys
-import random
 import math
+import random
+import sys
 
 
 class RDDSamplerBase(object):
