@@ -259,7 +259,7 @@ def __get_serialized_mlmodel(model, conda_env=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model, conda_env=None, name='model'):
+def _log_model(model,  name='model', conda_env=None):
     """
     Log a trained machine learning model
 
@@ -280,7 +280,9 @@ def _log_model(model, conda_env=None, name='model'):
     run_id = mlflow.active_run().info.run_uuid
 
     buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env)
-    insert_artifact(splice_context=mlflow._splice_context, name=name, run_uuid=run_id, file_ext=file_ext)
+    buffer.seek(0)
+    insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
+                    run_uuid=run_id, file_ext=file_ext)
 
 
 @_mlflow_patch('start_run')
