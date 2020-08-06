@@ -15,19 +15,21 @@
 # limitations under the License.
 #
 
-import warnings
 from math import exp
+import warnings
 
 import numpy
 from numpy import array
+
 from pyspark import RDD, since
-from pyspark.mllib.common import _java2py, _py2java, callMLlibFunc
-from pyspark.mllib.linalg import DenseVector, SparseVector, _convert_to_vector
-from pyspark.mllib.regression import (LabeledPoint, LinearModel,
-                                      StreamingLinearAlgorithm,
-                                      _regression_train_wrapper)
-from pyspark.mllib.util import Loader, Saveable, inherit_doc
 from pyspark.streaming import DStream
+from pyspark.mllib.common import callMLlibFunc, _py2java, _java2py
+from pyspark.mllib.linalg import DenseVector, SparseVector, _convert_to_vector
+from pyspark.mllib.regression import (
+    LabeledPoint, LinearModel, _regression_train_wrapper,
+    StreamingLinearAlgorithm)
+from pyspark.mllib.util import Saveable, Loader, inherit_doc
+
 
 __all__ = ['LogisticRegressionModel', 'LogisticRegressionWithSGD', 'LogisticRegressionWithLBFGS',
            'SVMModel', 'SVMWithSGD', 'NaiveBayesModel', 'NaiveBayes',

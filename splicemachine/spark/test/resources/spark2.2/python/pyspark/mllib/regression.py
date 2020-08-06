@@ -15,15 +15,15 @@
 # limitations under the License.
 #
 
-import warnings
-
 import numpy as np
 from numpy import array
+import warnings
+
 from pyspark import RDD, since
-from pyspark.mllib.common import _java2py, _py2java, callMLlibFunc, inherit_doc
-from pyspark.mllib.linalg import SparseVector, Vectors, _convert_to_vector
-from pyspark.mllib.util import Loader, Saveable
 from pyspark.streaming.dstream import DStream
+from pyspark.mllib.common import callMLlibFunc, _py2java, _java2py, inherit_doc
+from pyspark.mllib.linalg import SparseVector, Vectors, _convert_to_vector
+from pyspark.mllib.util import Saveable, Loader
 
 __all__ = ['LabeledPoint', 'LinearModel',
            'LinearRegressionModel', 'LinearRegressionWithSGD',

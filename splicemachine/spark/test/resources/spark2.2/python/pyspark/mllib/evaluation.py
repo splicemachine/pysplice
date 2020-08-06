@@ -20,8 +20,7 @@ import warnings
 from pyspark import since
 from pyspark.mllib.common import JavaModelWrapper, callMLlibFunc
 from pyspark.sql import SQLContext
-from pyspark.sql.types import (ArrayType, DoubleType, IntegerType, StructField,
-                               StructType)
+from pyspark.sql.types import StructField, StructType, DoubleType, IntegerType, ArrayType
 
 __all__ = ['BinaryClassificationMetrics', 'RegressionMetrics',
            'MulticlassMetrics', 'RankingMetrics']

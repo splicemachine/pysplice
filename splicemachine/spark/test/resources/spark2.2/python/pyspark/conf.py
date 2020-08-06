@@ -64,8 +64,8 @@ spark.home=/path
 
 __all__ = ['SparkConf']
 
-import re
 import sys
+import re
 
 if sys.version > '3':
     unicode = str

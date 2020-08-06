@@ -15,19 +15,19 @@
 # limitations under the License.
 #
 
+import os
+import platform
+import shutil
+import warnings
 import gc
 import itertools
 import operator
-import os
-import platform
 import random
-import shutil
-import warnings
 
 import pyspark.heapq3 as heapq
-from pyspark.serializers import (AutoBatchedSerializer, BatchedSerializer,
-                                 CompressedSerializer,
-                                 FlattenedValuesSerializer, PickleSerializer)
+from pyspark.serializers import BatchedSerializer, PickleSerializer, FlattenedValuesSerializer, \
+    CompressedSerializer, AutoBatchedSerializer
+
 
 try:
     import psutil

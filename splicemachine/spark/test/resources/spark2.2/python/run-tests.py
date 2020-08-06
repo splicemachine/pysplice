@@ -18,21 +18,15 @@
 #
 
 from __future__ import print_function
-
 import logging
+from optparse import OptionParser
 import os
 import re
 import subprocess
 import sys
 import tempfile
+from threading import Thread, Lock
 import time
-from optparse import OptionParser
-from threading import Lock, Thread
-
-from sparktestsupport import SPARK_HOME  # noqa (suppress pep8 warnings)
-from sparktestsupport.modules import all_modules  # noqa
-from sparktestsupport.shellutils import subprocess_check_output, which  # noqa
-
 if sys.version < '3':
     import Queue
 else:
@@ -43,6 +37,9 @@ else:
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../dev/"))
 
 
+from sparktestsupport import SPARK_HOME  # noqa (suppress pep8 warnings)
+from sparktestsupport.shellutils import which, subprocess_check_output  # noqa
+from sparktestsupport.modules import all_modules  # noqa
 
 
 python_modules = dict((m.name, m) for m in all_modules if m.python_test_goals if m.name != 'root')

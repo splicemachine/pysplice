@@ -205,8 +205,8 @@ class SKUtils:
                 t = ('return_std', 'return_cov')
                 exc = f'predict_args value is invalid. Available options are {t}'
             else:
-                if isinstance(model,
-                              SKPipeline):  # If we are working with a Pipeline, we want to check the last step for arguments
+                if isinstance(model, SKPipeline):
+                    # If we are working with a Pipeline, we want to check the last step for arguments
                     m = model.steps[-1][-1]
                     model_params = get_model_params(m.predict) if hasattr(m, 'predict') else get_model_params(
                         m.transform)

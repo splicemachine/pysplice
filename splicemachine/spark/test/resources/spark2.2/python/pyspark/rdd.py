@@ -15,45 +15,42 @@
 # limitations under the License.
 #
 
-import bisect
 import copy
-import heapq
-import operator
-import os
-import random
-import re
-import shlex
-import socket
 import sys
+import os
+import re
+import operator
+import shlex
 import warnings
-from collections import defaultdict
-from functools import reduce
-from itertools import chain
-from math import ceil, isinf, isnan, log, pow, sqrt
-from subprocess import PIPE, Popen
+import heapq
+import bisect
+import random
+import socket
+from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile
 from threading import Thread
-
-from pyspark.join import (python_cogroup, python_full_outer_join, python_join,
-                          python_left_outer_join, python_right_outer_join)
-from pyspark.rddsampler import (RDDRangeSampler, RDDSampler,
-                                RDDStratifiedSampler)
-from pyspark.resultiterable import ResultIterable
-from pyspark.serializers import (AutoBatchedSerializer, BatchedSerializer,
-                                 CartesianDeserializer, CloudPickleSerializer,
-                                 NoOpSerializer, PairDeserializer,
-                                 PickleSerializer, pack_long)
-from pyspark.shuffle import (Aggregator, ExternalGroupBy, ExternalMerger,
-                             ExternalSorter, get_used_memory)
-from pyspark.statcounter import StatCounter
-from pyspark.storagelevel import StorageLevel
-from pyspark.traceback_utils import SCCallSiteSync
+from collections import defaultdict
+from itertools import chain
+from functools import reduce
+from math import sqrt, log, isinf, isnan, pow, ceil
 
 if sys.version > '3':
     basestring = unicode = str
 else:
     from itertools import imap as map, ifilter as filter
 
+from pyspark.serializers import NoOpSerializer, CartesianDeserializer, \
+    BatchedSerializer, CloudPickleSerializer, PairDeserializer, \
+    PickleSerializer, pack_long, AutoBatchedSerializer
+from pyspark.join import python_join, python_left_outer_join, \
+    python_right_outer_join, python_full_outer_join, python_cogroup
+from pyspark.statcounter import StatCounter
+from pyspark.rddsampler import RDDSampler, RDDRangeSampler, RDDStratifiedSampler
+from pyspark.storagelevel import StorageLevel
+from pyspark.resultiterable import ResultIterable
+from pyspark.shuffle import Aggregator, ExternalMerger, \
+    get_used_memory, ExternalSorter, ExternalGroupBy
+from pyspark.traceback_utils import SCCallSiteSync
 
 
 __all__ = ["RDD"]

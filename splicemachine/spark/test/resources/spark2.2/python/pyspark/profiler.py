@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-import atexit
 import cProfile
-import os
 import pstats
+import os
+import atexit
 
 from pyspark.accumulators import AccumulatorParam
 

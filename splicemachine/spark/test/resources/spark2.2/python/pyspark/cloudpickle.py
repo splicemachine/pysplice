@@ -42,20 +42,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import print_function
 
-import dis
-import io
-import itertools
 import operator
+import opcode
 import os
+import io
 import pickle
 import struct
 import sys
-import traceback
 import types
-import weakref
 from functools import partial
+import itertools
+import dis
+import traceback
+import weakref
 
-import opcode
 from pyspark.util import _exception_message
 
 if sys.version < '3':

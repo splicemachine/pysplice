@@ -23,24 +23,24 @@ import signal
 import sys
 import threading
 import warnings
-from tempfile import NamedTemporaryFile
 from threading import RLock
+from tempfile import NamedTemporaryFile
 
 from py4j.protocol import Py4JError
+
 from pyspark import accumulators
 from pyspark.accumulators import Accumulator
 from pyspark.broadcast import Broadcast
 from pyspark.conf import SparkConf
 from pyspark.files import SparkFiles
 from pyspark.java_gateway import launch_gateway
-from pyspark.profiler import BasicProfiler, ProfilerCollector
-from pyspark.rdd import RDD, _load_from_socket, ignore_unicode_prefix
-from pyspark.serializers import (AutoBatchedSerializer, BatchedSerializer,
-                                 NoOpSerializer, PairDeserializer,
-                                 PickleSerializer, UTF8Deserializer)
-from pyspark.status import StatusTracker
+from pyspark.serializers import PickleSerializer, BatchedSerializer, UTF8Deserializer, \
+    PairDeserializer, AutoBatchedSerializer, NoOpSerializer
 from pyspark.storagelevel import StorageLevel
+from pyspark.rdd import RDD, _load_from_socket, ignore_unicode_prefix
 from pyspark.traceback_utils import CallSite, first_spark_call
+from pyspark.status import StatusTracker
+from pyspark.profiler import ProfilerCollector, BasicProfiler
 
 if sys.version > '3':
     xrange = range

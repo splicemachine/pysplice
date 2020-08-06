@@ -86,18 +86,16 @@ Traceback (most recent call last):
 TypeError:...
 """
 
+import sys
 import select
 import struct
-import sys
-import threading
-
-from pyspark.cloudpickle import CloudPickler
-from pyspark.serializers import PickleSerializer, read_int
-
 if sys.version < '3':
     import SocketServer
 else:
     import socketserver as SocketServer
+import threading
+from pyspark.cloudpickle import CloudPickler
+from pyspark.serializers import read_int, PickleSerializer
 
 
 __all__ = ['Accumulator', 'AccumulatorParam']

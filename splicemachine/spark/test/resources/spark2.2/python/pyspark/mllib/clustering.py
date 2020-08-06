@@ -15,31 +15,28 @@
 # limitations under the License.
 #
 
-import array as pyarray
 import sys
+import array as pyarray
 import warnings
-from collections import namedtuple
-from math import exp, log
-
-from numpy import array, random, tile
-from pyspark import SparkContext, since
-from pyspark.mllib.common import (JavaModelWrapper, _java2py, _py2java,
-                                  callJavaFunc, callMLlibFunc)
-from pyspark.mllib.linalg import DenseVector, SparseVector, _convert_to_vector
-from pyspark.mllib.regression import LabeledPoint
-from pyspark.mllib.stat.distribution import MultivariateGaussian
-from pyspark.mllib.util import (JavaLoader, JavaSaveable, Loader, Saveable,
-                                inherit_doc)
-from pyspark.rdd import RDD, ignore_unicode_prefix
-from pyspark.streaming import DStream
 
 if sys.version > '3':
     xrange = range
     basestring = str
 
+from math import exp, log
 
+from numpy import array, random, tile
 
+from collections import namedtuple
 
+from pyspark import SparkContext, since
+from pyspark.rdd import RDD, ignore_unicode_prefix
+from pyspark.mllib.common import JavaModelWrapper, callMLlibFunc, callJavaFunc, _py2java, _java2py
+from pyspark.mllib.linalg import SparseVector, _convert_to_vector, DenseVector
+from pyspark.mllib.regression import LabeledPoint
+from pyspark.mllib.stat.distribution import MultivariateGaussian
+from pyspark.mllib.util import Saveable, Loader, inherit_doc, JavaLoader, JavaSaveable
+from pyspark.streaming import DStream
 
 __all__ = ['BisectingKMeansModel', 'BisectingKMeans', 'KMeansModel', 'KMeans',
            'GaussianMixtureModel', 'GaussianMixture', 'PowerIterationClusteringModel',

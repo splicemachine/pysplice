@@ -23,10 +23,9 @@ migration to the DataFrame-based APIs under the `pyspark.mlflow_support` package
 """
 from __future__ import absolute_import
 
-import numpy
-
 # MLlib currently needs NumPy 1.4+, so complain if lower
 
+import numpy
 
 ver = [int(x) for x in numpy.version.version.split('.')[:2]]
 if ver < [1, 4]:

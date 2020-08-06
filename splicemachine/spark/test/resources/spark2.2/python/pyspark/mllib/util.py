@@ -16,18 +16,17 @@
 #
 
 import sys
-import warnings
-
 import numpy as np
-from pyspark import SparkContext, since
-from pyspark.mllib.common import callMLlibFunc, inherit_doc
-from pyspark.mllib.linalg import SparseVector, Vectors, _convert_to_vector
-from pyspark.sql import DataFrame
+import warnings
 
 if sys.version > '3':
     xrange = range
     basestring = str
 
+from pyspark import SparkContext, since
+from pyspark.mllib.common import callMLlibFunc, inherit_doc
+from pyspark.mllib.linalg import Vectors, SparseVector, _convert_to_vector
+from pyspark.sql import DataFrame
 
 
 class MLUtils(object):

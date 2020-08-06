@@ -31,9 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from functools import reduce
-
 from pyspark.resultiterable import ResultIterable
+from functools import reduce
 
 
 def _do_python_join(rdd, other, numPartitions, dispatch):

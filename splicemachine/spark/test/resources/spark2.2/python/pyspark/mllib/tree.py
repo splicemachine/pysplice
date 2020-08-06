@@ -19,8 +19,8 @@ from __future__ import absolute_import
 
 import random
 
-from pyspark import RDD, SparkContext, since
-from pyspark.mllib.common import JavaModelWrapper, callMLlibFunc, inherit_doc
+from pyspark import SparkContext, RDD, since
+from pyspark.mllib.common import callMLlibFunc, inherit_doc, JavaModelWrapper
 from pyspark.mllib.linalg import _convert_to_vector
 from pyspark.mllib.regression import LabeledPoint
 from pyspark.mllib.util import JavaLoader, JavaSaveable

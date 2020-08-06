@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-import gc
 import os
 import sys
+import gc
 from tempfile import NamedTemporaryFile
 
 from pyspark.cloudpickle import print_exec
