@@ -263,14 +263,13 @@ def _log_model(model, conda_env=None, name='model'):
         with the current run
     :param name: (str) the run relative name to store the model under. [Deault 'model']
     """
-
-    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
-
     _check_for_splice_ctx()
+
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise SpliceMachineException("Only one model is permitted per run.")
 
     model_class = str(model.__class__)
+    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
     mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
