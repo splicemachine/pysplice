@@ -39,46 +39,52 @@ Importing anything directly from mlflow before running the above statement will 
 
 ======================================================================================================================================================================================\n
 """
+import glob
+import os
 import time
-from tempfile import TemporaryDirectory
 from collections import defaultdict
 from contextlib import contextmanager
-import os
-from os import path
-from sys import version as py_version, stderr
-from zipfile import ZipFile, ZIP_DEFLATED
-from io import BytesIO
-import glob
-import yaml
 from importlib import import_module
+from io import BytesIO
+from os import path
+from sys import stderr
+from sys import version as py_version
+from tempfile import TemporaryDirectory
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import gorilla
+import h2o
 import mlflow
+import mlflow.pyfunc
 import pyspark
 import requests
 import sklearn
-import h2o
-
+import yaml
+from h2o.estimators.estimator_base import ModelBase as H2OModel
 from mleap.pyspark import spark_support
-from pyspark.ml.base import Model as SparkModel
 from pandas.core.frame import DataFrame as PandasDF
+from pyspark.ml.base import Model as SparkModel
 from requests.auth import HTTPBasicAuth
 from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
-from h2o.estimators.estimator_base import ModelBase as H2OModel
 
-from splicemachine.mlflow_support.constants import FileExtensions, DBLibraries, SparkModelType, H2OModelType, \
-    KerasModelType, SklearnModelType
-
-from splicemachine.mlflow_support.utilities import SparkUtils, H2OUtils, KerasUtils, SKUtils, SpliceMachineException, \
-    ModelUtils, get_pod_uri, insert_artifact, get_user, create_model_deployment_table, create_parsing_trigger, \
-    create_prediction_trigger, create_vti_prediction_trigger, get_feature_columns_and_types, validate_primary_key, \
-    get_df_for_mleap, alter_model_table, add_model_to_metadata, drop_tables_on_failure, get_model_library
-
+from splicemachine.mlflow_support.constants import (DBLibraries,
+                                                    FileExtensions,
+                                                    H2OModelType,
+                                                    KerasModelType,
+                                                    SklearnModelType,
+                                                    SparkModelType)
+from splicemachine.mlflow_support.utilities import (
+    H2OUtils, KerasUtils, ModelUtils, SKUtils, SparkUtils,
+    SpliceMachineException, add_model_to_metadata, alter_model_table,
+    create_model_deployment_table, create_parsing_trigger,
+    create_prediction_trigger, create_vti_prediction_trigger,
+    drop_tables_on_failure, get_df_for_mleap, get_feature_columns_and_types,
+    get_model_library, get_pod_uri, get_user, insert_artifact,
+    validate_primary_key)
 from splicemachine.spark.constants import CONVERSIONS
-
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
@@ -479,7 +485,6 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     :param as_pyfunc: (bool) load as a model-agnostic pyfunc model
         (https://www.mlflow.org/docs/latest/models.html#python-function-python-function)
     """
-    import mlflow.pyfunc
     _check_for_splice_ctx()
     run_id = run_id or mlflow.active_run().info.run_uuid
     name = name or _get_model_name(run_id)

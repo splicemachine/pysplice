@@ -14,6 +14,7 @@ import h2o
 import sklearn.base
 from cloudpickle import dumps as save_pickle_string
 from cloudpickle import loads as load_pickle_string
+from h2o.estimators.estimator_base import ModelBase as H2OModel
 from h5py import File as h5_file
 from mleap.pyspark.spark_support import SimpleSparkSerializer
 from mleap.version import __version__ as MLEAP_VERSION
@@ -27,14 +28,14 @@ from pyspark.sql.dataframe import DataFrame as SparkDF
 from sklearn import __version__ as sklearn_version
 from sklearn.base import BaseEstimator as ScikitModel
 from sklearn.pipeline import Pipeline as SKPipeline
+from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as KERAS_VERSION
 from tensorflow.keras.models import load_model as load_kr_model
-from h2o.estimators.estimator_base import ModelBase as H2OModel
 
-from tensorflow.keras import Model as KerasModel
-
-from splicemachine.mlflow_support.constants import KerasModelType, SparkModelType, DBLibraries, \
-    SklearnModelType, H2OModelType
+from splicemachine.mlflow_support.constants import (DBLibraries, H2OModelType,
+                                                    KerasModelType,
+                                                    SklearnModelType,
+                                                    SparkModelType)
 from splicemachine.spark.constants import SQL_TYPES
 
 from ..spark.context import PySpliceContext
