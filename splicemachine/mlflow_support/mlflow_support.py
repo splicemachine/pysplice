@@ -474,7 +474,6 @@ def _get_model_name(run_id):
     return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
 
 
-@_mlflow_patch('load_model')
 def _load_model(run_id=None, name=None, as_pyfunc=False):
     """
     Download and deserialize a serialized model
@@ -485,7 +484,9 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     :param as_pyfunc: (bool) load as a model-agnostic pyfunc model
         (https://www.mlflow.org/docs/latest/models.html#python-function-python-function)
     """
-    _check_for_splice_ctx()
+    if not (run_id or mlflow.active_run()):
+        raise SpliceMachineException("You need to pass in a run_id or start an mlflow run.")
+
     run_id = run_id or mlflow.active_run().info.run_uuid
     name = name or _get_model_name(run_id)
     if not name:
@@ -502,7 +503,8 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
         if as_pyfunc:
             mlflow_module = 'pyfunc'
         else:
-            loader_module = yaml.load(f'{tempdir}/MLmodel')['flavors']['python_function']['loader_module']
+            with open(f'{tempdir}/MLmodel', 'r') as mlmodel_file:
+                loader_module = yaml.safe_load(mlmodel_file.read())['flavors']['python_function']['loader_module']
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
