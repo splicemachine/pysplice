@@ -49,12 +49,11 @@ from sys import version as py_version, stderr
 from zipfile import ZipFile, ZIP_DEFLATED
 from io import BytesIO
 import glob
+import yaml
+from importlib import import_module
 
 import gorilla
 import mlflow
-import mlflow.keras
-import mlflow.sklearn
-import mlflow.spark
 import pyspark
 import requests
 import sklearn
@@ -225,7 +224,6 @@ def __get_serialized_mlmodel(model, conda_env=None):
 
     with TemporaryDirectory() as tempdir:
         mlmodel_dir = f'{tempdir}/model'
-        os.system('ls ' + mlmodel_dir)
         if isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
@@ -259,7 +257,7 @@ def __get_serialized_mlmodel(model, conda_env=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model,  name='model', conda_env=None):
+def _log_model(model, name='model', conda_env=None):
     """
     Log a trained machine learning model
 
@@ -471,13 +469,15 @@ def _get_model_name(run_id):
 
 
 @_mlflow_patch('load_model')
-def _load_model(run_id=None, name=None):
+def _load_model(run_id=None, name=None, as_pyfunc=False):
     """
     Download and deserialize a serialized model
 
-    :param run_id: the id of the run to get a model from
+    :param run_id: (str) the id of the run to get a model from
         (the run must have an associated model with it named spark_model)
-    :param name: the name of the model in the database
+    :param name: (str) the name of the model in the database
+    :param as_pyfunc: (bool) load as a model-agnostic pyfunc model
+        (https://www.mlflow.org/docs/latest/models.html#python-function-python-function)
     """
     _check_for_splice_ctx()
     run_id = run_id or mlflow.active_run().info.run_uuid
@@ -485,21 +485,22 @@ def _load_model(run_id=None, name=None):
     if not name:
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
-    model_blob, file_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+    model_blob, _ = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
 
-    if file_ext == FileExtensions.spark:
-        model = SparkUtils.load_spark_model(mlflow._splice_context, model_blob)
-    elif file_ext == FileExtensions.h2o:
-        model = H2OUtils.load_h2o_model(model_blob)
-    elif file_ext == FileExtensions.sklearn:
-        model = SKUtils.load_sklearn_model(model_blob)
-    elif file_ext == FileExtensions.keras:
-        model = KerasUtils.load_keras_model(model_blob)
-    else:
-        raise SpliceMachineException(f'Model extension {file_ext} was not a supported model type. '
-                                     f'Supported model extensions are {FileExtensions.get_valid()}')
+    buffer = BytesIO()
+    buffer.seek(0)
+    buffer.write(model_blob)
 
-    return model
+    with TemporaryDirectory() as tempdir:
+        ZipFile(buffer).extractall(path=tempdir)
+        if as_pyfunc:
+            import mlflow.pyfunc
+            mlflow_module = 'pyfunc'
+        else:
+            loader_module = yaml.load(f'{tempdir}/MLmodel')['flavors']['python_function']['loader_module']
+            mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
+            import_module(loader_module)
+        return getattr(mlflow, mlflow_module).load_model(tempdir)
 
 
 @_mlflow_patch('log_artifact')
