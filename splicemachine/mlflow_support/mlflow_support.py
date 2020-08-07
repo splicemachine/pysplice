@@ -479,6 +479,7 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     :param as_pyfunc: (bool) load as a model-agnostic pyfunc model
         (https://www.mlflow.org/docs/latest/models.html#python-function-python-function)
     """
+    import mlflow.pyfunc
     _check_for_splice_ctx()
     run_id = run_id or mlflow.active_run().info.run_uuid
     name = name or _get_model_name(run_id)
@@ -494,7 +495,6 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     with TemporaryDirectory() as tempdir:
         ZipFile(buffer).extractall(path=tempdir)
         if as_pyfunc:
-            import mlflow.pyfunc
             mlflow_module = 'pyfunc'
         else:
             loader_module = yaml.load(f'{tempdir}/MLmodel')['flavors']['python_function']['loader_module']
