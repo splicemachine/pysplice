@@ -641,8 +641,10 @@ def _deploy_db(db_schema_name,
                                 Will ONLY be used if the table does not exist and a dataframe is passed in
     :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
-                                        IN THAT ORDER. The columns passed here must exist in the table.
-    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.\n
+                                        IN THAT ORDER. The columns passed here must exist in the table. If creating the
+                                        table from a dataframe, the table will be created from the columns in the DF, not
+                                        model_cols. model_cols is only used at prediction time
+    :param classes: (List[str]) The classes (prediction labels) for the model being deployed.
                     NOTE: If not supplied, the table will have default column names for each class
     :param sklearn_args: (dict{str: str}) Prediction options for sklearn models: \n
         * Available key value options: \n
@@ -703,6 +705,8 @@ def _deploy_db(db_schema_name,
 
     schema_table_name = f'{db_schema_name}.{db_table_name}'
 
+    # Feature columns are all of the columns of the table, model_cols are the subset of feature columns that are used \
+    # in predictions. schema_types contains all columns from feature_columns
     feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
                                                                    model_cols, schema_table_name)
 
@@ -725,7 +729,9 @@ def _deploy_db(db_schema_name,
     # Create the schema of the table (we use this a few times)
     schema_str = ''
     for i in feature_columns:
-        schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},'
+        spark_data_type = schema_types[str(i)]
+        assert spark_data_type in CONVERSIONS, f'Type {spark_data_type} not supported for table creation. Remove column and try again'
+        schema_str += f'\t{i} {CONVERSIONS[spark_data_type]},'
 
     try:
         # Create/Alter table 1: DATA
@@ -739,11 +745,13 @@ def _deploy_db(db_schema_name,
 
         # Create Trigger 1: model prediction
         print('Creating model prediction trigger ...', end=' ')
+        # If model_cols were passed in, we'll use them here. Otherwise, use all of the columns (stored in feature_columns)
+        model_cols = model_cols or feature_columns
         if model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
-            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, model_cols, schema_types,
                                           schema_str, primary_key, classes, model_type, sklearn_args, pred_threshold, verbose)
         else:
-            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
+            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, model_cols, schema_types,
                                     schema_str, primary_key, model_type, verbose)
         print('Done.')
 
