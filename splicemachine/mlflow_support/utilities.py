@@ -638,7 +638,7 @@ class SparkUtils:
 
         if model.__module__ == 'pyspark.ml.classification':
             m_type = SparkModelType.CLASSIFICATION
-        elif model.__module__ == 'pyspark.ml.regression':
+        elif model.__module__ in ('pyspark.ml.regression', 'pyspark.ml.recommendation'):
             m_type = SparkModelType.REGRESSION
         elif model.__module__ == 'pyspark.ml.clustering':
             if 'probabilityCol' in model.explainParams():
