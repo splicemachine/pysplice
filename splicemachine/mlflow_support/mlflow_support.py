@@ -455,7 +455,8 @@ def _download_artifact(name, local_path, run_id=None):
 
     run_id = run_id or mlflow.active_run().info.run_uuid
     blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-
+    if f_ext in FileExtensions.get_valid():
+        f_ext = 'zip' # we zip up these models, even though we use the file ext to identify model type
     if not file_ext:  # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
         local_path += f'/{name}.{f_ext}'
 
@@ -502,7 +503,7 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
         if as_pyfunc:
             mlflow_module = 'pyfunc'
         else:
-            loader_module = yaml.load(f'{tempdir}/MLmodel')['flavors']['python_function']['loader_module']
+            loader_module = yaml.load(open(f'{tempdir}/MLmodel').read())['flavors']['python_function']['loader_module']
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
