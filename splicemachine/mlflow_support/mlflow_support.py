@@ -690,7 +690,7 @@ def _deploy_kubernetes(run_id: str = None, service_port: int = 80,
         'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
         'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
         'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request, 'cpu_limit': cpu_limit,
-        'memory_request': memory_request, 'expose_external': False
+        'memory_request': memory_request, 'expose_external': expose_external
     }
 
     return _initiate_job(payload, '/api/api/initiate')
@@ -828,7 +828,7 @@ def apply_patches():
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
