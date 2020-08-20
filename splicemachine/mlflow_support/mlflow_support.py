@@ -763,7 +763,7 @@ def _deploy_db(db_schema_name: str,
     _check_for_splice_ctx()
     print("Deploying model to database...")
 
-    if df:
+    if df is not None:
         if isinstance(df, PandasDF):
             df_schema = mlflow._splice_context.spark_session.createDataFrame(df).schema.json()
         elif isinstance(df, SparkDF):
