@@ -47,7 +47,7 @@ from contextlib import contextmanager
 from importlib import import_module
 from io import BytesIO
 from os import path
-from sys import version as py_version, stderr, modules, stdout
+from sys import version as py_version, stderr, stdout
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
@@ -814,27 +814,22 @@ def _watch_job(job_id: int):
     of a Job
     :param job_id: the job id to watch (returned after executing an operation)
     """
-    if 'ipykernel' not in modules:
-        raise SpliceMachineException("Watching Job Logs is only supported in Jupyter. Run mlflow.fetch_logs(job_id) "
-                                     "for one-time logs, or view them in the UI")
-
-    from IPython.display import clear_output
+    previous_lines = {}
 
     while True:
-        clear_output()
-        print('\n'.join(__get_logs(job_id)))
+        logs_retrieved = __get_logs(job_id)
+        print('\n'.join([log for log in logs_retrieved if log not in previous_lines]))
+        previous_lines = set(logs_retrieved) # O(1) checking
         time.sleep(2)
 
 
 @_mlflow_patch('fetch_logs')
-def _fetch_logs(job_id: int, file: str = stdout):
+def _fetch_logs(job_id: int):
     """
-    Get the logs and write them to a buffer (default stdout).
+    Get the logs as an array
     :param job_id: the job to get the logs for
-    :param file: (default stdout) where to write the logs. Specify a filename to write to a file.
     """
-    file_buffer = open(file, 'w') if isinstance(file, str) else file
-    file_buffer.write('\n'.join(__get_logs(job_id=job_id)))
+    return __get_logs(job_id)
 
 
 @_mlflow_patch('get_deployed_models')
