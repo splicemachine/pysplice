@@ -47,7 +47,7 @@ from contextlib import contextmanager
 from importlib import import_module
 from io import BytesIO
 from os import path
-from sys import version as py_version, stderr, modules
+from sys import version as py_version, stderr, modules, stdout
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
@@ -538,7 +538,7 @@ def _login_director(username, password):
     mlflow._basic_auth = HTTPBasicAuth(username, password)
 
 
-def _initiate_job(payload, endpoint):
+def __initiate_job(payload, endpoint):
     """
     Send a job to the initiation endpoint
 
@@ -568,8 +568,8 @@ def _initiate_job(payload, endpoint):
 
 
 @_mlflow_patch('deploy_aws')
-def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
-                run_id=None, instance_count=1, deployment_mode='replace'):
+def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = 'ml.m5.xlarge',
+                run_id: str = None, instance_count: int = 1, deployment_mode: str = 'replace'):
     """
     Queue Job to deploy a run to sagemaker with the
     given run id (found in MLFlow UI or through search API)
@@ -592,18 +592,18 @@ def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
     print("Processing...")
 
     request_payload = {
-        'handler_name': 'DEPLOY_AWS', 'run_id': run_id or mlflow.active_run().info.run_uuid,
+        'handler_name': 'DEPLOY_AWS', 'run_id': run_id,
         'region': region, 'user': get_user(),
         'instance_type': instance_type, 'instance_count': instance_count,
         'deployment_mode': deployment_mode, 'app_name': app_name
     }
 
-    return _initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/api/rest/initiate')
 
 
 @_mlflow_patch('deploy_azure')
-def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region='East US',
-                  cpu_cores=0.1, allocated_ram=0.5, model_name=None):
+def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_id: str, region: str = 'East US',
+                  cpu_cores: float = 0.1, allocated_ram: float = 0.5, model_name: str = None):
     """
     Deploy a given run to AzureML.
 
@@ -629,23 +629,23 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
         'endpoint_name': endpoint_name,
         'resource_group': resource_group,
         'workspace': workspace,
-        'run_id': run_id or mlflow.active_run().info.run_uuid,
+        'region': region,
+        'run_id': run_id,
         'cpu_cores': cpu_cores,
         'allocated_ram': allocated_ram,
         'model_name': model_name
     }
-    return _initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/api/rest/initiate')
 
 
 @_mlflow_patch('deploy_kubernetes')
-def _deploy_kubernetes(run_id: str = None, service_port: int = 80,
+def _deploy_kubernetes(run_id: str, service_port: int = 80,
                        base_replicas: int = 1, autoscaling_enabled: bool = False,
                        max_replicas: bool = 2, target_cpu_utilization: int = 50,
                        disable_nginx: bool = False, gunicorn_workers: int = 1,
                        resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
                        cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
-                       memory_limit: str = "2048Mi", expose_external: bool = False
-                       ):
+                       memory_limit: str = "2048Mi", expose_external: bool = False):
     """
     Deploy model associated with the specified or active run to Kubernetes cluster.\n
 
@@ -693,13 +693,13 @@ def _deploy_kubernetes(run_id: str = None, service_port: int = 80,
         'memory_request': memory_request, 'expose_external': expose_external
     }
 
-    return _initiate_job(payload, '/api/api/initiate')
+    return __initiate_job(payload, '/api/rest/initiate')
 
 
 @_mlflow_patch('deploy_database')
 def _deploy_db(db_schema_name: str,
                db_table_name: str,
-               run_id: Optional[str] = None,
+               run_id: str,
                reference_table: Optional[str] = None,
                reference_schema: Optional[str] = None,
                primary_key: Optional[Dict[str, str]] = None,
@@ -767,6 +767,10 @@ def _deploy_db(db_schema_name: str,
     """
     _check_for_splice_ctx()
     print("Deploying model to database...")
+    if primary_key is not None:
+        if isinstance(primary_key, list):
+            print("Passing in primary keys as a list of tuples is deprecated. Use dictionary {column name: type}")
+            primary_key = dict(primary_key)
 
     if df is not None:
         if isinstance(df, PandasDF):
@@ -785,7 +789,21 @@ def _deploy_db(db_schema_name: str,
         'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema
     }
 
-    return _initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/api/rest/initiate')
+
+
+def __get_logs(job_id: int):
+    """
+    Retrieve the logs associated with the specified job id
+    """
+    _check_for_splice_ctx()
+    request = requests.post(
+        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/logs",
+        json={"task_id": job_id}, auth=mlflow._basic_auth
+    )
+    if not request.ok:
+        raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}")
+    return request.json()['logs']
 
 
 @_mlflow_patch('watch_job')
@@ -793,22 +811,28 @@ def _watch_job(job_id: int):
     """
     Stream the logs in real time to standard out
     of a Job
+    :param job_id: the job id to watch (returned after executing an operation)
     """
     if 'ipykernel' not in modules:
-        raise Exception("Viewing Job Logs in real-time is not supported outside of Jupyter. View them in the UI")
+        raise SpliceMachineException("Watching Job Logs is only supported in Jupyter. Run mlflow.fetch_logs(job_id) "
+                                     "for one-time logs, or view them in the UI")
 
     from IPython.display import clear_output
 
     while True:
         clear_output()
-        request = requests.post(
-            get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/logs",
-            json={"task_id": job_id}, auth=mlflow._basic_auth
-        )
-        if not request.ok:
-            print("Error Retrieving Logs", file=stderr)
-        else:
-            print('\n'.join(request.json()['logs']))
+        print('\n'.join(__get_logs(job_id)))
+
+
+@_mlflow_patch('fetch_logs')
+def _fetch_logs(job_id: int, file: str = stdout):
+    """
+    Get the logs and write them to a buffer (default stdout).
+    :param job_id: the job to get the logs for
+    :param file: (default stdout) where to write the logs. Specify a filename to write to a file.
+    """
+    file_buffer = open(file, 'w') if isinstance(file, str) else file
+    file_buffer.write('\n'.join(__get_logs(job_id=job_id)))
 
 
 @_mlflow_patch('get_deployed_models')
@@ -833,7 +857,7 @@ def apply_patches():
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
