@@ -560,7 +560,7 @@ def __initiate_job(payload, endpoint):
     if request.ok:
         print("Your Job has been submitted. The returned value of this function is"
               " the job id, which you can use to monitor the your task in real-time. Run mlflow.watch_job(<job id>) to"
-              "stream them to Jupyter, or mlflow.fetch_logs(<job id>) to read them one time to the console or a file.")
+              "stream them to stdout, or mlflow.fetch_logs(<job id>) to read them one time to a list")
         return request.json()['job_id']
     else:
         print("Error! An error occurred while submitting your job")
@@ -814,13 +814,22 @@ def _watch_job(job_id: int):
     of a Job
     :param job_id: the job id to watch (returned after executing an operation)
     """
-    previous_lines = {}
+    previous_lines = []
 
     while True:
         logs_retrieved = __get_logs(job_id)
-        print('\n'.join([log for log in logs_retrieved if log not in previous_lines]))
-        previous_lines = set(logs_retrieved) # O(1) checking
-        time.sleep(2)
+        log_idx = len(logs_retrieved)
+        # searching from the end is faster, because unless the logs double in the interval, it will be closer
+        for log_idx in range(len(logs_retrieved) - 1, 0, -1):
+            if logs_retrieved[log_idx] in previous_lines:
+                break
+
+        new_logs = '\n'.join(logs_retrieved[log_idx + 1:])
+        if new_logs:
+            print(new_logs, end='') # dont create \n @ the end
+
+        previous_lines = logs_retrieved  # O(1) checking
+        time.sleep(1)
 
 
 @_mlflow_patch('fetch_logs')
