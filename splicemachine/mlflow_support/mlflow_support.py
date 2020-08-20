@@ -822,6 +822,7 @@ def _watch_job(job_id: int):
     while True:
         clear_output()
         print('\n'.join(__get_logs(job_id)))
+        time.sleep(2)
 
 
 @_mlflow_patch('fetch_logs')
