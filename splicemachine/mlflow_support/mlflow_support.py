@@ -700,6 +700,8 @@ def _deploy_kubernetes(run_id: str = None, service_port: int = 80,
 def _deploy_db(db_schema_name: str,
                db_table_name: str,
                run_id: Optional[str] = None,
+               reference_table: Optional[str] = None,
+               reference_schema: Optional[str] = None,
                primary_key: Optional[Dict[str, str]] = None,
                df: Optional[Union[SparkDF, PandasDF]] = None,
                create_model_table: Optional[bool] = False,
@@ -714,6 +716,9 @@ def _deploy_db(db_schema_name: str,
     :param db_schema_name: (str) the schema name to deploy to.
     :param db_table_name: (str) the table name to deploy to.
     :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
+    :param reference_table: (str) if creating a new table, an alternative to specifying a dataframe is specifying a
+        reference table. The column schema of the reference table will be used to create the new table (e.g. MYTABLE)\n
+    :param reference_schema: (str) the db schema for the reference table.
     :param primary_key: (Dict) Dictionary of column + SQL datatype to use for the primary/composite key. \n
         * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n
         * If you are creating the table in this function, you MUST pass in a primary key
@@ -777,7 +782,7 @@ def _deploy_db(db_schema_name: str,
         'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
         'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
         'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE'
+        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema
     }
 
     return _initiate_job(payload, '/api/rest/initiate')
