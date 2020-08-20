@@ -559,7 +559,8 @@ def __initiate_job(payload, endpoint):
 
     if request.ok:
         print("Your Job has been submitted. The returned value of this function is"
-              " the job id, which you can use to monitor the your task in real-time. Run mlflow.watch_job(<job id>")
+              " the job id, which you can use to monitor the your task in real-time. Run mlflow.watch_job(<job id>) to"
+              "stream them to Jupyter, or mlflow.fetch_logs(<job id>) to read them one time to the console or a file.")
         return request.json()['job_id']
     else:
         print("Error! An error occurred while submitting your job")
@@ -798,11 +799,11 @@ def __get_logs(job_id: int):
     """
     _check_for_splice_ctx()
     request = requests.post(
-        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/logs",
+        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
         json={"task_id": job_id}, auth=mlflow._basic_auth
     )
     if not request.ok:
-        raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}")
+        raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
 
 
