@@ -774,7 +774,7 @@ def _deploy_db(db_schema_name: str,
     # ~ Backwards Compatability ~
     if verbose:
         print("Deprecated Parameter 'verbose'. Use mlflow.watch_job(<job id>) or mlflow.fetch_logs(<job id>) to get"
-              " verbose output. Ignoring...")
+              " verbose output. Ignoring...", file=stderr)
 
     if primary_key is not None:
         if isinstance(primary_key, list):
