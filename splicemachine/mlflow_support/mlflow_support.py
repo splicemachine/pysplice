@@ -42,6 +42,7 @@ Importing anything directly from mlflow before running the above statement will 
 import glob
 import os
 import time
+import copy
 from collections import defaultdict
 from contextlib import contextmanager
 from importlib import import_module
@@ -709,7 +710,8 @@ def _deploy_db(db_schema_name: str,
                model_cols: Optional[List[str]] = None,
                classes: Optional[List[str]] = None,
                library_specific: Optional[Dict[str, str]] = None,
-               replace: Optional[bool] = False) -> None:
+               replace: Optional[bool] = False,
+               verbose: bool = False) -> None:
     """
     Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.
     This either creates a new table or alters an existing table in the database (depending on parameters passed)
@@ -768,9 +770,16 @@ def _deploy_db(db_schema_name: str,
     """
     _check_for_splice_ctx()
     print("Deploying model to database...")
+
+    # ~ Backwards Compatability ~
+    if verbose:
+        print("Deprecated Parameter 'verbose'. Use mlflow.watch_job(<job id>) or mlflow.fetch_logs(<job id>) to get"
+              " verbose output. Ignoring...")
+
     if primary_key is not None:
         if isinstance(primary_key, list):
-            print("Passing in primary keys as a list of tuples is deprecated. Use dictionary {column name: type}")
+            print("Passing in primary keys as a list of tuples is deprecated. Use dictionary {column name: type}",
+                  file=stderr)
             primary_key = dict(primary_key)
 
     if df is not None:
@@ -818,17 +827,22 @@ def _watch_job(job_id: int):
 
     while True:
         logs_retrieved = __get_logs(job_id)
+        logs_retrieved.remove('')
         log_idx = len(logs_retrieved)
         # searching from the end is faster, because unless the logs double in the interval, it will be closer
-        for log_idx in range(len(logs_retrieved) - 1, 0, -1):
+        for log_idx in range(len(logs_retrieved) - 1, -1, -1):
             if logs_retrieved[log_idx] in previous_lines:
                 break
 
-        new_logs = '\n'.join(logs_retrieved[log_idx + 1:])
+        new_logs = '\n'.join(logs_retrieved[log_idx:])
         if new_logs:
-            print(new_logs, end='') # dont create \n @ the end
+            print(new_logs, end='')  # dont create \n @ the end
 
-        previous_lines = logs_retrieved  # O(1) checking
+        previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
+
+        if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+            return
+
         time.sleep(1)
 
 

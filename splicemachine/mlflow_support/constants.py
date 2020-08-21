@@ -1,5 +1,3 @@
-from enum import Enum
-
 class FileExtensions:
     """
     Class containing names for
