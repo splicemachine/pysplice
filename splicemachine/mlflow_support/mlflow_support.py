@@ -42,15 +42,16 @@ Importing anything directly from mlflow before running the above statement will 
 import glob
 import os
 import time
+import copy
 from collections import defaultdict
 from contextlib import contextmanager
 from importlib import import_module
 from io import BytesIO
 from os import path
-from sys import stderr
-from sys import version as py_version
+from sys import version as py_version, stderr, stdout
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
+from typing import Dict, Optional, List, Union
 
 import gorilla
 import h2o
@@ -61,30 +62,18 @@ import requests
 import sklearn
 import yaml
 from h2o.estimators.estimator_base import ModelBase as H2OModel
-from mleap.pyspark import spark_support
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
+from pyspark.sql import DataFrame as SparkDF
 from requests.auth import HTTPBasicAuth
 from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
-from splicemachine.mlflow_support.constants import (DBLibraries,
-                                                    FileExtensions,
-                                                    H2OModelType,
-                                                    KerasModelType,
-                                                    SklearnModelType,
-                                                    SparkModelType)
-from splicemachine.mlflow_support.utilities import (
-    H2OUtils, KerasUtils, ModelUtils, SKUtils, SparkUtils,
-    SpliceMachineException, add_model_to_metadata, alter_model_table,
-    create_model_deployment_table, create_parsing_trigger,
-    create_prediction_trigger, create_vti_prediction_trigger,
-    drop_tables_on_failure, get_df_for_mleap, get_feature_columns_and_types,
-    get_model_library, get_pod_uri, get_user, insert_artifact,
-    validate_primary_key)
-from splicemachine.spark.constants import CONVERSIONS
+from splicemachine.mlflow_support.constants import (FileExtensions)
+from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
+                                                    insert_artifact)
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
@@ -455,7 +444,8 @@ def _download_artifact(name, local_path, run_id=None):
 
     run_id = run_id or mlflow.active_run().info.run_uuid
     blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-
+    if f_ext in FileExtensions.get_valid():
+        f_ext = 'zip'  # we zip up these models, even though we use the file ext to identify model type
     if not file_ext:  # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
         local_path += f'/{name}.{f_ext}'
 
@@ -551,7 +541,7 @@ def _login_director(username, password):
     mlflow._basic_auth = HTTPBasicAuth(username, password)
 
 
-def _initiate_job(payload, endpoint):
+def __initiate_job(payload, endpoint):
     """
     Send a job to the initiation endpoint
 
@@ -567,14 +557,14 @@ def _initiate_job(payload, endpoint):
     request = requests.post(
         get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
         auth=mlflow._basic_auth,
-        json=payload,
-
+        json=payload
     )
 
     if request.ok:
-        print("Your Job has been submitted. View its status on port 5003 (Job Dashboard)")
-        print(request.json)
-        return request.json
+        print("Your Job has been submitted. The returned value of this function is"
+              " the job id, which you can use to monitor the your task in real-time. Run mlflow.watch_job(<job id>) to"
+              "stream them to stdout, or mlflow.fetch_logs(<job id>) to read them one time to a list")
+        return request.json()['job_id']
     else:
         print("Error! An error occurred while submitting your job")
         print(request.text)
@@ -582,8 +572,8 @@ def _initiate_job(payload, endpoint):
 
 
 @_mlflow_patch('deploy_aws')
-def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
-                run_id=None, instance_count=1, deployment_mode='replace'):
+def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = 'ml.m5.xlarge',
+                run_id: str = None, instance_count: int = 1, deployment_mode: str = 'replace'):
     """
     Queue Job to deploy a run to sagemaker with the
     given run id (found in MLFlow UI or through search API)
@@ -604,33 +594,20 @@ def _deploy_aws(app_name, region='us-east-2', instance_type='ml.m5.xlarge',
     """
     # get run from mlflow
     print("Processing...")
-    time.sleep(3)  # give the mlflow server time to register the artifact, if necessary
-
-    supported_aws_regions = ['us-east-2', 'us-west-1', 'us-west-2', 'eu-central-1']
-    supported_instance_types = ['ml.m5.xlarge']
-    supported_deployment_modes = ['replace', 'add']
-
-    # data validation
-    if region not in supported_aws_regions:
-        raise Exception("Region must be in list: " + str(supported_aws_regions))
-    if instance_type not in supported_instance_types:
-        raise Exception("Instance type must be in list: " + str(instance_type))
-    if deployment_mode not in supported_deployment_modes:
-        raise Exception("Deployment mode must be in list: " + str(supported_deployment_modes))
 
     request_payload = {
-        'handler_name': 'DEPLOY_AWS', 'run_id': run_id if run_id else mlflow.active_run().info.run_uuid,
+        'handler_name': 'DEPLOY_AWS', 'run_id': run_id,
         'region': region, 'user': get_user(),
         'instance_type': instance_type, 'instance_count': instance_count,
         'deployment_mode': deployment_mode, 'app_name': app_name
     }
 
-    return _initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/api/rest/initiate')
 
 
 @_mlflow_patch('deploy_azure')
-def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region='East US',
-                  cpu_cores=0.1, allocated_ram=0.5, model_name=None):
+def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_id: str, region: str = 'East US',
+                  cpu_cores: float = 0.1, allocated_ram: float = 0.5, model_name: str = None):
     """
     Deploy a given run to AzureML.
 
@@ -651,42 +628,92 @@ def _deploy_azure(endpoint_name, resource_group, workspace, run_id=None, region=
     :param model_name: (str) If specified, this will be the name of the model in AzureML.
         Otherwise, the model name will be randomly generated.
     """
-    supported_regions = ['East US', 'East US 2', 'Central US',
-                         'West US 2', 'North Europe', 'West Europe', 'Japan East']
-
-    if region not in supported_regions:
-        raise Exception("Region must be in list: " + str(supported_regions))
-    if cpu_cores <= 0:
-        raise Exception("Invalid CPU Count")
-    if allocated_ram <= 0:
-        raise Exception("Invalid Allocated RAM")
-
     request_payload = {
         'handler_name': 'DEPLOY_AZURE',
         'endpoint_name': endpoint_name,
         'resource_group': resource_group,
         'workspace': workspace,
-        'run_id': run_id if run_id else mlflow.active_run().info.run_uuid,
+        'region': region,
+        'run_id': run_id,
         'cpu_cores': cpu_cores,
         'allocated_ram': allocated_ram,
         'model_name': model_name
     }
-    return _initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/api/rest/initiate')
+
+
+@_mlflow_patch('deploy_kubernetes')
+def _deploy_kubernetes(run_id: str, service_port: int = 80,
+                       base_replicas: int = 1, autoscaling_enabled: bool = False,
+                       max_replicas: bool = 2, target_cpu_utilization: int = 50,
+                       disable_nginx: bool = False, gunicorn_workers: int = 1,
+                       resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
+                       cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
+                       memory_limit: str = "2048Mi", expose_external: bool = False):
+    """
+    Deploy model associated with the specified or active run to Kubernetes cluster.\n
+
+    Creates the Following Resources:
+        * Pod (with your model loaded in via an init container)
+        * ReplicaSet (configured to base replicas specified)
+        * HPA (if autoscaling is enabled)
+        * Service (model-<run id>.<db namespace>.svc.cluster.local:<service port specified>)
+        * Deployment
+        * Ingress (if expose enable is set to True) (on <your cluster url>/<run id>/invocations)
+
+    :param run_id: specified if overriding the active run
+    :param service_port: (default 80) the port that the prediction service runs on internally in the cluster
+    :param autoscaling_enabled: (default False) whether or not to provision a Horizontal Pod Autoscaler to provision
+            pods dynamically
+    :param max_replicas (default 2) [USED IF AUTOSCALING ENABLED] max number of pods to scale up to
+    :param target_cpu_utilization: (default 50) [USED IF AUTOSCALING ENABLED] the cpu utilization to scale up to
+            new pods on
+    :param disable_nginx: (default False) disable nginx inside of the pod (recommended)
+    :param gunicorn_workers: (default 1) [MUST BE 1 FOR SPARK TO PREVENT OOM] Number of web workers.
+    :param resource_requests_enabled: (default False) whether or not to enable Kubernetes resource requests
+    :param resource_limits_enabled: (default False) whether or not to enable Kubernetes resource limits
+    :param cpu_request: (default 0.5) [USED IF RESOURCE REQUESTS ENABLED] number of CPU to request
+    :param cpu_limit: (default 1) [USED IF RESOURCE LIMITS ENABLED] number of CPU to cap at
+    :param memory_request: (default 512Mi) [USED IF RESOURCE REQUESTS ENABLED] amount of RAM to request
+    :param memory_limit: (default 2048Mi) [USED IF RESOURCE LIMITS ENABLED] amount of RAM to limit at
+    :param expose_external: (default False) whether or not to create Ingress resource to deploy outside of the cluster.
+        :NOTE:
+            .. code-block:: text
+                It is not recommended to create an Ingress resource using this parameter, as your model will be
+                deployed with no authorization (and public access). Instead, it is better to deploy your model
+                as an internal service, and deploy an authentication proxy (such as https://github.com/oauth2-proxy/oauth2-proxy)
+                to proxy traffic to your internal service after authenticating.
+    """
+    _check_for_splice_ctx()
+    print("Processing...")
+
+    payload = {
+        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'DEPLOY_KUBERNETES',
+        'service_port': service_port, 'base_replicas': base_replicas, 'autoscaling_enabled': autoscaling_enabled,
+        'max_replicas': max_replicas, 'target_cpu_utilization': target_cpu_utilization,
+        'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
+        'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
+        'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request, 'cpu_limit': cpu_limit,
+        'memory_request': memory_request, 'expose_external': expose_external
+    }
+
+    return __initiate_job(payload, '/api/rest/initiate')
 
 
 @_mlflow_patch('deploy_database')
-def _deploy_db(db_schema_name,
-               db_table_name,
-               run_id,
-               primary_key=None,
-               df=None,
-               create_model_table=False,
-               model_cols=None,
-               classes=None,
-               sklearn_args={},
-               verbose=False,
-               pred_threshold=None,
-               replace=False) -> None:
+def _deploy_db(db_schema_name: str,
+               db_table_name: str,
+               run_id: str,
+               reference_table: Optional[str] = None,
+               reference_schema: Optional[str] = None,
+               primary_key: Optional[Dict[str, str]] = None,
+               df: Optional[Union[SparkDF, PandasDF]] = None,
+               create_model_table: Optional[bool] = False,
+               model_cols: Optional[List[str]] = None,
+               classes: Optional[List[str]] = None,
+               library_specific: Optional[Dict[str, str]] = None,
+               replace: Optional[bool] = False,
+               verbose: bool = False) -> None:
     """
     Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.
     This either creates a new table or alters an existing table in the database (depending on parameters passed)
@@ -694,9 +721,12 @@ def _deploy_db(db_schema_name,
     :param db_schema_name: (str) the schema name to deploy to.
     :param db_table_name: (str) the table name to deploy to.
     :param run_id: (str) The run_id to deploy the model on. The model associated with this run will be deployed
-    :param primary_key: (List[Tuple[str, str]]) List of column + SQL datatype to use for the primary/composite key. \n
+    :param reference_table: (str) if creating a new table, an alternative to specifying a dataframe is specifying a
+        reference table. The column schema of the reference table will be used to create the new table (e.g. MYTABLE)\n
+    :param reference_schema: (str) the db schema for the reference table.
+    :param primary_key: (Dict) Dictionary of column + SQL datatype to use for the primary/composite key. \n
         * If you are deploying to a table that already exists, it must already have a primary key, and this parameter will be ignored. \n
-        * If you are creating the table in this function, you MUST pass in a primary key 
+        * If you are creating the table in this function, you MUST pass in a primary key
     :param df: (Spark or Pandas DF) The dataframe used to train the model \n
                 | NOTE: The columns in this df are the ones that will be used to create the table unless specified by model_cols
     :param create_model_table: Whether or not to create the table from the dataframe. Default false. This
@@ -706,24 +736,17 @@ def _deploy_db(db_schema_name,
                                         IN THAT ORDER. The columns passed here must exist in the table.
     :param classes: (List[str]) The classes (prediction labels) for the model being deployed.\n
                     NOTE: If not supplied, the table will have default column names for each class
-    :param sklearn_args: (dict{str: str}) Prediction options for sklearn models: \n
-        * Available key value options: \n
-            * 'predict_call': 'predict', 'predict_proba', or 'transform' \n
-                * Determines the function call for the model \n
-                        * If blank, predict will be used (or transform if model doesn't have predict) \n
-            * 'predict_args': 'return_std' or 'return_cov' - For Bayesian and Gaussian models \n
-                * Only one can be specified \n
-                    * If the model does not have the option specified, it will be ignored.
-    :param verbose: (bool) Whether or not to print out the queries being created. Helpful for debugging
-    :param pred_threshold: (double) A prediction threshold for *Keras* binary classification models \n
-        * If the model type isn't Keras, this parameter will be ignored \n
-        NOTE: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, \
-                you will NOT receive a class prediction, only the output of the final layer (like model.predict()). \
-                If you want a class prediction \
-                for your binary classification problem, you MUST pass in a threshold.
+    :param library_specific: (dict{str: str}) Prediction options for certain model types: \n
+        * Certain model types (specifically Keras and Scikit-learn) support prediction arguments. Here are the options that we support:
+            * Scikit-learn
+                * predict_call: determines function call for the model. Available: 'predict' (default), 'predict_proba', 'transform'
+                * predict_args: passed into the predict call (for Gaussian and Bayesian models). Available: 'return_std', 'return_cov'
+            * Keras
+                * pred_threshold: prediction threshold for Keras binary classification models. Note: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, you will NOT receive a class prediction, only the output of the final layer (like model.predict()). If you want a class prediction for your binary classification problem, you MUST pass in a threshold.
+    If the model does not support these parameters, they will be ignored.
     :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
     :return: None\n
-    
+
     This function creates the following IF you are creating a table from the dataframe \n
         * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n
             * USER which is the current user who made the request
@@ -734,8 +757,8 @@ def _deploy_db(db_schema_name,
     IF you are deploying to an existing table, the table will be altered to include the columns above. \n
     :NOTE:
         .. code-block:: text
-    
-            The columns listed above are default value columns.\n 
+
+            The columns listed above are default value columns.\n
             This means that on a SQL insert into the table, \n
             you do not need to reference or insert values into them.\n
             They are automatically taken care of.\n
@@ -748,95 +771,90 @@ def _deploy_db(db_schema_name,
             parsing the prediction probabilities and filling in proper column values
     """
     _check_for_splice_ctx()
+    print("Deploying model to database...")
 
-    # Get the model
-    run_id = run_id if run_id else mlflow.active_run().info.run_uuid
-    fitted_model = _load_model(run_id)
+    # ~ Backwards Compatability ~
+    if verbose:
+        print("Deprecated Parameter 'verbose'. Use mlflow.watch_job(<job id>) or mlflow.fetch_logs(<job id>) to get"
+              " verbose output. Ignoring...", file=stderr)
 
-    # Param checking. Can't create model table without a dataframe
-    if create_model_table and df is None:  # Need to compare to None, truth value of df is ambiguous
-        raise SpliceMachineException(
-            "If you'd like to create the model table as part of this deployment, you must pass in a dataframe")
-    # Make sure primary_key is valid format
-    if create_model_table and not primary_key:
-        raise SpliceMachineException(
-            "If you'd like to create the model table as part of this deployment must provide the primary key(s)")
+    if primary_key is not None:
+        if isinstance(primary_key, list):
+            print("Passing in primary keys as a list of tuples is deprecated. Use dictionary {column name: type}",
+                  file=stderr)
+            primary_key = dict(primary_key)
 
-    # FIXME: We need to use the dbConnection so we can set a savepoint and rollback on failure
-    classes = classes if classes else []
-
-    schema_table_name = f'{db_schema_name}.{db_table_name}'
-
-    feature_columns, schema_types = get_feature_columns_and_types(mlflow._splice_context, df, create_model_table,
-                                                                  model_cols, schema_table_name)
-
-    # Validate primary key is correct, or that provided table has primary keys
-    primary_key = validate_primary_key(mlflow._splice_context, primary_key, db_schema_name,
-                                       db_table_name) or primary_key
-
-    library = get_model_library(fitted_model)
-    if library == DBLibraries.MLeap:
-        # Mleap needs a dataframe in order to serialize the model
-        df = get_df_for_mleap(mlflow._splice_context, schema_table_name, df)
-
-    model_type, classes, model_already_exists = ModelUtils[library].prep_model_for_deployment(mlflow._splice_context,
-                                                                                              fitted_model, classes,
-                                                                                              run_id,
-                                                                                              df, pred_threshold,
-                                                                                              sklearn_args)
-
-    print(f'Deploying model {run_id} to table {schema_table_name}')
-
-    # Create the schema of the table (we use this a few times)
-    schema_str = ''
-    for i in feature_columns:
-        schema_str += f'\t{i} {CONVERSIONS[schema_types[str(i)]]},'
-
-    try:
-        # Create/Alter table 1: DATA
-        if create_model_table:
-            print('Creating model table ...', end=' ')
-            create_model_deployment_table(mlflow._splice_context, run_id, schema_table_name, schema_str, classes,
-                                          primary_key, model_type, verbose)
-            print('Done.')
+    if df is not None:
+        if isinstance(df, PandasDF):
+            df_schema = mlflow._splice_context.spark_session.createDataFrame(df).schema.json()
+        elif isinstance(df, SparkDF):
+            df_schema = df.schema.json()
         else:
-            print('Altering provided table for deployment')
-            alter_model_table(mlflow._splice_context, run_id, schema_table_name, classes, model_type, verbose)
+            raise SpliceMachineException("Dataframe must either be a Pandas or Spark Dataframe")
+    else:
+        df_schema = None
 
-        # Create Trigger 1: model prediction
-        print('Creating model prediction trigger ...', end=' ')
-        if model_type in (H2OModelType.KEY_VALUE, SklearnModelType.KEY_VALUE, KerasModelType.KEY_VALUE):
-            create_vti_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns,
-                                          schema_types,
-                                          schema_str, primary_key, classes, model_type, sklearn_args, pred_threshold,
-                                          verbose)
-        else:
-            create_prediction_trigger(mlflow._splice_context, schema_table_name, run_id, feature_columns, schema_types,
-                                      schema_str, primary_key, model_type, verbose)
-        print('Done.')
+    payload = {
+        'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
+        'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
+        'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
+        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema
+    }
 
-        if model_type in (SparkModelType.CLASSIFICATION, SparkModelType.CLUSTERING_WITH_PROB,
-                          H2OModelType.CLASSIFICATION):
-            # Create Trigger 2: model parsing
-            print('Creating parsing trigger ...', end=' ')
-            create_parsing_trigger(mlflow._splice_context, schema_table_name, primary_key, run_id, classes, model_type,
-                                   verbose)
-            print('Done.')
-
-        add_model_to_metadata(mlflow._splice_context, run_id, schema_table_name)
+    return __initiate_job(payload, '/api/rest/initiate')
 
 
-    except Exception as e:
-        import traceback
-        exc = 'Model deployment failed. Rolling back transactions.\n'
-        print(exc)
-        drop_tables_on_failure(mlflow._splice_context, schema_table_name, run_id, model_already_exists)
-        if not verbose:
-            exc += 'For more insight into the SQL statement that generated this error, rerun with verbose=True'
-        traceback.print_exc()
-        raise SpliceMachineException(exc)
+def __get_logs(job_id: int):
+    """
+    Retrieve the logs associated with the specified job id
+    """
+    _check_for_splice_ctx()
+    request = requests.post(
+        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
+        json={"task_id": job_id}, auth=mlflow._basic_auth
+    )
+    if not request.ok:
+        raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
+    return request.json()['logs']
 
-    print('Model Deployed.')
+
+@_mlflow_patch('watch_job')
+def _watch_job(job_id: int):
+    """
+    Stream the logs in real time to standard out
+    of a Job
+    :param job_id: the job id to watch (returned after executing an operation)
+    """
+    previous_lines = []
+
+    while True:
+        logs_retrieved = __get_logs(job_id)
+        logs_retrieved.remove('')
+        log_idx = len(logs_retrieved)
+        # searching from the end is faster, because unless the logs double in the interval, it will be closer
+        for log_idx in range(len(logs_retrieved) - 1, -1, -1):
+            if logs_retrieved[log_idx] in previous_lines:
+                break
+
+        new_logs = '\n'.join(logs_retrieved[log_idx:])
+        if new_logs:
+            print(new_logs, end='')  # dont create \n @ the end
+
+        previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
+
+        if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+            return
+
+        time.sleep(1)
+
+
+@_mlflow_patch('fetch_logs')
+def _fetch_logs(job_id: int):
+    """
+    Get the logs as an array
+    :param job_id: the job to get the logs for
+    """
+    return __get_logs(job_id)
 
 
 @_mlflow_patch('get_deployed_models')
@@ -861,7 +879,7 @@ def apply_patches():
     targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
