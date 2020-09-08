@@ -852,7 +852,7 @@ def _watch_job(job_id: int):
             print(new_logs, end='')  # dont create \n @ the end
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-
+        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
         if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
             return
 
