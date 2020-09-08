@@ -92,6 +92,17 @@ _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
 
+def __try_auto_login():
+    """
+    Tries to login the user to the Director for deployment automatically. This will only work if the user is not
+    using the cloud service.
+
+    :return: None
+    """
+    user, password = os.environ.get('SPLICE_JUPYTER_USER'), os.environ.get('SPLICE_JUPYTER_PASSWORD')
+    if user and password:
+        mlflow.login_director(user, password)
+
 def _mlflow_patch(name):
     """
     Create a MLFlow Patch that applies the default gorilla settings
@@ -900,6 +911,7 @@ def set_mlflow_uri(uri):
 def main():
     mlflow.set_tracking_uri(_TRACKING_URL)
     apply_patches()
+    __try_auto_login()
 
 
 main()
