@@ -845,11 +845,13 @@ def _watch_job(job_id: int):
         # searching from the end is faster, because unless the logs double in the interval, it will be closer
         for log_idx in range(len(logs_retrieved) - 1, -1, -1):
             if logs_retrieved[log_idx] in previous_lines:
+                if log_idx == len(logs_retrieved)-1: # No new logs
+                    log_idx = len(logs_retrieved)
                 break
 
         new_logs = '\n'.join(logs_retrieved[log_idx:])
         if new_logs:
-            print(new_logs, end='')  # dont create \n @ the end
+            print(new_logs, end='')  # don't create \n @ the end
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
         previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
