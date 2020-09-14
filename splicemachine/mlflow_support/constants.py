@@ -28,3 +28,4 @@ class ModelStatuses():
     deployed: str = 'DEPLOYED'
     deleted: str = 'DELETED'
     SUPPORTED_STATUSES = [deployed, deleted]
+
