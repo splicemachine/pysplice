@@ -1,7 +1,9 @@
 import random
-from IPython.display import IFrame, HTML, display
-from pyspark import SparkContext
 from os import environ as env_vars
+
+from IPython.display import HTML, IFrame, display
+from pyspark import SparkContext
+
 
 def hide_toggle(toggle_next=False):
     """

@@ -1,26 +1,31 @@
-import warnings
-from multiprocessing.pool import ThreadPool
 import random
-from collections import defaultdict, OrderedDict
+import warnings
+from collections import OrderedDict, defaultdict
+from multiprocessing.pool import ThreadPool
 
+import graphviz
 import numpy as np
 import pandas as pd
-import scipy.stats as st
-import graphviz
-from numpy.linalg import eigh
-from tqdm import tqdm
-from IPython.display import HTML
 import pyspark_dist_explore as dist_explore
-from pyspark.sql import functions as F, Row
-from pyspark.sql.types import DoubleType, ArrayType, IntegerType, StringType
-from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
+import scipy.stats as st
+from IPython.display import HTML
+from numpy.linalg import eigh
+from pyspark import keyword_only
 from pyspark.ml import Pipeline, Transformer
 from pyspark.ml.classification import LogisticRegressionModel
+from pyspark.ml.evaluation import (BinaryClassificationEvaluator,
+                                   MulticlassClassificationEvaluator,
+                                   RegressionEvaluator)
+from pyspark.ml.feature import (PCA, Bucketizer, OneHotEncoder, StandardScaler,
+                                StringIndexer, VectorAssembler)
+from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
+from pyspark.ml.tuning import (CrossValidator, CrossValidatorModel,
+                               ParamGridBuilder)
 from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
-from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler, Bucketizer, PCA
-from pyspark.ml.evaluation import RegressionEvaluator, MulticlassClassificationEvaluator, BinaryClassificationEvaluator
-from pyspark import keyword_only
-from pyspark.ml.tuning import CrossValidator, ParamGridBuilder, CrossValidatorModel
+from pyspark.sql import Row
+from pyspark.sql import functions as F
+from pyspark.sql.types import ArrayType, DoubleType, IntegerType, StringType
+from tqdm import tqdm
 
 
 def get_confusion_matrix(spark, TP, TN, FP, FN):
