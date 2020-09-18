@@ -75,6 +75,7 @@ from splicemachine.mlflow_support.constants import (FileExtensions)
 from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
                                                     insert_artifact)
 from splicemachine.spark.context import PySpliceContext
+from splicemachine.features import *
 
 _TESTING = os.environ.get("TESTING", False)
 
@@ -141,7 +142,7 @@ def _register_splice_context(splice_context):
     """
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
-
+    mlflow.feature_store = FeatureStore(splice_context)
 
 def _check_for_splice_ctx():
     """
