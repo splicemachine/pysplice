@@ -11,5 +11,6 @@ Subpackages
    
    splicemachine.spark
    splicemachine.mlflow_support
+   splicemachine.feature
    splicemachine.notebook
    splicemachine.stats
