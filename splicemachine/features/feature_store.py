@@ -1,4 +1,4 @@
-from splicemachine.features import FeatureSet
+from splicemachine.features import *
 from typing import List, Dict, Optional, Tuple
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from datetime import datetime
@@ -18,12 +18,13 @@ class FeatureStore:
         """
         return self.feature_sets
 
-    def list_training_contexts(self) -> Dict[int, Tuple[str,str]]:
+    def list_training_contexts(self, filter: Dict[str,str]) -> Dict[int, Tuple[str,str]]:
         # TODO: Webinar
         # TODO: Do we need a filter that gets training contexts given a label name?
         """
         Returns all available training contexts in the format of a dictionary mapping
         Context_ID: (context_name, context_description)
+        :param filter: Dictionary container the filter keyword (label, description etc) and the value to filter on (using CONTAINS)
 
         :return:
         """
@@ -46,7 +47,7 @@ class FeatureStore:
         :param ft:
         :return:
         """
-        self.feature_tables.append(ft)
+        self.feature_sets.append(ft)
 
     def create_feature_set(self, schema: str, name: str, pk_columns: Dict[str,str],
                              feature_column: Dict[str,str], desc: Optional[str] = None) -> FeatureSet:
@@ -66,7 +67,7 @@ class FeatureStore:
 
     def create_training_context(self, *, name: str, sql: str, primary_keys: List[str],
                             ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
-                            desc: Optional[str] = None) -> None:
+                            context_keys: List[str] = None, desc: Optional[str] = None) -> None:
         # TODO: Webinar
         """
         Registers a training context for use in generating training SQL
@@ -81,6 +82,8 @@ class FeatureStore:
         :param ts_col: (Optional[str]) The timestamp column of the training SQL that identifies the inference timestamp
         :param label_col: (Optional[str]) The optional label column from the training SQL.
         :param replace: (Optional[bool]) Whether to replace an existing training set
+        :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in get_training_set
+            Note: If this parameter is None, default to all other columns in the sql that aren't PK, label, ts etc
         :param desc: (Optional[str]) An optional description of the training set
         :return:
         """
@@ -98,7 +101,7 @@ class FeatureStore:
         """
         pass
 
-    def get_available_features(self, training_context: Optional[str, int]) -> List[str]:
+    def get_available_features(self, training_context: Optional[str, int]) -> List[Feature]:
         # TODO: Webinar
         """
         Given a training context ID or name, returns the available features
