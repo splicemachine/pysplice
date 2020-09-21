@@ -523,7 +523,8 @@ def _log_artifact(file_name, name=None, run_uuid=None):
                 mlflow.log_artifact('my_image.png')
 
     :param file_name: (str) the name of the file name to log
-    :param name: (str) the name of the run relative name to store the model under
+    :param name: (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file
+        extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).
     :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run
     :return: None
     
