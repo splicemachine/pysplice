@@ -8,24 +8,27 @@ TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss'
 class FeatureStore:
     def __init__(self, splice):
         self.splice_ctx = splice
-        self.feature_tables = []
+        self.feature_sets = []
 
-    def get_feature_sets(self) -> List[FeatureSet]:
+    def list_feature_sets(self) -> List[FeatureSet]:
         """
         Returns a list of available feature sets
 
         :return: List[FeatureTable]
         """
-        return self.feature_tables
+        return self.feature_sets
 
-    def get_training_contexts(self) -> Dict[int, Tuple[str,str]]:
+    def list_training_contexts(self) -> Dict[int, Tuple[str,str]]:
         # TODO: Webinar
+        # TODO: Do we need a filter that gets training contexts given a label name?
         """
         Returns all available training contexts in the format of a dictionary mapping
         Context_ID: (context_name, context_description)
 
         :return:
         """
+
+
 
     def get_training_context_id(self, name) -> int:
         """
@@ -120,6 +123,7 @@ class FeatureStore:
         :param features: (List[str]) the list of features from the feature store to be included in the training
             * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
              desired features
+        # FIXME: Doesn't this function need context keys as a parameter?
         :param start_time: (Optional[datetime]) The start time of the query (how far back in the data to start). Default None
             * NOTE: If start_time is None, query will start from beginning of history
         :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
