@@ -3,9 +3,9 @@ class FeatureTypes:
     Class containing names for
     valid feature types
     """
-    categorical: str = "categorical"
-    ordinal: str = "ordinal"
-    continuous: str = "continuous"
+    categorical: str = "N"
+    ordinal: str = "O"
+    continuous: str = "C"
 
     @staticmethod
     def get_valid() -> tuple:
