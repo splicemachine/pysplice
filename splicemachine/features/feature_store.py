@@ -1,8 +1,15 @@
 from typing import List, Dict, Optional, Tuple
 from pyspark.sql.dataframe import DataFrame as SparkDF
+from pyspark.ml import Pipeline
+from pyspark.ml.classification import RandomForestClassifier
+from pyspark.ml.regression import RandomForestRegressor
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from IPython.display import display
+import pandas as pd
 from splicemachine.spark import PySpliceContext
 from datetime import datetime
-from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df
+from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df, Columns
+
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext, mlflow_ctx = None):
@@ -44,7 +51,7 @@ class FeatureStore:
         sql = sql.rstrip('AND')
 
         feature_set_rows = self.splice_ctx.df(sql)
-        cols = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns']
+        cols = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns', 'pktypes']
         feature_set_rows = clean_df(feature_set_rows, cols)
 
         for fs in feature_set_rows.collect():
@@ -94,10 +101,36 @@ class FeatureStore:
             training_contexts.append(TrainingContext(**t))
         return training_contexts
 
+    def _get_pipeline(self, df, features, label, model_type):
+        categorical_features = [f.name for f in features if f.is_categorical()]
+        numeric_features = [f.name for f in features if f.is_continuous() or f.is_ordinal()]
+        indexed_features = [f'{n}_index' for n in categorical_features]
 
-    def run_feature_elimination(self, df, label: str = 'label', n: int = 10, verbose: int = 0,
-                                log_mlflow: bool = False, mlflow_run_name: str = None) -> None:
-        # TODO: Webinar
+        si = [StringIndexer(inputCol=n, outputCol=f'{n}_index', handleInvalid='keep') for n in categorical_features]
+        all_features = [f.name for f in features if not f.is_categorical()] + indexed_features
+
+        v = VectorAssembler(inputCols=all_features, outputCol='features')
+        if model_type=='classification':
+            si += [StringIndexer(inputCol=label, outputCol=f'{label}_index', handleInvalid='keep')]
+            clf = RandomForestClassifier(labelCol=f'{label}_index')
+        else:
+            clf = RandomForestRegressor(labelCol=label)
+        return Pipeline(stages=si + [v, clf]).fit(df)
+
+    def _get_feature_importance(self, feature_importances, df, features_column):
+        feature_rank = []
+        for i in df.schema[features_column].metadata["ml_attr"]["attrs"]:
+            feature_rank += df.schema[features_column].metadata["ml_attr"]["attrs"][i]
+        features_df = pd.DataFrame(feature_rank)
+        features_df['score'] = features_df['idx'].apply(lambda x: feature_importances[x])
+        return(features_df.sort_values('score', ascending = False))
+
+
+
+    def run_feature_elimination(self, df, features, label: str = 'label', n: int = 10, verbose: int = 0,
+                            model_type: str='classification', step: int = 1, log_mlflow: bool = False,
+                            mlflow_run_name: str = None, return_importances: bool = False):
+
         """
         Runs feature elimination using a Spark decision tree on the dataframe passed in. Optionally logs results to mlflow
         :param df: The dataframe with features and label
@@ -110,6 +143,40 @@ class FeatureStore:
             names will be {mlflow_run_name}_{num_features}_features. ie testrun_5_features, testrun_4_features etc
         :return:
         """
+
+        train_df = df
+        remaining_features = features
+        rnd = 0
+        rn = mlflow_run_name or f'feature_elimination_{label}'
+        if log_mlflow: self.mlflow_ctx.start_run(run_name=rn)
+        while len(remaining_features) > n:
+            rnd += 1
+            num_features = max(len(remaining_features)-step, n) # Don't go less than the specified value
+            print(f'Building {model_type} model')
+            model = self._get_pipeline(train_df, remaining_features, label, model_type)
+            print('Getting feature importance')
+            feature_importances = self._get_feature_importance(model.stages[-1].featureImportances, model.transform(train_df), "features").head(num_features)
+            remaining_features_and_label = list(feature_importances['name'].values) + [label]
+            train_df = train_df.select(*remaining_features_and_label)
+            remaining_features = [f for f in remaining_features if f.name in feature_importances['name'].values]
+            print(f'{len(remaining_features)} features remaining')
+
+            if verbose == 1:
+                print(f'Round {rnd} complete. Remaining Features:')
+                for i,f in enumerate(list(feature_importances['name'].values)):
+                    print(f'{i}. {f}')
+            elif verbose == 2:
+                print(f'Round {rnd} complete. Remaining Features:')
+                display(feature_importances.reset_index(drop=True))
+
+            if log_mlflow:
+                with self.mlflow_ctx.start_run(run_name=f'Round {rnd}', nested=True):
+                    for index, row in feature_importances.iterrows():
+                        self.mlflow_ctx.lm(row['name'], row['score'])
+
+        if return_importances:
+            return remaining_features, feature_importances.reset_index(drop=True)
+        return remaining_features
 
 
 
@@ -208,8 +275,8 @@ class FeatureStore:
               WHERE tc.ContextID={training_context_id}
           )
         ''')
-        cols = ['FEATUREID', 'FEATURESETID', 'NAME', 'DESCRIPTION', 'FEATUREDATATYPE', 'FEATURETYPE', 'CARDINALITY','TAGS', 'COMPLIANCELEVEL', 'LASTUPDATETS', 'LASTUPDATEUSERID']
-        df = clean_df(df, cols)
+
+        df = clean_df(df, Columns.feature)
 
         features = []
         for feat in df.collect():
@@ -307,12 +374,8 @@ class FeatureStore:
         :return : (str)
         """
 
-        # DB-9556 loss of column names on complex sql for NSDS
-        cols = []
-
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
         tctx = self.get_training_contexts(_filter={'CONTEXTID': training_context_id})[0]
-        sql=''
 
         # optional INSERT prefix
         if (include_insert):

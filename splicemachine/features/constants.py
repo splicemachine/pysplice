@@ -19,7 +19,7 @@ class FeatureTypes:
 
 class SQL:
     feature_set_table = 'CREATE TABLE {schema}.{table} ({pk_columns}, {ts_columns}, {feature_columns}, ' \
-                            'PRIMARY KEY ({pk_list})'
+                            'PRIMARY KEY ({pk_list}))'
 
     feature_set_trigger = '''
     CREATE TRIGGER {schema}.{table}_history_update AFTER UPDATE ON {schema}.{table}
@@ -42,9 +42,17 @@ class SQL:
     """
 
     feature_metadata = """
-    INSERT INTO FeatureStore.Feature (FeatureSetID, Name, Description, FeatureDataType, FeatureType, Tags, 
-    ComplianceLevel) 
+    INSERT INTO FeatureStore.Feature (FeatureSetID, Name, Description, FeatureDataType, FeatureType, Tags) 
     VALUES 
-    ({feature_set_id}, '{name}', '{desc}', {feature_data_type}', '{feature_type}', '{tags}', {compliance_level}) 
+    ({feature_set_id}, '{name}', '{desc}', '{feature_data_type}', '{feature_type}', '{tags}') 
     """
 
+    get_features_in_feature_set = """
+    select FeatureID,FeatureSetID,Name,Description,FeatureDataType, FeatureType,Cardinality,Tags,ComplianceLevel, 
+    LastUpdateTS,LastUpdateUserID from featurestore.feature where featuresetid={featuresetid}
+    """
+
+class Columns:
+    feature = ['featureid', 'featuresetid', 'name', 'description', 'featuredatatype', 'featuretype',
+               'cardinality', 'tags', 'compliancelevel', 'lastupdatets', 'lastupdateuserid']
+    history_table_pk = ['ASOF_TS','UNTIL_TS']
