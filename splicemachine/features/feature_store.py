@@ -2,13 +2,7 @@ from typing import List, Dict, Optional, Tuple
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from splicemachine.spark import PySpliceContext
 from datetime import datetime
-
-TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss'
-
-def clean_df(df, cols):
-    for old,new in zip(df.columns, cols):
-        df = df.withColumnRenamed(old,new)
-    return df
+from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext, mlflow_ctx = None):
@@ -32,9 +26,11 @@ class FeatureStore:
         _filter = _filter or {}
 
         sql = '''
-        SELECT fset.FeatureSetID, TableName, SchemaName, Description, pkcolumns FROM FeatureStore.FeatureSet fset
+        SELECT fset.FeatureSetID, TableName, SchemaName, Description, pkcolumns, pktypes FROM FeatureStore.FeatureSet fset
         INNER JOIN 
-        (SELECT FeatureSetID, STRING_AGG(KeyColumnName,',') PKColumns FROM FeatureStore.FeatureSetKey GROUP BY 1)  p ON fset.FeatureSetID=p.FeatureSetID 
+        (SELECT FeatureSetID, STRING_AGG(KeyColumnName,'|') PKColumns, STRING_AGG(KeyColumnDataType,'|') pktypes 
+        FROM FeatureStore.FeatureSetKey GROUP BY 1) p 
+        ON fset.FeatureSetID=p.FeatureSetID 
         '''
 
         # Filter by featuresetid and filter
@@ -48,12 +44,15 @@ class FeatureStore:
         sql = sql.rstrip('AND')
 
         feature_set_rows = self.splice_ctx.df(sql)
-        cols = ['FeatureSetID', 'TableName', 'SchemaName', 'Description', 'pkcolumns']
+        cols = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns']
         feature_set_rows = clean_df(feature_set_rows, cols)
 
         for fs in feature_set_rows.collect():
             d = fs.asDict()
-            feature_sets.append(FeatureSet(splice, **d))
+            pkcols = d.pop('pkcolumns').split('|')
+            pktypes = d.pop('pktypes').split('|')
+            d['primary_keys'] = {c:k for c,k in zip(pkcols,pktypes)}
+            feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
     def get_training_contexts(self, _filter: Dict[str,str] = None) -> List[TrainingContext]:
@@ -111,6 +110,9 @@ class FeatureStore:
             names will be {mlflow_run_name}_{num_features}_features. ie testrun_5_features, testrun_4_features etc
         :return:
         """
+
+
+
     def get_training_context_id(self, name) -> int:
         """
         Returns the unique context ID from a name
@@ -190,7 +192,7 @@ class FeatureStore:
         :param training_context:
         :return:
         """
-        df = splice.df(f'''
+        df = self.splice_ctx.df(f'''
         SELECT f.FEATUREID, f.FEATURESETID, f.NAME, f.DESCRIPTION, f.FEATUREDATATYPE, f.FEATURETYPE, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.LASTUPDATETS, f.LASTUPDATEUSERID
           FROM FeatureStore.Feature f
           WHERE FeatureID IN
@@ -248,48 +250,109 @@ class FeatureStore:
         # SELECT clause
         sql = 'SELECT '
         for pkcol in tctx.pkcolumns: # Select primary key column(s)
-            sql += f'ctx.{pkcol},'
+            sql += f'\n\tctx.{pkcol},'
             cols.append(pkcol)
 
-        sql += f' ctx.{tctx.tscolumn}, ' # Select timestamp column
+        sql += f'\n\tctx.{tctx.tscolumn}, ' # Select timestamp column
         cols.append(tctx.tscolumn)
 
         for feature in features:
-            sql += f'COALESCE(fset{feature.featuresetid}.{feature.name},fset{feature.featuresetid}h.{feature.name}) {feature.name},' # Collect all features over time
+            sql += f'\n\tCOALESCE(fset{feature.featuresetid}.{feature.name},fset{feature.featuresetid}h.{feature.name}) {feature.name},' # Collect all features over time
             cols.append(feature.name)
 
-        sql = sql + f'ctx.{tctx.labelcolumn}' if tctx.labelcolumn else sql.rstrip(',')  # Select the optional label col
+        sql = sql + f'\n\tctx.{tctx.labelcolumn}' if tctx.labelcolumn else sql.rstrip(',')  # Select the optional label col
         if tctx.labelcolumn: cols.append(tctx.labelcolumn)
 
         # FROM clause
-        sql += f' FROM ({tctx.context_sql}) ctx '
+        sql += f'\nFROM ({tctx.context_sql}) ctx '
 
         # JOIN clause
         feature_set_ids = list({f.featuresetid for f in features}) # Distinct set of IDs
         feature_sets = self.get_feature_sets(feature_set_ids)
         for fset in feature_sets:
             # Join Feature Set
-            sql += f' LEFT OUTER JOIN {fset.schemaname}.{fset.tablename} fset{fset.featuresetid} ON '
+            sql += f'\nLEFT OUTER JOIN {fset.schemaname}.{fset.tablename} fset{fset.featuresetid} \n\tON '
             for pkcol in fset.pkcolumns:
-                sql += f' fset{fset.featuresetid}.{pkcol}=ctx.{pkcol} AND '
+                sql += f'fset{fset.featuresetid}.{pkcol}=ctx.{pkcol} AND '
             sql += f' ctx.{tctx.tscolumn} >= fset{fset.featuresetid}.LAST_UPDATE_TS '
 
             # Join Feature Set History
-            sql += f' LEFT OUTER JOIN {fset.schemaname}.{fset.tablename}_history fset{fset.featuresetid}h ON '
+            sql += f'\nLEFT OUTER JOIN {fset.schemaname}.{fset.tablename}_history fset{fset.featuresetid}h \n\tON '
             for pkcol in fset.pkcolumns:
                 sql += f' fset{fset.featuresetid}h.{pkcol}=ctx.{pkcol} AND '
             sql += f' ctx.{tctx.tscolumn} >= fset{fset.featuresetid}h.ASOF_TS AND ctx.{tctx.tscolumn} < fset{fset.featuresetid}h.UNTIL_TS'
 
         # WHERE clause on optional start and end times
         if start_time or end_time:
-            sql += ' WHERE '
+            sql += '\nWHERE '
             if start_time:
-                sql += f"ctx.{tctx.tscolumn} >= '{str(start_time)}' AND"
+                sql += f"\n\tctx.{tctx.tscolumn} >= '{str(start_time)}' AND"
             if end_time:
-                sql += f"ctx.{tctx.tscolumn} <= '{str(end_time)}'"
+                sql += f"\n\tctx.{tctx.tscolumn} <= '{str(end_time)}'"
             sql = sql.rstrip('AND')
 
-        return sql if return_sql else clean_df(splice.df(sql),cols)
+        return sql if return_sql else clean_df(self.splice_ctx.df(sql),cols)
+
+
+    def get_feature_vector_sql(self, training_context_id: int, features: List[Feature], include_insert: Optional[bool] = True  ) -> str:
+        # TODO: Webinar
+        """
+        Returns the parameterized feature retrieval SQL used for online model serving.
+
+        :param training_context_id: (int) The name of the registered training context
+        :param features: (List[str]) the list of features from the feature store to be included in the training
+            * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
+             desired features
+        :param include_insert: (Optional[bool]) determines whether insert into model table is included in the SQL statement
+        :return : (str)
+        """
+
+        # DB-9556 loss of column names on complex sql for NSDS
+        cols = []
+
+        # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
+        tctx = self.get_training_contexts(_filter={'CONTEXTID': training_context_id})[0]
+        sql=''
+
+        # optional INSERT prefix
+        if (include_insert):
+            sql = 'INSERT INTO {target_model_table} ('
+            for pkcol in tctx.pkcolumns: # Select primary key column(s)
+                sql += f'{pkcol}, '
+            for feature in features:
+                sql += f'{feature.name}, ' # Collect all features over time
+            sql = sql.rstrip(', ')
+            sql += ')\nSELECT '
+        else:
+            sql = 'SELECT '
+
+        # SELECT expressions
+        for pkcol in tctx.pkcolumns: # Select primary key column(s)
+            sql += f'\n\t{{p_{pkcol}}} {pkcol},'
+
+        for feature in features:
+            sql += f'\n\tfset{feature.featuresetid}.{feature.name}, ' # Collect all features over time
+        sql = sql.rstrip(', ')
+
+        # FROM clause
+        sql += f'\nFROM '
+
+        # JOIN clause
+        feature_set_ids = list({f.featuresetid for f in features}) # Distinct set of IDs
+        feature_sets = self.get_feature_sets(feature_set_ids)
+        where = '\nWHERE '
+        for fset in feature_sets:
+            # Join Feature Set
+            sql += f'\n\t{fset.schemaname}.{fset.tablename} fset{fset.featuresetid}, '
+            for pkcol in fset.pkcolumns:
+                where += f'\n\tfset{fset.featuresetid}.{pkcol}={{p_{pkcol}}} AND '
+
+        sql = sql.rstrip(', ')
+        where = where.rstrip('AND ')
+        sql += where
+
+        return sql
+
 
     def list_training_sets(self) -> Dict[str, Optional[str]]:
         """
@@ -299,4 +362,3 @@ class FeatureStore:
         :return: Dict[str, Optional[str]]
         """
         pass
-
