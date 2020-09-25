@@ -21,16 +21,15 @@ class SQL:
     feature_set_table = 'CREATE TABLE {schema}.{table} ({pk_columns}, {ts_columns}, {feature_columns}, ' \
                             'PRIMARY KEY ({pk_list}))'
 
-    feature_set_trigger = '''
-    CREATE TRIGGER {schema}.{table}_history_update AFTER UPDATE ON {schema}.{table}
+    feature_set_trigger = '''CREATE TRIGGER {schema}.{table}_history_update AFTER UPDATE ON {schema}.{table}
     REFERENCING OLD AS OLDW NEW AS NEWW
     FOR EACH ROW 
         INSERT INTO {schema}.{table}_history (ASOF_TS, UNTIL_TS, {pk_list}, {feature_list}) 
         VALUES( OLDW.LAST_UPDATE_TS, NEWW.LAST_UPDATE_TS, {old_pk_cols}, {old_feature_cols} )
     '''
 
-    feature_set_metadata = """
-    INSERT INTO FeatureStore.FeatureSet ( SchemaName, TableName, Description) VALUES ('{schema}', '{table}', '{desc}')
+    feature_set_metadata = """INSERT INTO FeatureStore.FeatureSet 
+    ( SchemaName, TableName, Description) VALUES ('{schema}', '{table}', '{desc}')
     """
 
     get_feature_set_id = "SELECT FeatureSetID FROM FeatureStore.FeatureSet " \
@@ -50,6 +49,20 @@ class SQL:
     get_features_in_feature_set = """
     select FeatureID,FeatureSetID,Name,Description,FeatureDataType, FeatureType,Cardinality,Tags,ComplianceLevel, 
     LastUpdateTS,LastUpdateUserID from featurestore.feature where featuresetid={featuresetid}
+    """
+
+    training_context = """
+    INSERT INTO FeatureStore.TrainingContext (Name, Description, SQLText, TSColumn, LabelColumn) 
+    VALUES ('{name}', '{desc}', '{sql_text}', '{ts_col}', {label_col})
+    """
+
+    get_training_context_id = """
+    SELECT ContextID from FeatureStore.TrainingContext where Name='{name}'
+    """
+
+    training_context_keys = """
+    INSERT INTO FeatureStore.TrainingContextKey (ContextID, KeyColumnName, KeyType)
+    VALUES ({context_id}, '{key_column}', '{key_type}' )
     """
 
 class Columns:

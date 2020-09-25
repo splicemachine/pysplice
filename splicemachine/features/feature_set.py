@@ -1,5 +1,6 @@
 from splicemachine.features import Feature, SQL, clean_df, Columns
 from splicemachine.spark import PySpliceContext
+from splicemachine.mlflow_support.utilities import SpliceMachineException
 from typing import List, Dict
 
 FEATURE_SET_TS_COL = 'LAST_UPDATE_TS TIMESTAMP'
@@ -33,11 +34,13 @@ class FeatureSet:
                 f = f.asDict()
                 self.features.append(Feature(**f))
 
-    def add_feature(self, feature: Feature):
-        # TODO: Make sure feature name doesn't exist in feature store
-        if feature not in self.features:
-            self.features.append(feature)
-
+    def add_feature(self, *, name, description, feature_data_type, feature_type, tags: List[str]):
+        f = Feature(name=name, description=description, featuredatatype=feature_data_type,
+                       featuretype=feature_type, tags=tags)
+        # FIXME: This only checks within this feature set. Needs to check all features
+        if f in self.features:
+            raise SpliceMachineException("Feature already exists. Provide a different name")
+        self.features.append(f)
 
     def get_feature_by_name(self, feature_name: str):
         return [f for f in self.features if f.name == feature_name][0]
@@ -125,9 +128,13 @@ class FeatureSet:
 
 
     def __repr__(self):
-        return str(self.__dict__)
+        return self.__dict__
     def __str__(self):
         return f'FeatureSet(FeatureSetID={self.__dict__.get("featuresetid", "None")}, SchemaName={self.schemaname}, ' \
                f'TableName={self.tablename}, Description={self.description}, PKColumns={self.pkcolumns},' \
                f'{len(self.features)} Features)'
+    def __eq__(self, other):
+        if isinstance(other, FeatureSet):
+            return self.tablename == other.tablename and self.schemaname == other.schemaname
+        return False
 

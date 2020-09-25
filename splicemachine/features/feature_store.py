@@ -4,17 +4,19 @@ from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
+from splicemachine.mlflow_support.utilities import SpliceMachineException
 from IPython.display import display
 import pandas as pd
 from splicemachine.spark import PySpliceContext
 from datetime import datetime
-from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df, Columns
+from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df, Columns, SQL
 
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext, mlflow_ctx = None):
         self.splice_ctx = splice_ctx
         self.mlflow_ctx = mlflow_ctx
+        self.feature_sets = self.get_feature_sets()
 
     def register_splice_context(self, splice_ctx):
         self.splice_ctx = splice_ctx
@@ -107,7 +109,7 @@ class FeatureStore:
         indexed_features = [f'{n}_index' for n in categorical_features]
 
         si = [StringIndexer(inputCol=n, outputCol=f'{n}_index', handleInvalid='keep') for n in categorical_features]
-        all_features = [f.name for f in features if not f.is_categorical()] + indexed_features
+        all_features = numeric_features + indexed_features
 
         v = VectorAssembler(inputCols=all_features, outputCol='features')
         if model_type=='classification':
@@ -198,11 +200,11 @@ class FeatureStore:
         """
         self.feature_sets.append(feature_set)
 
-    def create_feature_set(self, schema: str, name: str, pk_columns: Dict[str,str],
-                             feature_column: Dict[str,str], desc: Optional[str] = None) -> FeatureSet:
-        # TODO: Webinar
+
+    def create_feature_set(self, schema: str, table: str, primary_keys: Dict[str,str],
+                           desc: Optional[str] = None) -> FeatureSet:
         """
-        Creates a new feature set, recording metadata and generating the database table with associated triggers
+        Creates and returns a new feature set
 
         :param schema:
         :param name:
@@ -211,15 +213,20 @@ class FeatureStore:
         :param desc:
         :return: FeatureTable
         """
-        pass
+        fset = FeatureSet(splice_ctx=self.splice_ctx, schemaname=schema, tablename=table, primary_keys=primary_keys,
+                            description=desc)
+        if fset in self.feature_sets:
+            raise SpliceMachineException('This feature set already exists. Use a different schema and/or table name.')
+        self.feature_sets.append(fset)
+        return fset
 
     def get_features_by_name(self, name: List[str]) -> List[Feature]:
         pass
 
-    def create_training_context(self, *, name: str, sql: str, primary_keys: List[str],
+
+    def create_training_context(self, *, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
                             ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
-                            context_keys: List[str] = None, desc: Optional[str] = None) -> None:
-        # TODO: Webinar
+                            desc: Optional[str] = None) -> None:
         """
         Registers a training context for use in generating training SQL
 
@@ -233,15 +240,40 @@ class FeatureStore:
         :param ts_col: (Optional[str]) The timestamp column of the training SQL that identifies the inference timestamp
         :param label_col: (Optional[str]) The optional label column from the training SQL.
         :param replace: (Optional[bool]) Whether to replace an existing training set
-        :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in get_training_set
-            Note: If this parameter is None, default to all other columns in the sql that aren't PK, label, ts etc
+        :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in
+            get_training_set
         :param desc: (Optional[str]) An optional description of the training set
         :return:
         """
 
         # validate_sql()
         # register_training_context()
-        pass
+        label_col = f"'{label_col}'" if label_col else "NULL" # Formatting incase NULL
+        train_sql = SQL.training_context.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
+                                                label_col=label_col)
+        print('Building training sql...')
+        print('\t',train_sql)
+        self.splice_ctx.execute(train_sql)
+        print('Done.')
+
+        # Get generated context ID
+        cid = self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
+
+        print('Creating Context Keys')
+        for i in context_keys:
+            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i, key_type='C')
+            print(f'\tCreating Context Key {i}...')
+            print('\t',key_sql)
+            self.splice_ctx.execute(key_sql)
+        print('Done.')
+        print('Creating Primary Keys')
+        for i in primary_keys:
+            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i, key_type='P')
+            print(f'\tCreating Primary Key {i}...')
+            print('\t',key_sql)
+            self.splice_ctx.execute(key_sql)
+        print('Done.')
+
 
     def get_feature_context_keys(self, features: List[str]) -> Dict[str,List[str]]:
         """
