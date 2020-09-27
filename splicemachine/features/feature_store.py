@@ -284,13 +284,19 @@ class FeatureStore:
         """
         pass
 
-    def get_available_features(self, training_context_id: int) -> List[Feature]:
+    def get_available_features(self, context_id:Optional[int] = None, name: Optional[str] = None ) -> List[Feature]:
         """
         Given a training context ID or name, returns the available features
 
         :param training_context:
         :return:
         """
+        
+        if (context_id) :
+            where = f'tc.ContextID={context_id}'
+        if (name) :
+            where = f"tc.Name='{name}'"
+            
         df = self.splice_ctx.df(f'''
         SELECT f.FEATUREID, f.FEATURESETID, f.NAME, f.DESCRIPTION, f.FEATUREDATATYPE, f.FEATURETYPE, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.LASTUPDATETS, f.LASTUPDATEUSERID
           FROM FeatureStore.Feature f
@@ -304,17 +310,17 @@ class FeatureStore:
                 FeatureStore.FeatureSetKey fsk ON c.KeyColumnName=fsk.KeyColumnName
                 INNER JOIN
                 FeatureStore.Feature f USING (FeatureSetID)
-              WHERE tc.ContextID={training_context_id}
+              WHERE {where}
           )
         ''')
-
+        
         df = clean_df(df, Columns.feature)
-
         features = []
         for feat in df.collect():
             f = feat.asDict()
             features.append(Feature(**f))
         return features
+
 
 
     def set_feature_description(self):
