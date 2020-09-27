@@ -3,8 +3,8 @@ from splicemachine.spark import PySpliceContext
 from splicemachine.mlflow_support.utilities import SpliceMachineException
 from typing import List, Dict
 
-FEATURE_SET_TS_COL = 'LAST_UPDATE_TS TIMESTAMP'
-HISTORY_SET_TS_COL = 'ASOF_TS TIMESTAMP, UNTIL_TS TIMESTAMP'
+FEATURE_SET_TS_COL = '\n\tLAST_UPDATE_TS TIMESTAMP'
+HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
 
 class FeatureSet:
     def __init__(self, *, splice_ctx: PySpliceContext, tablename, schemaname,
@@ -42,6 +42,7 @@ class FeatureSet:
             raise SpliceMachineException("Feature already exists. Provide a different name")
         self.features.append(f)
 
+
     def get_feature_by_name(self, feature_name: str):
         return [f for f in self.features if f.name == feature_name][0]
 
@@ -52,7 +53,7 @@ class FeatureSet:
 
 
     def get_pk_schema_str(self):
-        return ','.join([f'{k} {self.primary_keys[k]}' for k in self.primary_keys])
+        return ','.join([f'\n\t{k} {self.primary_keys[k]}' for k in self.primary_keys])
 
     def get_pk_column_str(self, history=False):
         if history:
@@ -60,7 +61,7 @@ class FeatureSet:
         return ','.join(self.pkcolumns)
 
     def get_feature_schema_str(self):
-        return ','.join([f'{f.name}  {f.featuredatatype}' for f in self.features])
+        return ','.join([f'\n\t{f.name}  {f.featuredatatype}' for f in self.features])
 
     def get_feature_column_str(self):
         return ','.join([f.name for f in self.features])
@@ -128,13 +129,9 @@ class FeatureSet:
 
 
     def __repr__(self):
-        return self.__dict__
+        return str(self.__dict__)
     def __str__(self):
         return f'FeatureSet(FeatureSetID={self.__dict__.get("featuresetid", "None")}, SchemaName={self.schemaname}, ' \
                f'TableName={self.tablename}, Description={self.description}, PKColumns={self.pkcolumns},' \
                f'{len(self.features)} Features)'
-    def __eq__(self, other):
-        if isinstance(other, FeatureSet):
-            return self.tablename == other.tablename and self.schemaname == other.schemaname
-        return False
 
