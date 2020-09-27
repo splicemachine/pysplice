@@ -19,17 +19,19 @@ class FeatureTypes:
 
 class SQL:
     feature_set_table = 'CREATE TABLE {schema}.{table} ({pk_columns}, {ts_columns}, {feature_columns}, ' \
-                            'PRIMARY KEY ({pk_list}))'
+                            '\nPRIMARY KEY ({pk_list}))'
 
-    feature_set_trigger = '''CREATE TRIGGER {schema}.{table}_history_update AFTER UPDATE ON {schema}.{table}
+    feature_set_trigger = '''
+    CREATE TRIGGER {schema}.{table}_history_update 
+    AFTER UPDATE ON {schema}.{table}
     REFERENCING OLD AS OLDW NEW AS NEWW
     FOR EACH ROW 
         INSERT INTO {schema}.{table}_history (ASOF_TS, UNTIL_TS, {pk_list}, {feature_list}) 
         VALUES( OLDW.LAST_UPDATE_TS, NEWW.LAST_UPDATE_TS, {old_pk_cols}, {old_feature_cols} )
     '''
 
-    feature_set_metadata = """INSERT INTO FeatureStore.FeatureSet 
-    ( SchemaName, TableName, Description) VALUES ('{schema}', '{table}', '{desc}')
+    feature_set_metadata = """
+    INSERT INTO FeatureStore.FeatureSet ( SchemaName, TableName, Description) VALUES ('{schema}', '{table}', '{desc}')
     """
 
     get_feature_set_id = "SELECT FeatureSetID FROM FeatureStore.FeatureSet " \
