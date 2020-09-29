@@ -218,7 +218,7 @@ def _lm(key, value, step=None):
     mlflow.log_metric(key, value, step=step)
 
 
-def __get_serialized_mlmodel(model, conda_env=None):
+def __get_serialized_mlmodel(model, conda_env=None, model_class=None):
     """
     Populate the Zip buffer with the serialized MLModel
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
@@ -227,10 +227,20 @@ def __get_serialized_mlmodel(model, conda_env=None):
     """
     buffer = BytesIO()
     zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
-
     with TemporaryDirectory() as tempdir:
         mlmodel_dir = f'{tempdir}/model'
-        if isinstance(model, H2OModel):
+        if model_class:
+            try:
+                import mlflow
+                import_module(f'mlflow.{model_class}')
+                mlflow._splice_context.df()
+                getattr(mlflow, model_class).save_model(tempdir, conda_env=conda_env)
+            except:
+                raise SpliceMachineException(f'Failed to save model type {model_class}. Ensure that is a supposed model'
+                                             f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                             f'Or you can build a pyfunc model'
+                                             'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
+        elif isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
             mlflow.h2o.save_model(model, mlmodel_dir, conda_env=conda_env)
@@ -251,13 +261,13 @@ def __get_serialized_mlmodel(model, conda_env=None):
             mlflow.set_tag('splice.tf_version', tf_version)
             mlflow.keras.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.keras
-        else: # Save as pyfunc
-
-
-        # else:
-        #     raise SpliceMachineException('Model type not supported for logging.'
-        #                                  'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
-        #                                  'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
+        else:
+            raise SpliceMachineException('Model type not supported for logging. If you received this error,'
+                                         'you should pass a value to the model_class parameter of the model type you'
+                                         'want to save. Supported values are available here: '
+                                         'https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                         'as well as \'pyfunc\' '
+                                         'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
@@ -289,7 +299,7 @@ def _log_model(model, name='model', conda_env=None, model_class=None):
 
     run_id = mlflow.active_run().info.run_uuid
 
-    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env)
+    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_class=model_class)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
