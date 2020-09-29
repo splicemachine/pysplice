@@ -71,7 +71,7 @@ from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
-from splicemachine.mlflow_support.constants import (FileExtensions)
+from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
                                                     insert_artifact)
 from splicemachine.spark.context import PySpliceContext
@@ -234,6 +234,10 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
                 import mlflow
                 import_module(f'mlflow.{model_lib}')
                 getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
+
+                file_ext = FileExtensions.map_from_mlflow_flavor(model_lib) if \
+                    model_lib in DatabaseSupportedLibs.get_valid() else model_lib
+
             except:
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
