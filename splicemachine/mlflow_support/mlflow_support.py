@@ -233,9 +233,9 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
             try:
                 import mlflow
                 import_module(f'mlflow.{model_lib}')
-                getattr(mlflow, model_lib).save_model(tempdir, conda_env=conda_env)
+                getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
             except:
-                raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model'
+                raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
                                              f'Or you can build a pyfunc model'
                                              'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
