@@ -251,10 +251,13 @@ def __get_serialized_mlmodel(model, conda_env=None):
             mlflow.set_tag('splice.tf_version', tf_version)
             mlflow.keras.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.keras
-        else:
-            raise SpliceMachineException('Model type not supported for logging.'
-                                         'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
-                                         'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
+        else: # Save as pyfunc
+
+
+        # else:
+        #     raise SpliceMachineException('Model type not supported for logging.'
+        #                                  'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
+        #                                  'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
@@ -263,13 +266,16 @@ def __get_serialized_mlmodel(model, conda_env=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model, name='model', conda_env=None):
+def _log_model(model, name='model', conda_env=None, model_class=None):
     """
     Log a trained machine learning model
 
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
         with the current run
     :param name: (str) the run relative name to store the model under. [Deault 'model']
+    :param conda_env: An optional conda environment for specifying custom configurations
+    :param model_class: An optional param specifying the model type of the model to log
+        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
     """
     _check_for_splice_ctx()
 
