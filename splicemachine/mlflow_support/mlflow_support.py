@@ -233,7 +233,6 @@ def __get_serialized_mlmodel(model, conda_env=None, model_class=None):
             try:
                 import mlflow
                 import_module(f'mlflow.{model_class}')
-                mlflow._splice_context.df()
                 getattr(mlflow, model_class).save_model(tempdir, conda_env=conda_env)
             except:
                 raise SpliceMachineException(f'Failed to save model type {model_class}. Ensure that is a supposed model'
