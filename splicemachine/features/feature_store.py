@@ -175,7 +175,8 @@ class FeatureStore:
                 with self.mlflow_ctx.start_run(run_name=f'Round {rnd}', nested=True):
                     for index, row in feature_importances.iterrows():
                         self.mlflow_ctx.lm(row['name'], row['score'])
-
+                        
+        mlflow.end_run() # Doesn't ever throw exception so it's fine to run always
         if return_importances:
             return remaining_features, feature_importances.reset_index(drop=True)
         return remaining_features
@@ -302,15 +303,28 @@ class FeatureStore:
           FROM FeatureStore.Feature f
           WHERE FeatureID IN
           (
-              SELECT f.FeatureID FROM
-                FeatureStore.TrainingContext tc 
-                INNER JOIN 
-                FeatureStore.TrainingContextKey c ON c.ContextID=tc.ContextID AND c.KeyType='C'
-                INNER JOIN 
-                FeatureStore.FeatureSetKey fsk ON c.KeyColumnName=fsk.KeyColumnName
-                INNER JOIN
-                FeatureStore.Feature f USING (FeatureSetID)
-              WHERE {where}
+              SELECT FeatureID 
+              FROM
+              (
+                  SELECT FeatureID FROM
+                    (
+                        SELECT f.FeatureID, fsk.KeyCount, count(distinct fsk.KeyColumnName) ContextKeyMatchCount 
+                        FROM
+                            FeatureStore.TrainingContext tc 
+                            INNER JOIN 
+                            FeatureStore.TrainingContextKey c ON c.ContextID=tc.ContextID AND c.KeyType='C'
+                            INNER JOIN 
+                            ( 
+                                SELECT FeatureSetId, KeyColumnName, count(*) OVER (PARTITION BY FeatureSetId) KeyCount 
+                                FROM FeatureStore.FeatureSetKey 
+                            )fsk ON c.KeyColumnName=fsk.KeyColumnName
+                            INNER JOIN
+                            FeatureStore.Feature f USING (FeatureSetID)
+                        WHERE {where}
+                        GROUP BY 1,2
+                    )match_keys
+                    WHERE ContextKeyMatchCount = KeyCount 
+              )fl
           )
         ''')
         
