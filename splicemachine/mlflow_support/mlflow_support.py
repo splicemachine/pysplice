@@ -676,7 +676,7 @@ def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_i
 @_mlflow_patch('deploy_kubernetes')
 def _deploy_kubernetes(run_id: str, service_port: int = 80,
                        base_replicas: int = 1, autoscaling_enabled: bool = False,
-                       max_replicas: bool = 2, target_cpu_utilization: int = 50,
+                       max_replicas: int = 2, target_cpu_utilization: int = 50,
                        disable_nginx: bool = False, gunicorn_workers: int = 1,
                        resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
                        cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
