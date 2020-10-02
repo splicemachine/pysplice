@@ -241,7 +241,7 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
             except:
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
-                                             f'Or you can build a pyfunc model'
+                                             f'Or you can build a pyfunc model\n'
                                              'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
         elif isinstance(model, H2OModel):
             import mlflow.h2o
@@ -266,7 +266,7 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
             file_ext = FileExtensions.keras
         else:
             raise SpliceMachineException('Model type not supported for logging. If you received this error,'
-                                         'you should pass a value to the model_class parameter of the model type you'
+                                         'you should pass a value to the model_lib parameter of the model type you '
                                          'want to save. Supported values are available here: '
                                          'https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
                                          'as well as \'pyfunc\' '
