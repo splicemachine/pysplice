@@ -142,6 +142,16 @@ def _register_splice_context(splice_context):
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
+@_mlflow_patch('register_feature_store')
+def _register_feature_store(fs: FeatureStore):
+    """
+    Register a feature store for feature tracking of experiments
+
+    :param feature_store: (FeatureStore) The feature store
+    :return: None
+    """
+    mlflow._feature_store = fs
+
 def _check_for_splice_ctx():
     """
     Check to make sure that the user has registered
@@ -875,7 +885,7 @@ def apply_patches():
     Apply all the Gorilla Patches; \
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
-    targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]

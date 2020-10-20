@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Union
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
@@ -21,9 +21,6 @@ class FeatureStore:
     def register_splice_context(self, splice_ctx):
         self.splice_ctx = splice_ctx
 
-    def register_mlflow_context(self, mlflow_ctx):
-        self.mlflow_ctx = mlflow_ctx
-
     def get_feature_sets(self, feature_set_ids: List[int] = None, _filter: Dict[str,str] = None) -> List[FeatureSet]:
         """
         Returns a list of available feature sets
@@ -34,13 +31,7 @@ class FeatureStore:
         feature_set_ids = feature_set_ids or []
         _filter = _filter or {}
 
-        sql = '''
-        SELECT fset.FeatureSetID, TableName, SchemaName, Description, pkcolumns, pktypes FROM FeatureStore.FeatureSet fset
-        INNER JOIN 
-        (SELECT FeatureSetID, STRING_AGG(KeyColumnName,'|') PKColumns, STRING_AGG(KeyColumnDataType,'|') pktypes 
-        FROM FeatureStore.FeatureSetKey GROUP BY 1) p 
-        ON fset.FeatureSetID=p.FeatureSetID 
-        '''
+        sql = SQL.get_feature_sets
 
         # Filter by featuresetid and filter
         if feature_set_ids or _filter:
@@ -53,7 +44,7 @@ class FeatureStore:
         sql = sql.rstrip('AND')
 
         feature_set_rows = self.splice_ctx.df(sql)
-        cols = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns', 'pktypes']
+        cols = Columns.feature_set
         feature_set_rows = clean_df(feature_set_rows, cols)
 
         for fs in feature_set_rows.collect():
@@ -64,7 +55,7 @@ class FeatureStore:
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
-    def get_training_contexts(self, _filter: Dict[str,str] = None) -> List[TrainingContext]:
+    def get_training_contexts(self, _filter: Dict[str,Union[int,str]] = None) -> List[TrainingContext]:
         """
         Returns all available training contexts in the format of a dictionary mapping
         Context_ID: (context_name, context_description)
@@ -74,17 +65,7 @@ class FeatureStore:
         """
         training_contexts = []
 
-        sql = '''
-              SELECT tc.ContextID, tc.Name, tc.Description, CAST(SQLText AS VARCHAR(1000)) context_sql, 
-                   p.PKColumns, 
-                   TSColumn, LabelColumn,
-                   c.ContextColumns               
-              FROM FeatureStore.TrainingContext tc 
-                   INNER JOIN 
-                    (SELECT ContextID, STRING_AGG(KeyColumnName,',') PKColumns FROM FeatureStore.TrainingContextKey WHERE KeyType='P' GROUP BY 1)  p ON tc.ContextID=p.ContextID 
-                   INNER JOIN 
-                    (SELECT ContextID, STRING_AGG(KeyColumnName,',') ContextColumns FROM FeatureStore.TrainingContextKey WHERE KeyType='C' GROUP BY 1)  c ON tc.ContextID=c.ContextID 
-              '''
+        sql = SQL.get_training_contexts
 
         if _filter:
             sql += ' WHERE '
@@ -94,7 +75,7 @@ class FeatureStore:
 
         training_context_rows = self.splice_ctx.df(sql)
 
-        cols = ['contextid','name','description','context_sql','pkcolumns','tscolumn','labelcolumn','contextcolumns']
+        cols = Columns.training_context
 
         training_context_rows = clean_df(training_context_rows,cols)
 
@@ -187,9 +168,10 @@ class FeatureStore:
         """
         Returns the unique context ID from a name
 
-        :param name:
-        :return:
+        :param name: The training context name
+        :return: The training context id
         """
+        return self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
 
 
     def add_feature_set(self, feature_set: FeatureSet):
@@ -212,7 +194,7 @@ class FeatureStore:
         :param pk_columns:
         :param feature_column:
         :param desc:
-        :return: FeatureTable
+        :return: FeatureSet
         """
         fset = FeatureSet(splice_ctx=self.splice_ctx, schemaname=schema, tablename=table, primary_keys=primary_keys,
                             description=desc)
@@ -258,7 +240,7 @@ class FeatureStore:
         print('Done.')
 
         # Get generated context ID
-        cid = self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
+        cid = self.get_training_context_id(name)
 
         print('Creating Context Keys')
         for i in context_keys:
@@ -285,48 +267,16 @@ class FeatureStore:
         """
         pass
 
-    def get_available_features(self, context_id:Optional[int] = None, name: Optional[str] = None ) -> List[Feature]:
+    def get_available_features(self, training_context: str ) -> List[Feature]:
         """
-        Given a training context ID or name, returns the available features
+        Returns the available features for the given a training context name
 
-        :param training_context:
-        :return:
+        :param training_context: The name of the training context
+        :return: A list of available features
         """
-        
-        if (context_id) :
-            where = f'tc.ContextID={context_id}'
-        if (name) :
-            where = f"tc.Name='{name}'"
+        where = f"tc.Name='{training_context}'"
             
-        df = self.splice_ctx.df(f'''
-        SELECT f.FEATUREID, f.FEATURESETID, f.NAME, f.DESCRIPTION, f.FEATUREDATATYPE, f.FEATURETYPE, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.LASTUPDATETS, f.LASTUPDATEUSERID
-          FROM FeatureStore.Feature f
-          WHERE FeatureID IN
-          (
-              SELECT FeatureID 
-              FROM
-              (
-                  SELECT FeatureID FROM
-                    (
-                        SELECT f.FeatureID, fsk.KeyCount, count(distinct fsk.KeyColumnName) ContextKeyMatchCount 
-                        FROM
-                            FeatureStore.TrainingContext tc 
-                            INNER JOIN 
-                            FeatureStore.TrainingContextKey c ON c.ContextID=tc.ContextID AND c.KeyType='C'
-                            INNER JOIN 
-                            ( 
-                                SELECT FeatureSetId, KeyColumnName, count(*) OVER (PARTITION BY FeatureSetId) KeyCount 
-                                FROM FeatureStore.FeatureSetKey 
-                            )fsk ON c.KeyColumnName=fsk.KeyColumnName
-                            INNER JOIN
-                            FeatureStore.Feature f USING (FeatureSetID)
-                        WHERE {where}
-                        GROUP BY 1,2
-                    )match_keys
-                    WHERE ContextKeyMatchCount = KeyCount 
-              )fl
-          )
-        ''')
+        df = self.splice_ctx.df(SQL.get_available_features.format(where=where))
         
         df = clean_df(df, Columns.feature)
         features = []
@@ -343,13 +293,12 @@ class FeatureStore:
     def get_feature_description(self):
         pass
 
-    def get_training_set(self, training_context_id: int, features: List[Feature], start_time: Optional[datetime] = None,
+    def get_training_set(self, training_context: str, features: List[Feature], start_time: Optional[datetime] = None,
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
-        # TODO: Webinar
         """
         Returns the training set as a Spark Dataframe
 
-        :param training_context_id: (int) The name of the registered training context
+        :param training_context: (str) The name of the registered training context
         :param features: (List[str]) the list of features from the feature store to be included in the training
             * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
              desired features
@@ -365,60 +314,60 @@ class FeatureStore:
         cols = []
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
-        tctx = self.get_training_contexts(_filter={'CONTEXTID': training_context_id})[0]
+        cid = self.get_training_context_id(training_context)
+        tctx = self.get_training_contexts(_filter={'CONTEXTID': cid})[0]
         # SELECT clause
         sql = 'SELECT '
-        for pkcol in tctx.pkcolumns: # Select primary key column(s)
+        for pkcol in tctx.pk_columns: # Select primary key column(s)
             sql += f'\n\tctx.{pkcol},'
             cols.append(pkcol)
 
-        sql += f'\n\tctx.{tctx.tscolumn}, ' # Select timestamp column
-        cols.append(tctx.tscolumn)
+        sql += f'\n\tctx.{tctx.ts_column}, ' # Select timestamp column
+        cols.append(tctx.ts_column)
 
         for feature in features:
-            sql += f'\n\tCOALESCE(fset{feature.featuresetid}.{feature.name},fset{feature.featuresetid}h.{feature.name}) {feature.name},' # Collect all features over time
+            sql += f'\n\tCOALESCE(fset{feature.feature_set_id}.{feature.name},fset{feature.feature_set_id}h.{feature.name}) {feature.name},' # Collect all features over time
             cols.append(feature.name)
 
-        sql = sql + f'\n\tctx.{tctx.labelcolumn}' if tctx.labelcolumn else sql.rstrip(',')  # Select the optional label col
-        if tctx.labelcolumn: cols.append(tctx.labelcolumn)
+        sql = sql + f'\n\tctx.{tctx.label_column}' if tctx.label_column else sql.rstrip(',')  # Select the optional label col
+        if tctx.label_column: cols.append(tctx.label_column)
 
         # FROM clause
         sql += f'\nFROM ({tctx.context_sql}) ctx '
 
         # JOIN clause
-        feature_set_ids = list({f.featuresetid for f in features}) # Distinct set of IDs
+        feature_set_ids = list({f.feature_set_id for f in features}) # Distinct set of IDs
         feature_sets = self.get_feature_sets(feature_set_ids)
         for fset in feature_sets:
             # Join Feature Set
-            sql += f'\nLEFT OUTER JOIN {fset.schemaname}.{fset.tablename} fset{fset.featuresetid} \n\tON '
-            for pkcol in fset.pkcolumns:
-                sql += f'fset{fset.featuresetid}.{pkcol}=ctx.{pkcol} AND '
-            sql += f' ctx.{tctx.tscolumn} >= fset{fset.featuresetid}.LAST_UPDATE_TS '
+            sql += f'\nLEFT OUTER JOIN {fset.schema_name}.{fset.table_name} fset{fset.feature_set_id} \n\tON '
+            for pkcol in fset.pk_columns:
+                sql += f'fset{fset.feature_set_id}.{pkcol}=ctx.{pkcol} AND '
+            sql += f' ctx.{tctx.ts_column} >= fset{fset.feature_set_id}.LAST_UPDATE_TS '
 
             # Join Feature Set History
-            sql += f'\nLEFT OUTER JOIN {fset.schemaname}.{fset.tablename}_history fset{fset.featuresetid}h \n\tON '
-            for pkcol in fset.pkcolumns:
-                sql += f' fset{fset.featuresetid}h.{pkcol}=ctx.{pkcol} AND '
-            sql += f' ctx.{tctx.tscolumn} >= fset{fset.featuresetid}h.ASOF_TS AND ctx.{tctx.tscolumn} < fset{fset.featuresetid}h.UNTIL_TS'
+            sql += f'\nLEFT OUTER JOIN {fset.schema_name}.{fset.table_name}_history fset{fset.feature_set_id}h \n\tON '
+            for pkcol in fset.pk_columns:
+                sql += f' fset{fset.feature_set_id}h.{pkcol}=ctx.{pkcol} AND '
+            sql += f' ctx.{tctx.ts_column} >= fset{fset.feature_set_id}h.ASOF_TS AND ctx.{tctx.ts_column} < fset{fset.feature_set_id}h.UNTIL_TS'
 
         # WHERE clause on optional start and end times
         if start_time or end_time:
             sql += '\nWHERE '
             if start_time:
-                sql += f"\n\tctx.{tctx.tscolumn} >= '{str(start_time)}' AND"
+                sql += f"\n\tctx.{tctx.ts_column} >= '{str(start_time)}' AND"
             if end_time:
-                sql += f"\n\tctx.{tctx.tscolumn} <= '{str(end_time)}'"
+                sql += f"\n\tctx.{tctx.ts_column} <= '{str(end_time)}'"
             sql = sql.rstrip('AND')
 
         return sql if return_sql else clean_df(self.splice_ctx.df(sql),cols)
 
 
-    def get_feature_vector_sql(self, training_context_id: int, features: List[Feature], include_insert: Optional[bool] = True  ) -> str:
-        # TODO: Webinar
+    def get_feature_vector_sql(self, training_context: str, features: List[Feature], include_insert: Optional[bool] = True  ) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
-        :param training_context_id: (int) The name of the registered training context
+        :param training_context_id: (str) The name of the registered training context
         :param features: (List[str]) the list of features from the feature store to be included in the training
             * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
              desired features
@@ -427,12 +376,13 @@ class FeatureStore:
         """
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
-        tctx = self.get_training_contexts(_filter={'CONTEXTID': training_context_id})[0]
+        cid = self.get_training_context_id(training_context)
+        tctx = self.get_training_contexts(_filter={'CONTEXTID': cid})[0]
 
         # optional INSERT prefix
         if (include_insert):
             sql = 'INSERT INTO {target_model_table} ('
-            for pkcol in tctx.pkcolumns: # Select primary key column(s)
+            for pkcol in tctx.pk_columns: # Select primary key column(s)
                 sql += f'{pkcol}, '
             for feature in features:
                 sql += f'{feature.name}, ' # Collect all features over time
@@ -442,25 +392,25 @@ class FeatureStore:
             sql = 'SELECT '
 
         # SELECT expressions
-        for pkcol in tctx.pkcolumns: # Select primary key column(s)
+        for pkcol in tctx.pk_columns: # Select primary key column(s)
             sql += f'\n\t{{p_{pkcol}}} {pkcol},'
 
         for feature in features:
-            sql += f'\n\tfset{feature.featuresetid}.{feature.name}, ' # Collect all features over time
+            sql += f'\n\tfset{feature.feature_set_id}.{feature.name}, ' # Collect all features over time
         sql = sql.rstrip(', ')
 
         # FROM clause
         sql += f'\nFROM '
 
         # JOIN clause
-        feature_set_ids = list({f.featuresetid for f in features}) # Distinct set of IDs
+        feature_set_ids = list({f.feature_set_id for f in features}) # Distinct set of IDs
         feature_sets = self.get_feature_sets(feature_set_ids)
         where = '\nWHERE '
         for fset in feature_sets:
             # Join Feature Set
-            sql += f'\n\t{fset.schemaname}.{fset.tablename} fset{fset.featuresetid}, '
-            for pkcol in fset.pkcolumns:
-                where += f'\n\tfset{fset.featuresetid}.{pkcol}={{p_{pkcol}}} AND '
+            sql += f'\n\t{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}, '
+            for pkcol in fset.pk_columns:
+                where += f'\n\tfset{fset.feature_set_id}.{pkcol}={{p_{pkcol}}} AND '
 
         sql = sql.rstrip(', ')
         where = where.rstrip('AND ')

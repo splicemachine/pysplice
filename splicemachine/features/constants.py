@@ -53,6 +53,57 @@ class SQL:
     LastUpdateTS,LastUpdateUserID from featurestore.feature where featuresetid={featuresetid}
     """
 
+    get_feature_sets = """
+        SELECT fset.FeatureSetID, TableName, SchemaName, Description, pkcolumns, pktypes FROM FeatureStore.FeatureSet fset
+        INNER JOIN 
+            (
+                SELECT FeatureSetID, STRING_AGG(KeyColumnName,'|') PKColumns, STRING_AGG(KeyColumnDataType,'|'
+            ) pktypes 
+        FROM FeatureStore.FeatureSetKey GROUP BY 1) p 
+        ON fset.FeatureSetID=p.FeatureSetID 
+        """
+    get_training_contexts = """
+    SELECT tc.ContextID, tc.Name, tc.Description, CAST(SQLText AS VARCHAR(1000)) context_sql, 
+       p.PKColumns, 
+       TSColumn, LabelColumn,
+       c.ContextColumns               
+    FROM FeatureStore.TrainingContext tc 
+       INNER JOIN 
+        (SELECT ContextID, STRING_AGG(KeyColumnName,',') PKColumns FROM FeatureStore.TrainingContextKey WHERE KeyType='P' GROUP BY 1)  p ON tc.ContextID=p.ContextID 
+       INNER JOIN 
+        (SELECT ContextID, STRING_AGG(KeyColumnName,',') ContextColumns FROM FeatureStore.TrainingContextKey WHERE KeyType='C' GROUP BY 1)  c ON tc.ContextID=c.ContextID
+    """
+
+    get_available_features = """
+    SELECT f.FEATUREID, f.FEATURESETID, f.NAME, f.DESCRIPTION, f.FEATUREDATATYPE, f.FEATURETYPE, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.LASTUPDATETS, f.LASTUPDATEUSERID
+          FROM FeatureStore.Feature f
+          WHERE FeatureID IN
+          (
+              SELECT FeatureID 
+              FROM
+              (
+                  SELECT FeatureID FROM
+                    (
+                        SELECT f.FeatureID, fsk.KeyCount, count(distinct fsk.KeyColumnName) ContextKeyMatchCount 
+                        FROM
+                            FeatureStore.TrainingContext tc 
+                            INNER JOIN 
+                            FeatureStore.TrainingContextKey c ON c.ContextID=tc.ContextID AND c.KeyType='C'
+                            INNER JOIN 
+                            ( 
+                                SELECT FeatureSetId, KeyColumnName, count(*) OVER (PARTITION BY FeatureSetId) KeyCount 
+                                FROM FeatureStore.FeatureSetKey 
+                            )fsk ON c.KeyColumnName=fsk.KeyColumnName
+                            INNER JOIN
+                            FeatureStore.Feature f USING (FeatureSetID)
+                        WHERE {where}
+                        GROUP BY 1,2
+                    )match_keys
+                    WHERE ContextKeyMatchCount = KeyCount 
+              )fl
+          )
+    """
+
     training_context = """
     INSERT INTO FeatureStore.TrainingContext (Name, Description, SQLText, TSColumn, LabelColumn) 
     VALUES ('{name}', '{desc}', '{sql_text}', '{ts_col}', {label_col})
@@ -70,4 +121,6 @@ class SQL:
 class Columns:
     feature = ['featureid', 'featuresetid', 'name', 'description', 'featuredatatype', 'featuretype',
                'cardinality', 'tags', 'compliancelevel', 'lastupdatets', 'lastupdateuserid']
+    training_context = ['contextid','name','description','context_sql','pkcolumns','tscolumn','labelcolumn','contextcolumns']
+    feature_set = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns', 'pktypes']
     history_table_pk = ['ASOF_TS','UNTIL_TS']
