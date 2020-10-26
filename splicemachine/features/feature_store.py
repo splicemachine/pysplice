@@ -32,12 +32,12 @@ class FeatureStore:
 
         sql = SQL.get_feature_sets
 
-        # Filter by featuresetid and filter
+        # Filter by feature_set_id and filter
         if feature_set_ids or _filter:
             sql += ' WHERE '
         if feature_set_ids:
             fsd = tuple(feature_set_ids) if len(feature_set_ids) > 1 else f'({feature_set_ids[0]})'
-            sql += f' fset.featuresetID in {fsd} AND'
+            sql += f' fset.feature_set_id in {fsd} AND'
         for fl in _filter:
             sql += f" fset.{fl}='{_filter[fl]}' AND"
         sql = sql.rstrip('AND')
@@ -48,8 +48,8 @@ class FeatureStore:
 
         for fs in feature_set_rows.collect():
             d = fs.asDict()
-            pkcols = d.pop('pkcolumns').split('|')
-            pktypes = d.pop('pktypes').split('|')
+            pkcols = d.pop('pk_columns').split('|')
+            pktypes = d.pop('pk_types').split('|')
             d['primary_keys'] = {c:k for c,k in zip(pkcols,pktypes)}
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
@@ -194,7 +194,7 @@ class FeatureStore:
         # Validate Table
         assert not self.splice_ctx.tableExists(schema, table_name=table), str
         # Validate metadata
-        assert len(self.get_feature_sets(_filter={'TableName': table, 'SchemaName': schema})) == 0, str
+        assert len(self.get_feature_sets(_filter={'table_name': table, 'schema_name': schema})) == 0, str
 
 
     def create_feature_set(self, schema: str, table: str, primary_keys: Dict[str,str],
@@ -210,15 +210,30 @@ class FeatureStore:
         :return: FeatureSet
         """
         self._validate_feature_set(schema, table)
-        fset = FeatureSet(splice_ctx=self.splice_ctx, schemaname=schema, tablename=table, primary_keys=primary_keys,
+        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema, table_name=table, primary_keys=primary_keys,
                             description=desc)
         # if fset in self.feature_sets:
         #     raise SpliceMachineException('This feature set already exists. Use a different schema and/or table name.')
         # self.feature_sets.append(fset)
+        print(f'Registering feature set {schema}.{table} in Feature Store' )
+        fset.__register_metadata()
         return fset
 
-    def get_features_by_name(self, name: List[str]) -> List[Feature]:
-        pass
+    def get_features_by_name(self, names: List[str]) -> List[Feature]:
+        """
+        Returns a list of features whose names are provided
+        :param names: The list of feature names
+        :return: The list of features
+        """
+        # Format feature names into quotes strings for search
+        df = self.splice_ctx.df(SQL.get_features_by_name.format(",".join([f"'{i.upper()}'" for i in names])))
+        df = clean_df(df, Columns.feature)
+        features = []
+        for feat in df.collect():
+            f = feat.asDict()
+            features.append(Feature(**f))
+        return features
+
 
 
     def create_training_context(self, *, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
@@ -329,7 +344,7 @@ class FeatureStore:
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
         cid = self.get_training_context_id(training_context)
-        tctx = self.get_training_contexts(_filter={'CONTEXTID': cid})[0]
+        tctx = self.get_training_contexts(_filter={'context_id': cid})[0]
         # SELECT clause
         sql = 'SELECT '
         for pkcol in tctx.pk_columns: # Select primary key column(s)
@@ -391,7 +406,7 @@ class FeatureStore:
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
         cid = self.get_training_context_id(training_context)
-        tctx = self.get_training_contexts(_filter={'CONTEXTID': cid})[0]
+        tctx = self.get_training_contexts(_filter={'context_id': cid})[0]
 
         # optional INSERT prefix
         if (include_insert):

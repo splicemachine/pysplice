@@ -1,13 +1,14 @@
 from enum import Enum
-from splicemachine.features.constants import FeatureTypes
+from splicemachine.features.constants import FeatureTypes, SQL
 
 class Feature:
-    def __init__(self, *, name, description, featuredatatype, featuretype, tags, featuresetid=None, feature_id=None, **kwargs):
+    def __init__(self, *, name, description, feature_data_type, featuretype, tags, featuresetid=None, feature_id=None, **kwargs):
         self.name = name
         self.description = description
-        self.feature_data_type = featuredatatype
+        self.feature_data_type = feature_data_type
         self.feature_type = featuretype
         self.feature_set_id = featuresetid
+        self.feature_id = feature_id
         self.tags = tags
         args = {k.lower(): kwargs[k] for k in kwargs}
         self.__dict__.update(args)
@@ -20,6 +21,19 @@ class Feature:
 
     def is_ordinal(self):
         return self.feature_type == FeatureTypes.ordinal
+
+    def __register_metadata(self, splice):
+        """
+        Registers the feature's existence in the feature store
+        :return: None
+        """
+        feature_sql = SQL.feature_metadata.format(
+            feature_set_id=self.feature_set_id, name=self.name, desc=self.description,
+            feature_data_type=self.feature_data_type,
+            feature_type=self.feature_type, tags=','.join(self.tags)
+        )
+        splice.execute(feature_sql)
+
 
     def __eq__(self, other):
         if isinstance(other, Feature):
