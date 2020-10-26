@@ -13,10 +13,9 @@ from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df
 
 
 class FeatureStore:
-    def __init__(self, splice_ctx: PySpliceContext, mlflow_ctx = None):
+    def __init__(self, splice_ctx: PySpliceContext):
         self.splice_ctx = splice_ctx
-        self.mlflow_ctx = mlflow_ctx
-        self.feature_sets = self.get_feature_sets()
+        # self.feature_sets = self.get_feature_sets()
 
     def register_splice_context(self, splice_ctx):
         self.splice_ctx = splice_ctx
@@ -54,6 +53,10 @@ class FeatureStore:
             d['primary_keys'] = {c:k for c,k in zip(pkcols,pktypes)}
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
+
+    def remove_feature_set(self):
+        # TODO
+        pass
 
     def get_training_contexts(self, _filter: Dict[str,Union[int,str]] = None) -> List[TrainingContext]:
         """
@@ -108,7 +111,12 @@ class FeatureStore:
         features_df['score'] = features_df['idx'].apply(lambda x: feature_importances[x])
         return(features_df.sort_values('score', ascending = False))
 
-
+    def _log_mlflow_results(self, name, rounds, mlflow_results):
+        with self.mlflow_ctx.start_run(run_name=name):
+            for r in range(rounds):
+                with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
+                    for round_results in mlflow_results:
+                        self.mlflow_ctx.log_metrics(round_results)
 
     def run_feature_elimination(self, df, features, label: str = 'label', n: int = 10, verbose: int = 0,
                             model_type: str='classification', step: int = 1, log_mlflow: bool = False,
@@ -130,8 +138,7 @@ class FeatureStore:
         train_df = df
         remaining_features = features
         rnd = 0
-        rn = mlflow_run_name or f'feature_elimination_{label}'
-        if log_mlflow: self.mlflow_ctx.start_run(run_name=rn)
+        mlflow_results = []
         while len(remaining_features) > n:
             rnd += 1
             num_features = max(len(remaining_features)-step, n) # Don't go less than the specified value
@@ -152,15 +159,18 @@ class FeatureStore:
                 print(f'Round {rnd} complete. Remaining Features:')
                 display(feature_importances.reset_index(drop=True))
 
-            if log_mlflow:
-                with self.mlflow_ctx.start_run(run_name=f'Round {rnd}', nested=True):
-                    for index, row in feature_importances.iterrows():
-                        self.mlflow_ctx.lm(row['name'], row['score'])
+            # Add results to a list for mlflow logging
+            round_metrics = {'Round':rnd, 'Number of features': remaining_features}
+            for index, row in feature_importances.iterrows():
+                round_metrics[row['name']] = row['score']
+            mlflow_results.append(round_metrics)
+
+        if log_mlflow and hasattr(self, 'mlflow_ctx'):
+            assert hasattr(self, 'mlflow_ctx'), "In order to log results to mlflow, you must register your mlflow context!"
+            run_name = mlflow_run_name or f'feature_elimination_{label}'
+            self._log_mlflow_results(run_name, rnd, mlflow_results)
                         
-        mlflow.end_run() # Doesn't ever throw exception so it's fine to run always
-        if return_importances:
-            return remaining_features, feature_importances.reset_index(drop=True)
-        return remaining_features
+        return remaining_features, feature_importances.reset_index(drop=True) if return_importances else remaining_features
 
 
 
@@ -173,15 +183,18 @@ class FeatureStore:
         """
         return self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
 
-
-    def add_feature_set(self, feature_set: FeatureSet):
+    def _validate_feature_set(self, schema, table):
         """
-        Add a feature set
-
-        :param ft:
-        :return:
+        Asserts a feature set doesn't already exist in the database
+        :param schema: schema name of the feature set
+        :param table: table name of the feature set
+        :return: None
         """
-        self.feature_sets.append(feature_set)
+        str = 'This feature set already exists. Use a different schema and/or table name.'
+        # Validate Table
+        assert not self.splice_ctx.tableExists(schema, table_name=table), str
+        # Validate metadata
+        assert len(self.get_feature_sets(_filter={'TableName': table, 'SchemaName': schema})) == 0, str
 
 
     def create_feature_set(self, schema: str, table: str, primary_keys: Dict[str,str],
@@ -196,11 +209,12 @@ class FeatureStore:
         :param desc:
         :return: FeatureSet
         """
+        self._validate_feature_set(schema, table)
         fset = FeatureSet(splice_ctx=self.splice_ctx, schemaname=schema, tablename=table, primary_keys=primary_keys,
                             description=desc)
-        if fset in self.feature_sets:
-            raise SpliceMachineException('This feature set already exists. Use a different schema and/or table name.')
-        self.feature_sets.append(fset)
+        # if fset in self.feature_sets:
+        #     raise SpliceMachineException('This feature set already exists. Use a different schema and/or table name.')
+        # self.feature_sets.append(fset)
         return fset
 
     def get_features_by_name(self, name: List[str]) -> List[Feature]:

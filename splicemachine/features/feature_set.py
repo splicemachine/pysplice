@@ -2,6 +2,7 @@ from splicemachine.features import Feature, SQL, clean_df, Columns
 from splicemachine.spark import PySpliceContext
 from splicemachine.mlflow_support.utilities import SpliceMachineException
 from typing import List, Dict
+import re
 
 FEATURE_SET_TS_COL = '\n\tLAST_UPDATE_TS TIMESTAMP'
 HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
@@ -34,7 +35,26 @@ class FeatureSet:
                 f = f.asDict()
                 self.features.append(Feature(**f))
 
+    def _validate_feature(self, name):
+        """
+        Ensures that the feature doesn't exist as all features have unique names
+        :param name:
+        :return:
+        """
+        #TODO: Capitalization of feature name column
+        #TODO: Make more informative, add which feature set contains existing feature
+        str = f"Cannot add feature {name}, feature already exists in Feature Store. Try a new feature name."
+        assert name not in self.features, str
+        l = self.splice_ctx.df(SQL.get_all_features.format(name=name.upper())).count()
+        assert l == 0, str
+
+        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
+            raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
+                                         'and can only contains letters, numbers and underscores')
+
+
     def add_feature(self, *, name, description, feature_data_type, feature_type, tags: List[str]):
+        self._validate_feature(name)
         f = Feature(name=name, description=description, featuredatatype=feature_data_type,
                        featuretype=feature_type, tags=tags)
         # FIXME: This only checks within this feature set. Needs to check all features
@@ -128,6 +148,11 @@ class FeatureSet:
 
 
 
+
+    def __eq__(self, other):
+        if isinstance(other, FeatureSet):
+            return self.table_name == other.table_name and self.schema_name == other.schema_name
+        return False
     def __repr__(self):
         return self.__str__()
     def __str__(self):

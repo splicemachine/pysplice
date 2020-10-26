@@ -15,3 +15,6 @@ class TrainingContext:
                f'TSColumn={self.ts_column}, ' \
                f'LabelColumn={self.label_column}, \n' \
                f'ContextSQL={self.context_sql}'
+
+    def __str__(self):
+        return self.__repr__()

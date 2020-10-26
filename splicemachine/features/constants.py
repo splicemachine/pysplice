@@ -74,6 +74,8 @@ class SQL:
         (SELECT ContextID, STRING_AGG(KeyColumnName,',') ContextColumns FROM FeatureStore.TrainingContextKey WHERE KeyType='C' GROUP BY 1)  c ON tc.ContextID=c.ContextID
     """
 
+    get_all_features = "SELECT NAME FROM FeatureStore.feature WHERE Name='{name}'"
+
     get_available_features = """
     SELECT f.FEATUREID, f.FEATURESETID, f.NAME, f.DESCRIPTION, f.FEATUREDATATYPE, f.FEATURETYPE, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.LASTUPDATETS, f.LASTUPDATEUSERID
           FROM FeatureStore.Feature f
@@ -124,3 +126,4 @@ class Columns:
     training_context = ['contextid','name','description','context_sql','pkcolumns','tscolumn','labelcolumn','contextcolumns']
     feature_set = ['featuresetid', 'tablename', 'schemaname', 'description', 'pkcolumns', 'pktypes']
     history_table_pk = ['ASOF_TS','UNTIL_TS']
+

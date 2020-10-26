@@ -23,9 +23,9 @@ class Feature:
 
     def __eq__(self, other):
         if isinstance(other, Feature):
-            return self.name == other.name
+            return self.name.lower() == other.name.lower()
         if isinstance(other, str):
-            return self.name == other
+            return self.name.lower() == other.lower()
         return False
 
     def __repr__(self):

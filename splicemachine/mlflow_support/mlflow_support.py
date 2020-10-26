@@ -151,6 +151,7 @@ def _register_feature_store(fs: FeatureStore):
     :return: None
     """
     mlflow._feature_store = fs
+    mlflow._feature_store.mlflow_ctx = mlflow
 
 def _check_for_splice_ctx():
     """
