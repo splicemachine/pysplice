@@ -123,9 +123,9 @@ class FeatureSet:
         print('\n', trigger_sql, '\n')
         self.splice_ctx.execute(trigger_sql)
         print('Done.')
-        print('Registering Metadata...')
-        self.__register_metadata()
-        print('Done.')
+        # print('Registering Metadata...')
+        # self.__register_metadata()
+        # print('Done.')
 
     def __eq__(self, other):
         if isinstance(other, FeatureSet):
