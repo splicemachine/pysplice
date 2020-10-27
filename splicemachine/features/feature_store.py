@@ -4,12 +4,15 @@ from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
+from .constants import SQL, Columns
+from .training_context import TrainingContext
+from .utils import clean_df
 from splicemachine.mlflow_support.utilities import SpliceMachineException
 from IPython.display import display
 import pandas as pd
 from splicemachine.spark import PySpliceContext
 from datetime import datetime
-from splicemachine.features import Feature,FeatureSet, TrainingContext, clean_df, Columns, SQL
+from splicemachine.features import Feature, FeatureSet
 
 
 class FeatureStore:

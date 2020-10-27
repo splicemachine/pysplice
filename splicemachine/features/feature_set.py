@@ -1,4 +1,6 @@
-from splicemachine.features import Feature, SQL, clean_df, Columns
+from splicemachine.features import Feature
+from .constants import SQL, Columns
+from .utils import clean_df
 from splicemachine.spark import PySpliceContext
 from splicemachine.mlflow_support.utilities import SpliceMachineException
 from typing import List, Dict

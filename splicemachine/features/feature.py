@@ -1,4 +1,3 @@
-from enum import Enum
 from splicemachine.features.constants import FeatureTypes, SQL
 
 class Feature:
