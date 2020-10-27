@@ -85,6 +85,8 @@ class FeatureStore:
 
         for tc in training_context_rows.collect():
             t = tc.asDict()
+            # DB doesn't support lists so it stores , separated vals in a string
+            t['pk_columns'] = t.pop('pk_columns').split(',')
             training_contexts.append(TrainingContext(**t))
         return training_contexts
 

@@ -1,5 +1,7 @@
+from typing import List
+
 class TrainingContext:
-    def __init__(self, *, pk_columns, ts_column, label_column, context_sql, **kwargs):
+    def __init__(self, *, pk_columns: List[str], ts_column, label_column, context_sql, **kwargs):
         self.pk_columns = pk_columns
         self.ts_column = ts_column
         self.label_column = label_column
