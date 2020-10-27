@@ -53,12 +53,12 @@ class SQL:
 
     get_features_by_name = f"""
     select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,ComplianceLevel, 
-    last_update_ts,last_update_user_id from featurestore.feature where Name in ({{feature_names}})
+    last_update_ts,last_update_user_id from {FEATURE_STORE_SCHEMA}.feature where Name in ({{feature_names}})
     """
 
     get_features_in_feature_set = f"""
     select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,ComplianceLevel, 
-    last_update_ts,last_update_user_id from featurestore.feature where feature_set_id={{feature_set_id}}
+    last_update_ts,last_update_user_id from {FEATURE_STORE_SCHEMA}.feature where feature_set_id={{feature_set_id}}
     """
 
     get_feature_sets = f"""
