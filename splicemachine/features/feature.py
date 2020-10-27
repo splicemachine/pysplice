@@ -21,7 +21,7 @@ class Feature:
     def is_ordinal(self):
         return self.feature_type == FeatureTypes.ordinal
 
-    def __register_metadata(self, splice):
+    def _register_metadata(self, splice):
         """
         Registers the feature's existence in the feature store
         :return: None

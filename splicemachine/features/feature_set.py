@@ -59,7 +59,7 @@ class FeatureSet:
         f = Feature(name=name, description=description, feature_data_type=feature_data_type,
                     featuretype=feature_type, tags=tags)
         print('Registering feature in metadata')
-        f.__register_metadata(self.splice_ctx)
+        f._register_metadata(self.splice_ctx)
 
     def remove_feature(self, feature: Feature or str):
         #TODO
@@ -79,7 +79,7 @@ class FeatureSet:
     def get_feature_column_str(self):
         return ','.join([f.name for f in self.get_features()])
 
-    def __register_metadata(self):
+    def _register_metadata(self):
         fset_metadata = SQL.feature_set_metadata.format(schema=self.schema_name, table=self.table_name,
                                                         desc=self.description)
 

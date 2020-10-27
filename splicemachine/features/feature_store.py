@@ -7,7 +7,6 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 from .constants import SQL, Columns
 from .training_context import TrainingContext
 from .utils import clean_df
-from splicemachine.mlflow_support.utilities import SpliceMachineException
 from IPython.display import display
 import pandas as pd
 from splicemachine.spark import PySpliceContext
@@ -219,7 +218,7 @@ class FeatureStore:
         #     raise SpliceMachineException('This feature set already exists. Use a different schema and/or table name.')
         # self.feature_sets.append(fset)
         print(f'Registering feature set {schema}.{table} in Feature Store' )
-        fset.__register_metadata()
+        fset._register_metadata()
         return fset
 
     def get_features_by_name(self, names: List[str]) -> List[Feature]:
