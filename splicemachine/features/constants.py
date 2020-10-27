@@ -18,72 +18,73 @@ class FeatureTypes:
         )
 
 class SQL:
-    feature_set_table = 'CREATE TABLE {schema}.{table} ({pk_columns}, {ts_columns}, {feature_columns}, ' \
-                            '\nPRIMARY KEY ({pk_list}))'
+    FEATURE_STORE_SCHEMA = 'FeatureStore2'
+    feature_set_table = f'CREATE TABLE {{schema}}.{{table}} ({{pk_columns}}, {{ts_columns}}, {{feature_columns}}, ' \
+                            '\nPRIMARY KEY ({{pk_list}}))'
 
-    feature_set_trigger = '''
-    CREATE TRIGGER {schema}.{table}_history_update 
-    AFTER UPDATE ON {schema}.{table}
+    feature_set_trigger = f'''
+    CREATE TRIGGER {{schema}}.{{table}}_history_update 
+    AFTER UPDATE ON {{schema}}.{{table}}
     REFERENCING OLD AS OLDW NEW AS NEWW
     FOR EACH ROW 
-        INSERT INTO {schema}.{table}_history (ASOF_TS, UNTIL_TS, {pk_list}, {feature_list}) 
-        VALUES( OLDW.LAST_UPDATE_TS, NEWW.LAST_UPDATE_TS, {old_pk_cols}, {old_feature_cols} )
+        INSERT INTO {{schema}}.{{table}}_history (ASOF_TS, UNTIL_TS, {{pk_list}}, {{feature_list}}) 
+        VALUES( OLDW.LAST_UPDATE_TS, NEWW.LAST_UPDATE_TS, {{old_pk_cols}}, {{old_feature_cols}} )
     '''
 
-    feature_set_metadata = """
-    INSERT INTO FeatureStore.feature_set ( schema_name, table_name, Description) VALUES ('{schema}', '{table}', '{desc}')
+    feature_set_metadata = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.feature_set ( schema_name, table_name, Description) VALUES ('{{schema}}', '{{table}}', '{{desc}}')
     """
 
-    get_feature_set_id = "SELECT feature_set_id FROM FeatureStore.feature_set " \
-                         "WHERE schema_name='{schema}' and table_name='{table}'"
+    get_feature_set_id = f"SELECT feature_set_id FROM {FEATURE_STORE_SCHEMA}.feature_set " \
+                         "WHERE schema_name='{{schema}}' and table_name='{{table}}'"
 
-    feature_set_pk_metadata = """
-    INSERT INTO FeatureStore.feature_set_key( feature_set_id, key_column_name, key_column_data_type) 
-    VALUES ({feature_set_id}, '{pk_col_name}', '{pk_col_type}')
+    feature_set_pk_metadata = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.feature_set_key( feature_set_id, key_column_name, key_column_data_type) 
+    VALUES ({{feature_set_id}}, '{{pk_col_name}}', '{{pk_col_type}}')
     """
 
-    feature_metadata = """
-    INSERT INTO FeatureStore.Feature (feature_set_id, Name, Description, feature_data_type, feature_type, Tags) 
+    feature_metadata = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.Feature (feature_set_id, Name, Description, feature_data_type, feature_type, Tags) 
     VALUES 
-    ({feature_set_id}, '{name}', '{desc}', '{feature_data_type}', '{feature_type}', '{tags}') 
+    ({{feature_set_id}}, '{{name}}', '{{desc}}', '{{feature_data_type}}', '{{feature_type}}', '{{tags}}') 
     """
 
-    get_features_by_name = """
+    get_features_by_name = f"""
     select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,ComplianceLevel, 
-    last_update_ts,last_update_user_id from featurestore.feature where Name in ({feature_names})
+    last_update_ts,last_update_user_id from featurestore.feature where Name in ({{feature_names}})
     """
 
-    get_features_in_feature_set = """
+    get_features_in_feature_set = f"""
     select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,ComplianceLevel, 
-    last_update_ts,last_update_user_id from featurestore.feature where feature_set_id={feature_set_id}
+    last_update_ts,last_update_user_id from featurestore.feature where feature_set_id={{feature_set_id}}
     """
 
-    get_feature_sets = """
-        SELECT fset.feature_set_id, table_name, schema_name, Description, pk_columns, pk_types FROM FeatureStore.feature_set fset
+    get_feature_sets = f"""
+        SELECT fset.feature_set_id, table_name, schema_name, Description, pk_columns, pk_types FROM {FEATURE_STORE_SCHEMA}.feature_set fset
         INNER JOIN 
             (
                 SELECT feature_set_id, STRING_AGG(key_column_name,'|') pk_columns, STRING_AGG(key_column_data_type,'|'
             ) pk_types 
-        FROM FeatureStore.feature_set_key GROUP BY 1) p 
+        FROM {FEATURE_STORE_SCHEMA}.feature_set_key GROUP BY 1) p 
         ON fset.feature_set_id=p.feature_set_id 
         """
-    get_training_contexts = """
+    get_training_contexts = f"""
     SELECT tc.context_id, tc.Name, tc.Description, CAST(SQL_text AS VARCHAR(1000)) context_sql, 
        p.pk_columns, 
        ts_column, label_column,
        c.context_columns               
-    FROM FeatureStore.TrainingContext tc 
+    FROM {FEATURE_STORE_SCHEMA}.TrainingContext tc 
        INNER JOIN 
-        (SELECT context_id, STRING_AGG(key_column_name,',') pk_columns FROM FeatureStore.TrainingContextKey WHERE key_type='P' GROUP BY 1)  p ON tc.context_id=p.context_id 
+        (SELECT context_id, STRING_AGG(key_column_name,',') pk_columns FROM {FEATURE_STORE_SCHEMA}.TrainingContextKey WHERE key_type='P' GROUP BY 1)  p ON tc.context_id=p.context_id 
        INNER JOIN 
-        (SELECT context_id, STRING_AGG(key_column_name,',') context_columns FROM FeatureStore.TrainingContextKey WHERE key_type='C' GROUP BY 1)  c ON tc.context_id=c.context_id
+        (SELECT context_id, STRING_AGG(key_column_name,',') context_columns FROM {FEATURE_STORE_SCHEMA}.TrainingContextKey WHERE key_type='C' GROUP BY 1)  c ON tc.context_id=c.context_id
     """
 
-    get_all_features = "SELECT NAME FROM FeatureStore.feature WHERE Name='{name}'"
+    get_all_features = f"SELECT NAME FROM {FEATURE_STORE_SCHEMA}.feature WHERE Name='{{name}}'"
 
-    get_available_features = """
+    get_available_features = f"""
     SELECT f.feature_id, f.feature_set_id, f.NAME, f.DESCRIPTION, f.feature_data_type, f.feature_type, f.CARDINALITY, f.TAGS, f.COMPLIANCELEVEL, f.last_update_ts, f.last_update_user_id
-          FROM FeatureStore.Feature f
+          FROM {FEATURE_STORE_SCHEMA}.Feature f
           WHERE feature_id IN
           (
               SELECT feature_id 
@@ -93,17 +94,17 @@ class SQL:
                     (
                         SELECT f.feature_id, fsk.KeyCount, count(distinct fsk.key_column_name) ContextKeyMatchCount 
                         FROM
-                            FeatureStore.TrainingContext tc 
+                            {FEATURE_STORE_SCHEMA}.TrainingContext tc 
                             INNER JOIN 
-                            FeatureStore.TrainingContextKey c ON c.context_id=tc.context_id AND c.key_type='C'
+                            {FEATURE_STORE_SCHEMA}.TrainingContextKey c ON c.context_id=tc.context_id AND c.key_type='C'
                             INNER JOIN 
                             ( 
                                 SELECT feature_set_id, key_column_name, count(*) OVER (PARTITION BY feature_set_id) KeyCount 
-                                FROM FeatureStore.feature_set_key 
+                                FROM {FEATURE_STORE_SCHEMA}.feature_set_key 
                             )fsk ON c.key_column_name=fsk.key_column_name
                             INNER JOIN
-                            FeatureStore.Feature f USING (feature_set_id)
-                        WHERE {where}
+                            {FEATURE_STORE_SCHEMA}.Feature f USING (feature_set_id)
+                        WHERE {{where}}
                         GROUP BY 1,2
                     )match_keys
                     WHERE ContextKeyMatchCount = KeyCount 
@@ -111,18 +112,18 @@ class SQL:
           )
     """
 
-    training_context = """
-    INSERT INTO FeatureStore.TrainingContext (Name, Description, SQL_text, ts_column, label_column) 
-    VALUES ('{name}', '{desc}', '{sql_text}', '{ts_col}', {label_col})
+    training_context = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.TrainingContext (Name, Description, SQL_text, ts_column, label_column) 
+    VALUES ('{{name}}', '{{desc}}', '{{sql_text}}', '{{ts_col}}', {{label_col}})
     """
 
-    get_training_context_id = """
-    SELECT context_id from FeatureStore.Training_Context where Name='{name}'
+    get_training_context_id = f"""
+    SELECT context_id from {FEATURE_STORE_SCHEMA}.Training_Context where Name='{{name}}'
     """
 
-    training_context_keys = """
-    INSERT INTO FeatureStore.TrainingContextKey (Context_ID, Key_Column_Name, Key_Type)
-    VALUES ({context_id}, '{key_column}', '{key_type}' )
+    training_context_keys = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.TrainingContextKey (Context_ID, Key_Column_Name, Key_Type)
+    VALUES ({{context_id}}, '{{key_column}}', '{{key_type}}' )
     """
 
 class Columns:
