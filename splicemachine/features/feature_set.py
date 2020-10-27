@@ -57,7 +57,7 @@ class FeatureSet:
     def add_feature(self, *, name, description, feature_data_type, feature_type, tags: List[str]):
         self._validate_feature(name)
         f = Feature(name=name, description=description, feature_data_type=feature_data_type,
-                    featuretype=feature_type, tags=tags)
+                    feature_type=feature_type, tags=tags, feature_set_id=self.feature_set_id)
         print('Registering feature in metadata')
         f._register_metadata(self.splice_ctx)
 

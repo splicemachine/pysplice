@@ -1,12 +1,12 @@
 from splicemachine.features.constants import FeatureTypes, SQL
 
 class Feature:
-    def __init__(self, *, name, description, feature_data_type, featuretype, tags, featuresetid=None, feature_id=None, **kwargs):
+    def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
         self.name = name
         self.description = description
         self.feature_data_type = feature_data_type
-        self.feature_type = featuretype
-        self.feature_set_id = featuresetid
+        self.feature_type = feature_type
+        self.feature_set_id = feature_set_id
         self.feature_id = feature_id
         self.tags = tags
         args = {k.lower(): kwargs[k] for k in kwargs}
