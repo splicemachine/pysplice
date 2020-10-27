@@ -77,11 +77,11 @@ class SQL:
        p.pk_columns, 
        ts_column, label_column,
        c.context_columns               
-    FROM {FEATURE_STORE_SCHEMA}.TrainingContext tc 
+    FROM {FEATURE_STORE_SCHEMA}.training_context tc 
        INNER JOIN 
-        (SELECT context_id, STRING_AGG(key_column_name,',') pk_columns FROM {FEATURE_STORE_SCHEMA}.TrainingContextKey WHERE key_type='P' GROUP BY 1)  p ON tc.context_id=p.context_id 
+        (SELECT context_id, STRING_AGG(key_column_name,',') pk_columns FROM {FEATURE_STORE_SCHEMA}.training_context_key WHERE key_type='P' GROUP BY 1)  p ON tc.context_id=p.context_id 
        INNER JOIN 
-        (SELECT context_id, STRING_AGG(key_column_name,',') context_columns FROM {FEATURE_STORE_SCHEMA}.TrainingContextKey WHERE key_type='C' GROUP BY 1)  c ON tc.context_id=c.context_id
+        (SELECT context_id, STRING_AGG(key_column_name,',') context_columns FROM {FEATURE_STORE_SCHEMA}.training_context_key WHERE key_type='C' GROUP BY 1)  c ON tc.context_id=c.context_id
     """
 
     get_all_features = f"SELECT NAME FROM {FEATURE_STORE_SCHEMA}.feature WHERE Name='{{name}}'"
@@ -98,9 +98,9 @@ class SQL:
                     (
                         SELECT f.feature_id, fsk.KeyCount, count(distinct fsk.key_column_name) ContextKeyMatchCount 
                         FROM
-                            {FEATURE_STORE_SCHEMA}.TrainingContext tc 
+                            {FEATURE_STORE_SCHEMA}.training_context tc 
                             INNER JOIN 
-                            {FEATURE_STORE_SCHEMA}.TrainingContextKey c ON c.context_id=tc.context_id AND c.key_type='C'
+                            {FEATURE_STORE_SCHEMA}.training_context_key c ON c.context_id=tc.context_id AND c.key_type='C'
                             INNER JOIN 
                             ( 
                                 SELECT feature_set_id, key_column_name, count(*) OVER (PARTITION BY feature_set_id) KeyCount 
@@ -117,7 +117,7 @@ class SQL:
     """
 
     training_context = f"""
-    INSERT INTO {FEATURE_STORE_SCHEMA}.TrainingContext (Name, Description, SQL_text, ts_column, label_column) 
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_context (Name, Description, SQL_text, ts_column, label_column) 
     VALUES ('{{name}}', '{{desc}}', '{{sql_text}}', '{{ts_col}}', {{label_col}})
     """
 
@@ -126,7 +126,7 @@ class SQL:
     """
 
     training_context_keys = f"""
-    INSERT INTO {FEATURE_STORE_SCHEMA}.TrainingContextKey (Context_ID, Key_Column_Name, Key_Type)
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_context_key (Context_ID, Key_Column_Name, Key_Type)
     VALUES ({{context_id}}, '{{key_column}}', '{{key_type}}' )
     """
 
