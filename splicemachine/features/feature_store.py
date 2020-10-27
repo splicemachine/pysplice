@@ -62,8 +62,7 @@ class FeatureStore:
 
     def get_training_contexts(self, _filter: Dict[str,Union[int,str]] = None) -> List[TrainingContext]:
         """
-        Returns all available training contexts in the format of a dictionary mapping
-        Context_ID: (context_name, context_description)
+        Returns a list of all available training contexts with an optional filter
         :param filter: Dictionary container the filter keyword (label, description etc) and the value to filter on (using CONTAINS)
 
         :return:

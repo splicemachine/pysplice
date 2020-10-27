@@ -1,8 +1,8 @@
 class TrainingContext:
-    def __init__(self, *, pkcolumns, tscolumn, labelcolumn, context_sql, **kwargs):
-        self.pk_columns = pkcolumns
-        self.ts_column = tscolumn
-        self.label_column = labelcolumn
+    def __init__(self, *, pk_columns, ts_column, label_column, context_sql, **kwargs):
+        self.pk_columns = pk_columns
+        self.ts_column = ts_column
+        self.label_column = label_column
         self.context_sql = context_sql
         args = {k.lower(): kwargs[k] for k in kwargs} # Make all keys lowercase
         args = {k: args[k].split(',') if 'columns' in k else args[k] for k in args} # Make value a list for specific pkcolumns and contextcolumns because Splice doesn't support Arrays
