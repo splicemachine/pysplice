@@ -35,8 +35,10 @@ class SQL:
     INSERT INTO {FEATURE_STORE_SCHEMA}.feature_set ( schema_name, table_name, Description) VALUES ('{{schema}}', '{{table}}', '{{desc}}')
     """
 
-    get_feature_set_id = f"SELECT feature_set_id FROM {FEATURE_STORE_SCHEMA}.feature_set " \
-                         "WHERE schema_name='{{schema}}' and table_name='{{table}}'"
+    get_feature_set_id = f"""
+    SELECT feature_set_id FROM {FEATURE_STORE_SCHEMA}.feature_set
+    WHERE schema_name='{{schema}}' and table_name='{{table}}'
+    """
 
     feature_set_pk_metadata = f"""
     INSERT INTO {FEATURE_STORE_SCHEMA}.feature_set_key( feature_set_id, key_column_name, key_column_data_type) 
