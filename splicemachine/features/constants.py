@@ -19,8 +19,10 @@ class FeatureTypes:
 
 class SQL:
     FEATURE_STORE_SCHEMA = 'FeatureStore2'
-    feature_set_table = f'CREATE TABLE {{schema}}.{{table}} ({{pk_columns}}, {{ts_columns}}, {{feature_columns}}, ' \
-                            '\nPRIMARY KEY ({{pk_list}}))'
+    feature_set_table = f"""
+    CREATE TABLE {{schema}}.{{table}} ({{pk_columns}}, {{ts_columns}}, {{feature_columns}}, PRIMARY KEY ({{pk_list}}))
+    """
+
 
     feature_set_trigger = f'''
     CREATE TRIGGER {{schema}}.{{table}}_history_update 
