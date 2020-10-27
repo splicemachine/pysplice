@@ -31,9 +31,9 @@ class FeatureSet:
     def get_features(self) -> List[Feature]:
         features = []
         if self.feature_set_id:
-            features = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id))
-            features = clean_df(features, Columns.feature).collect()
-            for f in features:
+            features_df = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id))
+            features_df = clean_df(features_df, Columns.feature).collect()
+            for f in features_df:
                 f = f.asDict()
                 features.append(Feature(**f))
         return features
