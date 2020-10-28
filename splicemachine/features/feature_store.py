@@ -409,6 +409,11 @@ class FeatureStore:
             self.splice_ctx.execute(key_sql)
         print('Done.')
 
+    def deploy_feature_set(self, feature_set_schema, feature_set_table):
+        fset = self.get_feature_sets(_filter={'schema_name':feature_set_schema, 'table_name':feature_set_table})[0]
+        fset.deploy()
+
+
     def describe_feature_sets(self) -> None:
         """
         Prints out a description of a all feature sets, with all features in the feature sets and whether the feature
@@ -418,9 +423,9 @@ class FeatureStore:
         print('Available feature sets')
         print('----------------------')
         for fset in self.get_feature_sets():
+            print('-'*200)
             print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
             print('\n\tAvailable features:')
-            print('\t----------------------')
             display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
 
 
