@@ -451,9 +451,8 @@ class FeatureStore:
         for tcx in self.get_training_contexts():
             print('-'*200)
             print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
-            avl_features = self.get_available_features(tcx.name)
             print(f'Available features in {tcx.name}:')
-            display(pd.DataFrame(f.__dict__ for f in avl_features))
+            display(pd.DataFrame(f.__dict__ for f in self.get_available_features(tcx.name)))
 
     def describe_training_context(self, training_context: str) -> None:
         """
@@ -464,6 +463,7 @@ class FeatureStore:
         tcx = self.get_training_contexts(_filter={'name': training_context})[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print("Available Features")
+        display(pd.DataFrame(f.__dict__ for f in self.get_available_features(tcx.name)))
 
 
     def set_feature_description(self):
