@@ -358,6 +358,16 @@ class FeatureStore:
         f._register_metadata(self.splice_ctx)
         #TODO: Backfill the feature
 
+    def _validate_training_context(self, name):
+        """
+        Validates that the training context doesn't already exist.
+        #TODO: Validate the SQL for the training_sql (if possible?)
+        #TODO: Validate context_keys, primary_key etc...
+        :param name: The training context name
+        :return: None
+        """
+        assert len(self.get_training_contexts(_filter={'name': name})) == 0, f"Training context {name} already exists!"
+
 
     def create_training_context(self, *, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
                             ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
@@ -381,7 +391,7 @@ class FeatureStore:
         :return:
         """
         # TODO: Need a validate_training_context
-        # validate_sql()
+        self._validate_training_context(name)
         # register_training_context()
         label_col = f"'{label_col}'" if label_col else "NULL" # Formatting incase NULL
         train_sql = SQL.training_context.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
