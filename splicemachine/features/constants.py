@@ -64,7 +64,7 @@ class SQL:
     """
 
     get_feature_sets = f"""
-        SELECT fset.feature_set_id, table_name, schema_name, Description, pk_columns, pk_types FROM {FEATURE_STORE_SCHEMA}.feature_set fset
+        SELECT fset.feature_set_id, table_name, schema_name, Description, pk_columns, pk_types, deployed FROM {FEATURE_STORE_SCHEMA}.feature_set fset
         INNER JOIN 
             (
                 SELECT feature_set_id, STRING_AGG(key_column_name,'|') pk_columns, STRING_AGG(key_column_data_type,'|'
@@ -125,15 +125,23 @@ class SQL:
     SELECT context_id from {FEATURE_STORE_SCHEMA}.Training_Context where Name='{{name}}'
     """
 
+    get_fset_primary_keys = f"""
+    select distinct key_column_name from {FEATURE_STORE_SCHEMA}.Feature_Set_Key
+    """
+
     training_context_keys = f"""
     INSERT INTO {FEATURE_STORE_SCHEMA}.training_context_key (Context_ID, Key_Column_Name, Key_Type)
     VALUES ({{context_id}}, '{{key_column}}', '{{key_type}}' )
+    """
+
+    update_fset_deployment_status = f"""
+    UPDATE TABLE {FEATURE_STORE_SCHEMA}.feature_set set deployed={{status}} where feature_set_id = {{feature_set_id}} 
     """
 
 class Columns:
     feature = ['feature_id', 'feature_set_id', 'name', 'description', 'feature_data_type', 'feature_type',
                'cardinality', 'tags', 'compliance_level', 'last_update_ts', 'last_update_user_id']
     training_context = ['context_id','name','description','context_sql','pk_columns','ts_column','label_column','context_columns']
-    feature_set = ['feature_set_id', 'table_name', 'schema_name', 'description', 'pk_columns', 'pk_types']
+    feature_set = ['feature_set_id', 'table_name', 'schema_name', 'description', 'pk_columns', 'pk_types', 'deployed']
     history_table_pk = ['ASOF_TS','UNTIL_TS']
 

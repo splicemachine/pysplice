@@ -9,8 +9,8 @@ HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
 
 
 class FeatureSet:
-    def __init__(self, *, splice_ctx: PySpliceContext, table_name, schema_name,
-                 description, primary_keys: Dict[str, str], feature_set_id=None, **kwargs):
+    def __init__(self, *, splice_ctx: PySpliceContext, table_name, schema_name, description,
+                 primary_keys: Dict[str, str], feature_set_id=None, deployed: bool = False, **kwargs):
         self.splice_ctx = splice_ctx
 
         # FIXME: Set instance variables
@@ -19,6 +19,7 @@ class FeatureSet:
         self.description = description
         self.primary_keys = primary_keys
         self.feature_set_id = feature_set_id
+        self.deployed = deployed
 
         args = {k.lower(): kwargs[k] for k in kwargs}  # Lowercase keys
         args = {k: args[k].split(',') if 'columns' in k else args[k] for k in
@@ -69,6 +70,15 @@ class FeatureSet:
             )
             self.splice_ctx.execute(pk_sql)
 
+    def __update_deployment_status(self, status: bool):
+        """
+        Updated the deployment status of a feature set after deployment/undeployment
+        :return: None
+        """
+        self.splice_ctx.execute(SQL.update_fset_deployment_status.format(status=status,
+                                                                         feature_set_id=self.feature_set_id))
+
+
     def deploy(self):
         old_pk_cols = ','.join(f'OLDW.{p}' for p in self.pk_columns)
         old_feature_cols = ','.join(f'OLDW.{f.name}' for f in self.get_features())
@@ -100,9 +110,9 @@ class FeatureSet:
         print('\n', trigger_sql, '\n')
         self.splice_ctx.execute(trigger_sql)
         print('Done.')
-        # print('Registering Metadata...')
-        # self.__register_metadata()
-        # print('Done.')
+        print('Updating Metadata...')
+        self.__update_deployment_status(True)
+        print('Done.')
 
     def __eq__(self, other):
         if isinstance(other, FeatureSet):
@@ -113,5 +123,5 @@ class FeatureSet:
         return self.__str__()
 
     def __str__(self):
-        return f'FeatureSet(FeatureSetID={self.__dict__.get("feature_set_id", "None")}, SchemaName={self.schema_name}, ' \
+        return f'FeatureSet(FeatureSetID={self.__dict__.get("feature_set_id", "NA")}, SchemaName={self.schema_name}, ' \
                f'TableName={self.table_name}, Description={self.description}, PKColumns={self.pk_columns}'
