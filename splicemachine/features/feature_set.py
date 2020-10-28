@@ -66,7 +66,7 @@ class FeatureSet:
 
         for pk in self.pk_columns:
             pk_sql = SQL.feature_set_pk_metadata.format(
-                feature_set_id=fsid, pk_col_name=pk, pk_col_type=self.primary_keys[pk]
+                feature_set_id=fsid, pk_col_name=pk.upper(), pk_col_type=self.primary_keys[pk]
             )
             self.splice_ctx.execute(pk_sql)
 

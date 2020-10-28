@@ -421,14 +421,14 @@ class FeatureStore:
 
         print('Creating Context Keys')
         for i in context_keys:
-            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i, key_type='C')
+            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='C')
             print(f'\tCreating Context Key {i}...')
             print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
         print('Done.')
         print('Creating Primary Keys')
         for i in primary_keys:
-            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i, key_type='P')
+            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='P')
             print(f'\tCreating Primary Key {i}...')
             print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
