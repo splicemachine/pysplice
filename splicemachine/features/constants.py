@@ -135,7 +135,7 @@ class SQL:
     """
 
     update_fset_deployment_status = f"""
-    UPDATE TABLE {FEATURE_STORE_SCHEMA}.feature_set set deployed={{status}} where feature_set_id = {{feature_set_id}} 
+    UPDATE {FEATURE_STORE_SCHEMA}.feature_set set deployed={{status}} where feature_set_id = {{feature_set_id}} 
     """
 
 class Columns:
