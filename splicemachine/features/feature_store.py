@@ -354,7 +354,7 @@ class FeatureStore:
         self._validate_feature(name)
         f = Feature(name=name, description=description, feature_data_type=feature_data_type,
                     feature_type=feature_type, tags=tags, feature_set_id=fset.feature_set_id)
-        print('Registering feature in metadata')
+        print(f'Registering feature {f.name} in Feature Store')
         f._register_metadata(self.splice_ctx)
         #TODO: Backfill the feature
 
@@ -421,7 +421,6 @@ class FeatureStore:
         :return: None
         """
         print('Available feature sets')
-        print('----------------------')
         for fset in self.get_feature_sets():
             print('-'*200)
             print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
@@ -449,9 +448,12 @@ class FeatureStore:
         :return: None
         """
         print('Available training contexts')
-        print('---------------------------')
         for tcx in self.get_training_contexts():
+            print('-'*200)
             print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
+            avl_features = self.get_available_features(tcx.name)
+            print(f'Available features in {tcx.name}:')
+            display(pd.DataFrame(f.__dict__ for f in avl_features))
 
     def describe_training_context(self, training_context: str) -> None:
         """
@@ -461,6 +463,7 @@ class FeatureStore:
         """
         tcx = self.get_training_contexts(_filter={'name': training_context})[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
+        print("Available Features")
 
 
     def set_feature_description(self):
