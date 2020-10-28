@@ -2,9 +2,7 @@ from splicemachine.features import Feature
 from .constants import SQL, Columns
 from .utils import clean_df
 from splicemachine.spark import PySpliceContext
-from splicemachine.mlflow_support.utilities import SpliceMachineException
 from typing import List, Dict
-import re
 
 FEATURE_SET_TS_COL = '\n\tLAST_UPDATE_TS TIMESTAMP'
 HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
@@ -37,29 +35,6 @@ class FeatureSet:
                 f = f.asDict()
                 features.append(Feature(**f))
         return features
-
-    def _validate_feature(self, name):
-        """
-        Ensures that the feature doesn't exist as all features have unique names
-        :param name:
-        :return:
-        """
-        # TODO: Capitalization of feature name column
-        # TODO: Make more informative, add which feature set contains existing feature
-        str = f"Cannot add feature {name}, feature already exists in Feature Store. Try a new feature name."
-        l = self.splice_ctx.df(SQL.get_all_features.format(name=name.upper())).count()
-        assert l == 0, str
-
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
-            raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
-                                         'and can only contains letters, numbers and underscores')
-
-    def add_feature(self, *, name, description, feature_data_type, feature_type, tags: List[str]):
-        self._validate_feature(name)
-        f = Feature(name=name, description=description, feature_data_type=feature_data_type,
-                    feature_type=feature_type, tags=tags, feature_set_id=self.feature_set_id)
-        print('Registering feature in metadata')
-        f._register_metadata(self.splice_ctx)
 
     def remove_feature(self, feature: Feature or str):
         #TODO

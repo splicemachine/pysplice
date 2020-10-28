@@ -1,4 +1,4 @@
-class FeatureTypes:
+class FeatureType:
     """
     Class containing names for
     valid feature types
@@ -14,7 +14,7 @@ class FeatureTypes:
         :return: (tuple) valid types
         """
         return (
-            FeatureTypes.categorical, FeatureTypes.ordinal, FeatureTypes.continuous,
+            FeatureType.categorical, FeatureType.ordinal, FeatureType.continuous,
         )
 
 class SQL:

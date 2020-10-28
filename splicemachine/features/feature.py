@@ -1,4 +1,4 @@
-from splicemachine.features.constants import FeatureTypes, SQL
+from splicemachine.features.constants import FeatureType, SQL
 
 class Feature:
     def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
@@ -13,13 +13,13 @@ class Feature:
         self.__dict__.update(args)
 
     def is_categorical(self):
-        return self.feature_type == FeatureTypes.categorical
+        return self.feature_type == FeatureType.categorical
 
     def is_continuous(self):
-        return self.feature_type == FeatureTypes.continuous
+        return self.feature_type == FeatureType.continuous
 
     def is_ordinal(self):
-        return self.feature_type == FeatureTypes.ordinal
+        return self.feature_type == FeatureType.ordinal
 
     def _register_metadata(self, splice):
         """
