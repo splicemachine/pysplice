@@ -366,12 +366,19 @@ class FeatureStore:
         """
         # Validate name doesn't exist
         assert len(self.get_training_contexts(_filter={'name': name})) == 0, f"Training context {name} already exists!"
-        context_sql_df = self.splice_ctx.df(sql)
 
         # Column comparison
         # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, context_keys, tscol and label_col
-        # FIXME: We cannot move forward here until https://splicemachine.atlassian.net/browse/DB-9556
+        from py4j.protocol import Py4JJavaError
+        try:
+            context_sql_df = self.splice_ctx.df(sql)
+        except Py4JJavaError as e:
+            if 'SQLSyntaxErrorException' in str(e.java_exception):
+                raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
+                                             f'validation:\n\n{str(e.java_exception)}') from None
+            raise e
 
+        # FIXME: We cannot move forward here until https://splicemachine.atlassian.net/browse/DB-9556
         # Confirm that all context_keys provided correspond to primary keys of created feature sets
         pks = set(i[0].upper() for i in self.splice_ctx.df(SQL.get_fset_primary_keys).collect())
         missing_keys = set(i.upper() for i in context_keys) - pks
