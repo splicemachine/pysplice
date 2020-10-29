@@ -580,7 +580,8 @@ class FeatureStore:
         remaining_features = features
         rnd = 0
         mlflow_results = []
-        assert len(remaining_features) > n, \
+        assert len(
+            remaining_features) > n, \
             "You've set the number of desired features (n) greater than the number of available features"
         while len(remaining_features) > n:
             rnd += 1
@@ -604,7 +605,7 @@ class FeatureStore:
                 display(feature_importances.reset_index(drop=True))
 
             # Add results to a list for mlflow logging
-            round_metrics = {'Round': rnd, 'Number of features': [f.name for f in remaining_features]}
+            round_metrics = {'Round': rnd, 'Number of features': len(remaining_features)}
             for index, row in feature_importances.iterrows():
                 round_metrics[row['name']] = row['score']
             mlflow_results.append(round_metrics)
