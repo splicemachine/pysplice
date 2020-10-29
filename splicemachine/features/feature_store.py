@@ -21,17 +21,20 @@ from .utils import clean_df
 
 
 class FeatureStore:
-    def __init__(self, splice_ctx: PySpliceContext):
+    def __init__(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
         self.feature_sets = []  # Cache of newly created feature sets
 
-    def register_splice_context(self, splice_ctx):
+    def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
 
     def get_feature_sets(self, feature_set_ids: List[int] = None, _filter: Dict[str, str] = None) -> List[FeatureSet]:
         """
         Returns a list of available feature sets
 
+        :param feature_set_ids: A list of feature set IDs. If none will return all FeatureSets
+        :param _filter: Dictionary of filters to apply to the query. This filter can be on any attribute of FeatureSets.
+            If None, will return all FeatureSets
         :return: List[FeatureSet]
         """
         feature_sets = []
@@ -65,6 +68,7 @@ class FeatureStore:
     def get_training_context(self, training_context: str) -> TrainingContext:
         """
         Gets a training context by name
+
         :param training_context: Training context name
         :return: TrainingContext
         """
@@ -73,9 +77,10 @@ class FeatureStore:
     def get_training_contexts(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingContext]:
         """
         Returns a list of all available training contexts with an optional filter
-        :param filter: Dictionary container the filter keyword (label, description etc) and the value to filter on (using CONTAINS)
 
-        :return:
+        :param _filter: Dictionary container the filter keyword (label, description etc) and the value to filter on
+            If None, will return all TrainingContexts
+        :return: List[TrainingContext]
         """
         training_contexts = []
 
@@ -100,7 +105,7 @@ class FeatureStore:
             training_contexts.append(TrainingContext(**t))
         return training_contexts
 
-    def get_training_context_id(self, name) -> int:
+    def get_training_context_id(self, name: str) -> int:
         """
         Returns the unique context ID from a name
 
@@ -112,6 +117,7 @@ class FeatureStore:
     def get_features_by_name(self, names: List[str]) -> List[Feature]:
         """
         Returns a list of features whose names are provided
+
         :param names: The list of feature names
         :return: The list of features
         """
@@ -126,7 +132,7 @@ class FeatureStore:
 
     def remove_feature_set(self):
         # TODO
-        pass
+        raise NotImplementedError
 
     def get_feature_vector_sql(self, training_context: str, features: List[Feature],
                                include_insert: Optional[bool] = True) -> str:
@@ -212,7 +218,8 @@ class FeatureStore:
         return features
 
     def get_feature_description(self):
-        pass
+        #TODO
+        raise NotImplementedError
 
     def get_training_set(self, training_context: str, features: List[Feature], start_time: Optional[datetime] = None,
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
@@ -573,8 +580,8 @@ class FeatureStore:
         remaining_features = features
         rnd = 0
         mlflow_results = []
-        assert len(
-            remaining_features) > n, "You've set the number of desired features (n) greater than the number of available features"
+        assert len(remaining_features) > n, \
+            "You've set the number of desired features (n) greater than the number of available features"
         while len(remaining_features) > n:
             rnd += 1
             num_features = max(len(remaining_features) - step, n)  # Don't go less than the specified value
@@ -597,7 +604,7 @@ class FeatureStore:
                 display(feature_importances.reset_index(drop=True))
 
             # Add results to a list for mlflow logging
-            round_metrics = {'Round': rnd, 'Number of features': remaining_features}
+            round_metrics = {'Round': rnd, 'Number of features': [f.name for f in remaining_features]}
             for index, row in feature_importances.iterrows():
                 round_metrics[row['name']] = row['score']
             mlflow_results.append(round_metrics)
