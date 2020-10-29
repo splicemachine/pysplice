@@ -62,6 +62,14 @@ class FeatureStore:
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
+    def get_training_context(self, training_context: str) -> TrainingContext:
+        """
+        Gets a training context by name
+        :param training_context: Training context name
+        :return: TrainingContext
+        """
+        return self.get_training_contexts(_filter={'name': training_context})[0]
+
     def get_training_contexts(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingContext]:
         """
         Returns a list of all available training contexts with an optional filter
