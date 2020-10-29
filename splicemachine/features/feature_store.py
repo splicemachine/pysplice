@@ -556,8 +556,7 @@ class FeatureStore:
         with self.mlflow_ctx.start_run(run_name=name):
             for r in range(rounds):
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
-                    for round_results in mlflow_results:
-                        self.mlflow_ctx.log_metrics(round_results)
+                    self.mlflow_ctx.log_metrics(mlflow_results[r])
 
     def run_feature_elimination(self, df, features, label: str = 'label', n: int = 10, verbose: int = 0,
                                 model_type: str = 'classification', step: int = 1, log_mlflow: bool = False,
