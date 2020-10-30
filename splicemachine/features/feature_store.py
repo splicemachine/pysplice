@@ -564,6 +564,7 @@ class FeatureStore:
 
         """
         Runs feature elimination using a Spark decision tree on the dataframe passed in. Optionally logs results to mlflow
+
         :param df: The dataframe with features and label
         :param label: the label column
         :param n: The number of features desired. Default 10
