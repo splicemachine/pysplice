@@ -13,7 +13,6 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
-from splicemachine.mlflow_support.utilities import SpliceMachineException
 
 from .constants import SQL, Columns, FeatureType
 from .training_context import TrainingContext
@@ -346,6 +345,7 @@ class FeatureStore:
         assert l == 0, str
 
         if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
+            from splicemachine.mlflow_support.utilities import SpliceMachineException
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
@@ -389,6 +389,7 @@ class FeatureStore:
             context_sql_df = self.splice_ctx.df(sql)
         except Py4JJavaError as e:
             if 'SQLSyntaxErrorException' in str(e.java_exception):
+                from splicemachine.mlflow_support.utilities import SpliceMachineException
                 raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
                                              f'validation:\n\n{str(e.java_exception)}') from None
             raise e
