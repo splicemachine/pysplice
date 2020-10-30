@@ -71,6 +71,7 @@ from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
+from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
                                                     insert_artifact)
@@ -141,7 +142,6 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
 
-
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
@@ -153,6 +153,16 @@ def _register_splice_context(splice_context):
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
+@_mlflow_patch('register_feature_store')
+def _register_feature_store(fs: FeatureStore):
+    """
+    Register a feature store for feature tracking of experiments
+
+    :param feature_store: (FeatureStore) The feature store
+    :return: None
+    """
+    mlflow._feature_store = fs
+    mlflow._feature_store.mlflow_ctx = mlflow
 
 def _check_for_splice_ctx():
     """
@@ -301,7 +311,6 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-
     buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
@@ -513,7 +522,6 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
     model_blob, _ = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-
     buffer = BytesIO()
     buffer.seek(0)
     buffer.write(model_blob)
@@ -848,7 +856,6 @@ def __get_logs(job_id: int):
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
 
-
 @_mlflow_patch('watch_job')
 def _watch_job(job_id: int):
     """
@@ -907,7 +914,7 @@ def apply_patches():
     Apply all the Gorilla Patches; \
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
-    targets = [_register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
