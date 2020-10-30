@@ -18,7 +18,7 @@ class FeatureType:
         )
 
 class SQL:
-    FEATURE_STORE_SCHEMA = 'FeatureStore2'
+    FEATURE_STORE_SCHEMA = 'FeatureStore'
     feature_set_table = f"""
     CREATE TABLE {{schema}}.{{table}} ({{pk_columns}}, {{ts_columns}}, {{feature_columns}}, PRIMARY KEY ({{pk_list}}))
     """
