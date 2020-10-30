@@ -71,11 +71,11 @@ from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
-from splicemachine.mlflow_support.constants import (FileExtensions)
+from splicemachine.features import FeatureStore
+from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
                                                     insert_artifact)
 from splicemachine.spark.context import PySpliceContext
-from splicemachine.features import FeatureStore
 
 _TESTING = os.environ.get("TESTING", False)
 
@@ -92,6 +92,17 @@ mlflow.client = _CLIENT
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
+
+def __try_auto_login():
+    """
+    Tries to login the user to the Director for deployment automatically. This will only work if the user is not
+    using the cloud service.
+
+    :return: None
+    """
+    user, password = os.environ.get('SPLICE_JUPYTER_USER'), os.environ.get('SPLICE_JUPYTER_PASSWORD')
+    if user and password:
+        mlflow.login_director(user, password)
 
 def _mlflow_patch(name):
     """
@@ -217,7 +228,7 @@ def _lm(key, value, step=None):
     mlflow.log_metric(key, value, step=step)
 
 
-def __get_serialized_mlmodel(model, conda_env=None):
+def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
     """
     Populate the Zip buffer with the serialized MLModel
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
@@ -226,10 +237,23 @@ def __get_serialized_mlmodel(model, conda_env=None):
     """
     buffer = BytesIO()
     zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
-
     with TemporaryDirectory() as tempdir:
         mlmodel_dir = f'{tempdir}/model'
-        if isinstance(model, H2OModel):
+        if model_lib:
+            try:
+                import mlflow
+                import_module(f'mlflow.{model_lib}')
+                getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
+
+                file_ext = FileExtensions.map_from_mlflow_flavor(model_lib) if \
+                    model_lib in DatabaseSupportedLibs.get_valid() else model_lib
+
+            except:
+                raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
+                                             f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                             f'Or you can build a pyfunc model\n'
+                                             'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
+        elif isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
             mlflow.h2o.save_model(model, mlmodel_dir, conda_env=conda_env)
@@ -251,9 +275,12 @@ def __get_serialized_mlmodel(model, conda_env=None):
             mlflow.keras.save_model(model, mlmodel_dir, conda_env=conda_env)
             file_ext = FileExtensions.keras
         else:
-            raise SpliceMachineException('Model type not supported for logging.'
-                                         'Currently we support logging Spark, H2O, SKLearn and Keras (TF backend) models.'
-                                         'You can save your model to disk, zip it and run mlflow.log_artifact to save.')
+            raise SpliceMachineException('Model type not supported for logging. If you received this error,'
+                                         'you should pass a value to the model_lib parameter of the model type you '
+                                         'want to save. Supported values are available here: '
+                                         'https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                         'as well as \'pyfunc\' '
+                                         'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
@@ -262,13 +289,16 @@ def __get_serialized_mlmodel(model, conda_env=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model, name='model', conda_env=None):
+def _log_model(model, name='model', conda_env=None, model_lib=None):
     """
     Log a trained machine learning model
 
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
         with the current run
     :param name: (str) the run relative name to store the model under. [Deault 'model']
+    :param conda_env: An optional conda environment for specifying custom configurations
+    :param model_class: An optional param specifying the model type of the model to log
+        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
     """
     _check_for_splice_ctx()
 
@@ -281,8 +311,7 @@ def _log_model(model, name='model', conda_env=None):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-
-    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env)
+    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
@@ -493,7 +522,6 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
     model_blob, _ = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-
     buffer = BytesIO()
     buffer.seek(0)
     buffer.write(model_blob)
@@ -522,7 +550,8 @@ def _log_artifact(file_name, name=None, run_uuid=None):
                 mlflow.log_artifact('my_image.png')
 
     :param file_name: (str) the name of the file name to log
-    :param name: (str) the name of the run relative name to store the model under
+    :param name: (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file
+        extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).
     :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run
     :return: None
     
@@ -655,7 +684,7 @@ def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_i
 @_mlflow_patch('deploy_kubernetes')
 def _deploy_kubernetes(run_id: str, service_port: int = 80,
                        base_replicas: int = 1, autoscaling_enabled: bool = False,
-                       max_replicas: bool = 2, target_cpu_utilization: int = 50,
+                       max_replicas: int = 2, target_cpu_utilization: int = 50,
                        disable_nginx: bool = False, gunicorn_workers: int = 1,
                        resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
                        cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
@@ -827,7 +856,6 @@ def __get_logs(job_id: int):
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
 
-
 @_mlflow_patch('watch_job')
 def _watch_job(job_id: int):
     """
@@ -846,12 +874,12 @@ def _watch_job(job_id: int):
             if logs_retrieved[log_idx] in previous_lines:
                 break
 
-        new_logs = '\n'.join(logs_retrieved[log_idx:])
-        if new_logs:
-            print(new_logs, end='')  # dont create \n @ the end
+        idx = log_idx+1 if log_idx else log_idx # First time getting logs, go to 0th index, else log_idx+1
+        for n in logs_retrieved[idx:]:
+            print(f'\n{n}',end='')
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-
+        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
         if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
             return
 
@@ -910,6 +938,7 @@ def set_mlflow_uri(uri):
 def main():
     mlflow.set_tracking_uri(_TRACKING_URL)
     apply_patches()
+    __try_auto_login()
 
 
 main()

@@ -18,9 +18,26 @@ class FileExtensions:
         return (
             FileExtensions.spark, FileExtensions.keras, FileExtensions.h2o, FileExtensions.sklearn
         )
+    @staticmethod
+    def map_from_mlflow_flavor(flavor: str):
+        return {
+            'spark': 'spark',
+            'h2o': 'h2o',
+            'keras': 'h5',
+            'sklearn': 'pkl'
+        }[flavor]
 
+class DatabaseSupportedLibs:
+    """
+    Class containing supported model libraries for native database model deployment
+    """
+    @staticmethod
+    def get_valid():
+        return (
+            'spark', 'h2o', 'sklearn', 'keras'
+        )
 
-class ModelStatuses():
+class ModelStatuses:
     """
     Class containing names
     for In Database Model Deployments
@@ -28,3 +45,4 @@ class ModelStatuses():
     deployed: str = 'DEPLOYED'
     deleted: str = 'DELETED'
     SUPPORTED_STATUSES = [deployed, deleted]
+
