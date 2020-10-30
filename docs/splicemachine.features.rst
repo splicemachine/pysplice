@@ -8,21 +8,6 @@ Submodules
      :members:
      :undoc-members:
      :show-inheritance:
-     
-  .. automodule:: splicemachine.features.feature_set
-     :members:
-     :undoc-members:
-     :show-inheritance:
-     
-  .. automodule:: splicemachine.features.feature
-     :members:
-     :undoc-members:
-     :show-inheritance:
-  
-  .. automodule:: splicemachine.features.training_context
-     :members:
-     :undoc-members:
-     :show-inheritance:
 
 splicemachine.features.feature_store module
 ----------------------------------
@@ -42,3 +27,7 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+
+
