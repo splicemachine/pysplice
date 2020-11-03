@@ -134,11 +134,11 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
     :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]
     :return: (List[str]) List of run ids
     """
-    exps = [experiment_id] if experiment_id else _CLIENT.list_experiments()
+    exps = [_CLIENT.get_experiment(experiment_id)] if experiment_id else _CLIENT.list_experiments()
     run_ids = []
     for exp in exps:
         for run in _CLIENT.search_runs(exp.experiment_id):
-            if run_name == run.data.tags['mlflow.runName']:
+            if run_name == run.data.tags.get('mlflow.runName'):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
 
@@ -302,19 +302,22 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     """
     _check_for_splice_ctx()
 
+    # Make sure no models have been logged to this run
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise SpliceMachineException("Only one model is permitted per run.")
 
     model_class = str(model.__class__)
-    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
-    mlflow.set_tag('splice.model_type', model_class)
-    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
     buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
+
+    # Set the model metadata as tags after successful logging
+    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
+    mlflow.set_tag('splice.model_type', model_class)
+    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
 
 @_mlflow_patch('start_run')
