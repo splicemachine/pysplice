@@ -99,6 +99,23 @@ class PySpliceContext:
         dataframe = dataframe.rdd.toDF(schema)
         return dataframe
 
+    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False):
+        """
+        Load a file from the local filesystem and create a new table (or recreate an existing table), and load the data
+        from the file into the new table
+
+        :param file_path: The local file to load
+        :param schema_table_name: The schema.table name
+        :param primary_keys: List[str] of primary keys for the table. Default None
+        :param dropTable: Whether or not to drop the table. If this is False and the table already exists, the
+            function will fail. Default False
+        :return: None
+        """
+        import pandas as pd
+        df = self.spark_session.createDataFrame(pd.read_csv(file_path))
+        self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
+        self.insert(df, schema_table_name, to_upper=True)
+
     def getConnection(self):
         """
         Return a connection to the database
