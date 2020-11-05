@@ -246,6 +246,8 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None, flavor_optio
                 if flavor_options:
                     flavor_options['path'] = mlmodel_dir
                     getattr(mlflow,model_lib).save_model(**flavor_options)
+                    if 'loader_module' in flavor_options:
+                        os.system(f'cp {flavor_options["loader_module"]} {tempdir}/model')
                 else:
                     getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
 
