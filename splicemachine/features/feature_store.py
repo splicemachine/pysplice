@@ -13,7 +13,6 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
-from splicemachine.mlflow_support.utilities import SpliceMachineException
 
 from .constants import SQL, Columns, FeatureType
 from .training_context import TrainingContext
@@ -346,6 +345,7 @@ class FeatureStore:
         assert l == 0, str
 
         if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
+            from splicemachine.mlflow_support.utilities import SpliceMachineException
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
@@ -389,6 +389,7 @@ class FeatureStore:
             context_sql_df = self.splice_ctx.df(sql)
         except Py4JJavaError as e:
             if 'SQLSyntaxErrorException' in str(e.java_exception):
+                from splicemachine.mlflow_support.utilities import SpliceMachineException
                 raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
                                              f'validation:\n\n{str(e.java_exception)}') from None
             raise e
@@ -457,6 +458,7 @@ class FeatureStore:
         """
         Prints out a description of a all feature sets, with all features in the feature sets and whether the feature
         set is deployed
+
         :return: None
         """
         print('Available feature sets')
@@ -470,6 +472,7 @@ class FeatureStore:
         """
         Prints out a description of a given feature set, with all features in the feature set and whether the feature
         set is deployed
+
         :param feature_set_schema: feature set schema name
         :param feature_set_table: feature set table name
         :return: None
@@ -481,6 +484,7 @@ class FeatureStore:
     def describe_training_contexts(self) -> None:
         """
         Prints out a description of all training contexts, the ID, name, description and optional label
+
         :param training_context: The training context name
         :return: None
         """
@@ -494,6 +498,7 @@ class FeatureStore:
     def describe_training_context(self, training_context: str) -> None:
         """
         Prints out a description of a given training context, the ID, name, description and optional label
+
         :param training_context: The training context name
         :return: None
         """
@@ -505,10 +510,11 @@ class FeatureStore:
     def set_feature_description(self):
         pass
 
-    def _get_pipeline(self, df, features, label, model_type):
+    def __get_pipeline(self, df, features, label, model_type):
         """
         Creates a Pipeline with preprocessing steps (StringINdexer, VectorAssembler) for each feature depending
         on feature type, and returns the pipeline for training for feature elimination
+
         :param df: Spark Dataframe
         :param features: List[Feature] to train on
         :param label: Label name to train on
@@ -530,7 +536,7 @@ class FeatureStore:
             clf = RandomForestRegressor(labelCol=label)
         return Pipeline(stages=si + [v, clf]).fit(df)
 
-    def _get_feature_importance(self, feature_importances, df, features_column):
+    def __get_feature_importance(self, feature_importances, df, features_column):
         """
         Gets the ordered feature importance for the feature elimination rounds
         :param feature_importances: Spark model featureImportances attribute
@@ -545,7 +551,7 @@ class FeatureStore:
         features_df['score'] = features_df['idx'].apply(lambda x: feature_importances[x])
         return (features_df.sort_values('score', ascending=False))
 
-    def _log_mlflow_results(self, name, rounds, mlflow_results):
+    def __log_mlflow_results(self, name, rounds, mlflow_results):
         """
         Logs the results of feature elimination to mlflow
         :param name: MLflow run name
@@ -587,10 +593,10 @@ class FeatureStore:
             rnd += 1
             num_features = max(len(remaining_features) - step, n)  # Don't go less than the specified value
             print(f'Building {model_type} model')
-            model = self._get_pipeline(train_df, remaining_features, label, model_type)
+            model = self.__get_pipeline(train_df, remaining_features, label, model_type)
             print('Getting feature importance')
-            feature_importances = self._get_feature_importance(model.stages[-1].featureImportances,
-                                                               model.transform(train_df), "features").head(num_features)
+            feature_importances = self.__get_feature_importance(model.stages[-1].featureImportances,
+                                                                model.transform(train_df), "features").head(num_features)
             remaining_features_and_label = list(feature_importances['name'].values) + [label]
             train_df = train_df.select(*remaining_features_and_label)
             remaining_features = [f for f in remaining_features if f.name in feature_importances['name'].values]
@@ -612,7 +618,7 @@ class FeatureStore:
 
         if log_mlflow and hasattr(self, 'mlflow_ctx'):
             run_name = mlflow_run_name or f'feature_elimination_{label}'
-            self._log_mlflow_results(run_name, rnd, mlflow_results)
+            self.__log_mlflow_results(run_name, rnd, mlflow_results)
 
         return remaining_features, feature_importances.reset_index(
             drop=True) if return_importances else remaining_features
