@@ -228,7 +228,7 @@ def _lm(key, value, step=None):
     mlflow.log_metric(key, value, step=step)
 
 
-def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
+def __get_serialized_mlmodel(model, conda_env=None, model_lib=None, flavor_options = {}):
     """
     Populate the Zip buffer with the serialized MLModel
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
@@ -243,7 +243,11 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
             try:
                 import mlflow
                 import_module(f'mlflow.{model_lib}')
-                getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
+                if flavor_options:
+                    flavor_options['path'] = mlmodel_dir
+                    getattr(mlflow,model_lib).save_model(**flavor_options)
+                else:
+                    getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
 
                 file_ext = FileExtensions.map_from_mlflow_flavor(model_lib) if \
                     model_lib in DatabaseSupportedLibs.get_valid() else model_lib
@@ -289,7 +293,7 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model, name='model', conda_env=None, model_lib=None):
+def _log_model(model, name='model', conda_env=None, model_lib=None, flavor_options = {}):
     """
     Log a trained machine learning model
 
@@ -299,6 +303,10 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     :param conda_env: An optional conda environment for specifying custom configurations
     :param model_class: An optional param specifying the model type of the model to log
         Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
+    :param flavor_options: (dict) The full set of save options to pass into the save_model function. If this is passed,
+        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
+        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
+        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
     """
     _check_for_splice_ctx()
 
@@ -311,7 +319,7 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
     run_id = mlflow.active_run().info.run_uuid
-    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib)
+    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib, flavor_options=flavor_options)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
