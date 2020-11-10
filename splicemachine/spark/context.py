@@ -75,6 +75,14 @@ class PySpliceContext:
             self.jvm = ''
             self.context = MockedScalaContext(self.jdbcurl)
 
+    def columnNamesCaseSensitive(self, caseSensitive):
+        """
+        Sets whether column names should be treated as case sensitive.
+
+        :param caseSensitive: (boolean) True for case sensitive, False for not case sensitive
+        """
+        self.context.columnNamesCaseSensitive(caseSensitive)
+
     def toUpper(self, dataframe):
         """
         Returns a dataframe with all of the columns in uppercase
