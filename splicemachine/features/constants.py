@@ -138,6 +138,40 @@ class SQL:
     UPDATE {FEATURE_STORE_SCHEMA}.feature_set set deployed={{status}} where feature_set_id = {{feature_set_id}} 
     """
 
+
+    training_set = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set (name, context_id ) 
+    VALUES ('{{name}}', {{context_id}})
+    """
+
+    get_training_set_id = f"""
+    SELECT training_set_id from {FEATURE_STORE_SCHEMA}.training_set where name='{{name}}'
+    """
+
+    training_set_feature = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set_feature (training_set_id, feature_id ) 
+    VALUES 
+    ({{training_set_id}}, {{feature_id}}) 
+    """
+
+    model_deployment = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.deployment (model_schema_name, model_table_name, training_set_id, training_set_start_ts, training_set_end_ts, run_id ) 
+    VALUES 
+    ('{{schema_name}}','{{table_name}}',{{training_set_id}},'{{start_ts}}','{{end_ts}}', '{{run_id}}') 
+    """
+
+    training_set_feature_stats = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set_feature_stats ( training_set_id, training_set_start_ts, training_set_end_ts, feature_id, feature_cardinality, feature_histogram, feature_mean, feature_median, feature_count, feature_stddev) 
+    VALUES 
+    ({{training_set_id}}, {{training_set_start_ts}}, {{training_set_end_ts}}, {{feature_id}}, {{feature_cardinality}}, {{feature_histogram}}, {{feature_mean}}, {{feature_median}}, {{feature_count}}, {{feature_stddev}}) 
+    """
+
+    deployment_feature_stats = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.deployment_feature_stats ( model_schema_name, model_table_name, model_start_ts, model_end_ts, feature_id, feature_cardinality, feature_histogram, feature_mean, feature_median, feature_count, feature_stddev) 
+    VALUES 
+    ({{model_schema_name}}, {{model_table_name}}, {{model_start_ts}}, {{model_end_ts}}, {{feature_id}}, {{feature_cardinality}}, {{feature_histogram}}, {{feature_mean}}, {{feature_median}}, {{feature_count}}, {{feature_stddev}}) 
+    """
+
 class Columns:
     feature = ['feature_id', 'feature_set_id', 'name', 'description', 'feature_data_type', 'feature_type',
                'cardinality', 'tags', 'compliance_level', 'last_update_ts', 'last_update_username']
