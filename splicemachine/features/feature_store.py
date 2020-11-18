@@ -13,6 +13,7 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
+from .training_set import TrainingSet
 
 from .constants import SQL, Columns, FeatureType
 from .training_context import TrainingContext
@@ -241,8 +242,7 @@ class FeatureStore:
         cols = []
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
-        cid = self.get_training_context_id(training_context)
-        tctx = self.get_training_contexts(_filter={'context_id': cid})[0]
+        tctx = self.get_training_context(training_context)
         # SELECT clause
         sql = 'SELECT '
         for pkcol in tctx.pk_columns:  # Select primary key column(s)
@@ -287,6 +287,13 @@ class FeatureStore:
             if end_time:
                 sql += f"\n\tctx.{tctx.ts_column} <= '{str(end_time)}'"
             sql = sql.rstrip('AND')
+
+        # Link this to mlflow for model deployment
+        if hasattr(self, 'mlflow_ctx'):
+            ts = TrainingSet(training_context=tctx, features=features,
+                                                               start_time=start_time, end_time=end_time)
+            self.mlflow_ctx._active_training_set: TrainingSet = ts
+            ts._register_metadata(self.mlflow_ctx)
 
         return sql if return_sql else clean_df(self.splice_ctx.df(sql), cols)
 
