@@ -12,7 +12,7 @@ numpy==1.18.2
 pandas==1.0.3
 scipy==1.4.1
 tensorflow==2.2.1
-pyspark
+pyspark==3.0.0
 h2o-pysparkling-2.4==3.28.1.2-1
 sphinx-tabs
 IPython

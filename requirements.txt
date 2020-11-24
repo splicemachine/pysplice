@@ -2,7 +2,6 @@ py4j
 pytest
 mlflow==1.8.0
 pyyaml==5.3.1
-mleap==0.16.0
 graphviz
 requests
 gorilla==0.3.0
