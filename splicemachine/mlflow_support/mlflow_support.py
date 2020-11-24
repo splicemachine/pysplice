@@ -61,7 +61,7 @@ import pyspark
 import requests
 import sklearn
 import yaml
-from h2o.estimators.estimator_base import ModelBase as H2OModel
+from h2o.model.model_base import ModelBase as H2OModel
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
 from pyspark.sql import DataFrame as SparkDF
