@@ -23,7 +23,7 @@ class TrainingSet:
         self.end_time = end_time or datetime.today()
 
     def _register_metadata(self, mlflow_ctx):
-        if self.mlflow_ctx.active_run():
+        if mlflow_ctx.active_run():
             print("There is an active mlflow run, your training set will be logged to that run.")
             mlflow_ctx.lp("splice.feature_store.training_set",self.training_context.name)
             mlflow_ctx.lp("splice.feature_store.training_set_start_time",str(self.start_time))
