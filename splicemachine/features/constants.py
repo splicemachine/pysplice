@@ -125,7 +125,7 @@ class SQL:
     SELECT context_id from {FEATURE_STORE_SCHEMA}.Training_Context where Name='{{name}}'
     """
 
-    get_fset_primary_keys = f"""training_set_feature_stats
+    get_fset_primary_keys = f"""
     select distinct key_column_name from {FEATURE_STORE_SCHEMA}.Feature_Set_Key
     """
 

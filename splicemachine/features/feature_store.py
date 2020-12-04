@@ -313,7 +313,7 @@ class FeatureStore:
         :param table: table name of the feature set
         :return: None
         """
-        str = 'This feature set already exists. Use a different schema and/or table name.'
+        str = f'Feature Set {schema}.{table} already exists. Use a different schema and/or table name.'
         # Validate Table
         assert not self.splice_ctx.tableExists(schema, table_name=table), str
         # Validate metadata
