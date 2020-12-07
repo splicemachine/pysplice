@@ -74,8 +74,9 @@ from tensorflow.keras import __version__ as keras_version
 from splicemachine.features import FeatureStore
 from splicemachine.features.training_set import TrainingSet
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
-from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
+from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
                                                     insert_artifact)
+from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)

@@ -11,6 +11,7 @@ from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
 
+from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
@@ -18,7 +19,6 @@ from .training_set import TrainingSet
 from .constants import SQL, Columns, FeatureType
 from .training_context import TrainingContext
 from .utils import clean_df
-
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
@@ -352,7 +352,6 @@ class FeatureStore:
         assert l == 0, str
 
         if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
-            from splicemachine.mlflow_support.utilities import SpliceMachineException
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
@@ -396,7 +395,6 @@ class FeatureStore:
             context_sql_df = self.splice_ctx.df(sql)
         except Py4JJavaError as e:
             if 'SQLSyntaxErrorException' in str(e.java_exception):
-                from splicemachine.mlflow_support.utilities import SpliceMachineException
                 raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
                                              f'validation:\n\n{str(e.java_exception)}') from None
             raise e
@@ -509,7 +507,9 @@ class FeatureStore:
         :param training_context: The training context name
         :return: None
         """
-        tcx = self.get_training_contexts(_filter={'name': training_context})[0]
+        tcx = self.get_training_contexts(_filter={'name': training_context})
+        if not tcx: raise SpliceMachineException(f"Training context {training_context} not found. Check name and try again.")
+        tcx = tcx[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print("Available Features")
         display(pd.DataFrame(f.__dict__ for f in self.get_available_features(tcx.name)))
