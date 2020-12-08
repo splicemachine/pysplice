@@ -252,6 +252,7 @@ class FeatureStore:
         sql += f'\n\tctx.{tctx.ts_column}, '  # Select timestamp column
         cols.append(tctx.ts_column)
 
+        # TODO: ensure these features exist and fail gracefully if not
         for feature in features:
             sql += f'\n\tCOALESCE(fset{feature.feature_set_id}.{feature.name},fset{feature.feature_set_id}h.{feature.name}) {feature.name},'  # Collect all features over time
             cols.append(feature.name)
