@@ -48,7 +48,7 @@ from contextlib import contextmanager
 from importlib import import_module
 from io import BytesIO
 from os import path
-from sys import version as py_version, stderr, stdout
+from sys import version as py_version, stderr
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
@@ -72,9 +72,11 @@ from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
 from splicemachine.features import FeatureStore
+from splicemachine.features.training_set import TrainingSet
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
-from splicemachine.mlflow_support.utilities import (SparkUtils, SpliceMachineException, get_pod_uri, get_user,
+from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
                                                     insert_artifact)
+from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
@@ -124,6 +126,13 @@ def _get_current_run_data():
     """
     return _CLIENT.get_run(mlflow.active_run().info.run_id).data
 
+def __get_active_user():
+    if hasattr(mlflow, '_username'):
+        return mlflow._username
+    if get_user():
+        return get_user()
+    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your database"
+                                  "username and password.")
 
 @_mlflow_patch('get_run_ids_by_name')
 def _get_run_ids_by_name(run_name, experiment_id=None):
@@ -319,6 +328,28 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
+def __get_current_transaction():
+    """
+    Gets the transaction ID of the started run. This enables time travel for model governance
+    :return: (int) the transaction ID
+    """
+    try:
+        usr = __get_active_user()
+    except SpliceMachineException:
+        usr = '<YOUR_USERNAME>'
+    db_connection = mlflow._splice_context.getConnection()
+    try:
+        prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
+    except:
+        raise SpliceMachineException("It looks like you don't have permission to call SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()."
+                        "You need this permission in order to start runs in mlflow. Please ask your DBA to run the following:\n"
+                        f"grant execute on procedure SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION to {usr}")
+    x = prepared_statement.executeQuery()
+    x.next()
+    timestamp = x.getLong(1)
+    prepared_statement.close()
+    return timestamp
+
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -348,16 +379,9 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     """
     # Get the current running transaction ID for time travel/data governance
     _check_for_splice_ctx()
-    db_connection = mlflow._splice_context.getConnection()
-    prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
-    x = prepared_statement.executeQuery()
-    x.next()
-    timestamp = x.getLong(1)
-    prepared_statement.close()
-
-    tags = tags if tags else {}
-    tags['mlflow.user'] = get_user()
-    tags['DB Transaction ID'] = timestamp
+    tags = tags or {}
+    tags['mlflow.user'] = __get_active_user()
+    tags['DB Transaction ID'] = __get_current_transaction()
 
     orig = gorilla.get_original_attribute(mlflow, "start_run")
     active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
@@ -368,6 +392,8 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
         mlflow.set_tag('Run ID', mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
+    if hasattr(mlflow,'_active_training_set'):
+        mlflow._active_training_set._register_metadata(mlflow)
 
     return active_run
 
@@ -443,7 +469,7 @@ def _log_model_params(pipeline_or_model):
 
 @_mlflow_patch('timer')
 @contextmanager
-def _timer(timer_name, param=True):
+def _timer(timer_name, param=False):
     """
     Context manager for logging
 
@@ -457,9 +483,9 @@ def _timer(timer_name, param=True):
     :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.
     :return: None
     """
+    t0 = time.time()
     try:
         print(f'Starting Code Block {timer_name}...', end=' ')
-        t0 = time.time()
         yield
     finally:
         t1 = time.time() - t0
@@ -581,6 +607,7 @@ def _login_director(username, password):
     :param password: (str) database password
     """
     mlflow._basic_auth = HTTPBasicAuth(username, password)
+    mlflow._username = username
 
 
 def __initiate_job(payload, endpoint):
@@ -639,7 +666,7 @@ def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = '
 
     request_payload = {
         'handler_name': 'DEPLOY_AWS', 'run_id': run_id,
-        'region': region, 'user': get_user(),
+        'region': region, 'user': __get_active_user(),
         'instance_type': instance_type, 'instance_count': instance_count,
         'deployment_mode': deployment_mode, 'app_name': app_name
     }

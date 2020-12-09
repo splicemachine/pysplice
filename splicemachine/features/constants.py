@@ -54,13 +54,13 @@ class SQL:
     """
 
     get_features_by_name = f"""
-    select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,compliance_level, 
-    last_update_ts,last_update_user_id from {FEATURE_STORE_SCHEMA}.feature where Name in ({{feature_names}})
+    select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Tags,compliance_level, 
+    last_update_ts,last_update_username from {FEATURE_STORE_SCHEMA}.feature where Name in ({{feature_names}})
     """
 
     get_features_in_feature_set = f"""
-    select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Cardinality,Tags,compliance_level, 
-    last_update_ts,last_update_user_id from {FEATURE_STORE_SCHEMA}.feature where feature_set_id={{feature_set_id}}
+    select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Tags,compliance_level, 
+    last_update_ts,last_update_username from {FEATURE_STORE_SCHEMA}.feature where feature_set_id={{feature_set_id}}
     """
 
     get_feature_sets = f"""
@@ -87,7 +87,7 @@ class SQL:
     get_all_features = f"SELECT NAME FROM {FEATURE_STORE_SCHEMA}.feature WHERE Name='{{name}}'"
 
     get_available_features = f"""
-    SELECT f.feature_id, f.feature_set_id, f.NAME, f.DESCRIPTION, f.feature_data_type, f.feature_type, f.CARDINALITY, f.TAGS, f.compliance_level, f.last_update_ts, f.last_update_user_id
+    SELECT f.feature_id, f.feature_set_id, f.NAME, f.DESCRIPTION, f.feature_data_type, f.feature_type, f.TAGS, f.compliance_level, f.last_update_ts, f.last_update_username
           FROM {FEATURE_STORE_SCHEMA}.Feature f
           WHERE feature_id IN
           (
@@ -138,9 +138,42 @@ class SQL:
     UPDATE {FEATURE_STORE_SCHEMA}.feature_set set deployed={{status}} where feature_set_id = {{feature_set_id}} 
     """
 
+    training_set = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set (name, context_id ) 
+    VALUES ('{{name}}', {{context_id}})
+    """
+
+    get_training_set_id = f"""
+    SELECT training_set_id from {FEATURE_STORE_SCHEMA}.training_set where name='{{name}}'
+    """
+
+    training_set_feature = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set_feature (training_set_id, feature_id ) 
+    VALUES 
+    ({{training_set_id}}, {{feature_id}}) 
+    """
+
+    model_deployment = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.deployment (model_schema_name, model_table_name, training_set_id, training_set_start_ts, training_set_end_ts, run_id ) 
+    VALUES 
+    ('{{schema_name}}','{{table_name}}',{{training_set_id}},'{{start_ts}}','{{end_ts}}', '{{run_id}}') 
+    """
+
+    training_set_feature_stats = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.training_set_feature_stats ( training_set_id, training_set_start_ts, training_set_end_ts, feature_id, feature_cardinality, feature_histogram, feature_mean, feature_median, feature_count, feature_stddev) 
+    VALUES 
+    ({{training_set_id}}, {{training_set_start_ts}}, {{training_set_end_ts}}, {{feature_id}}, {{feature_cardinality}}, {{feature_histogram}}, {{feature_mean}}, {{feature_median}}, {{feature_count}}, {{feature_stddev}}) 
+    """
+
+    deployment_feature_stats = f"""
+    INSERT INTO {FEATURE_STORE_SCHEMA}.deployment_feature_stats ( model_schema_name, model_table_name, model_start_ts, model_end_ts, feature_id, feature_cardinality, feature_histogram, feature_mean, feature_median, feature_count, feature_stddev) 
+    VALUES 
+    ({{model_schema_name}}, {{model_table_name}}, {{model_start_ts}}, {{model_end_ts}}, {{feature_id}}, {{feature_cardinality}}, {{feature_histogram}}, {{feature_mean}}, {{feature_median}}, {{feature_count}}, {{feature_stddev}}) 
+    """
+
 class Columns:
     feature = ['feature_id', 'feature_set_id', 'name', 'description', 'feature_data_type', 'feature_type',
-               'cardinality', 'tags', 'compliance_level', 'last_update_ts', 'last_update_user_id']
+               'tags', 'compliance_level', 'last_update_ts', 'last_update_username']
     training_context = ['context_id','name','description','context_sql','pk_columns','ts_column','label_column','context_columns']
     feature_set = ['feature_set_id', 'table_name', 'schema_name', 'description', 'pk_columns', 'pk_types', 'deployed']
     history_table_pk = ['ASOF_TS','UNTIL_TS']

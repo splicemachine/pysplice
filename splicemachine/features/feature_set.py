@@ -75,7 +75,7 @@ class FeatureSet:
         Updated the deployment status of a feature set after deployment/undeployment
         :return: None
         """
-        self.splice_ctx.execute(SQL.update_fset_deployment_status.format(status=status,
+        self.splice_ctx.execute(SQL.update_fset_deployment_status.format(status=int(status),
                                                                          feature_set_id=self.feature_set_id))
 
 
