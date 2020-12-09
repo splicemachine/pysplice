@@ -777,7 +777,7 @@ def _deploy_db(db_schema_name: str,
                reference_schema: Optional[str] = None,
                primary_key: Optional[Dict[str, str]] = None,
                df: Optional[Union[SparkDF, PandasDF]] = None,
-               create_model_table: Optional[bool] = False,
+               create_model_table: Optional[bool] = True,
                model_cols: Optional[List[str]] = None,
                classes: Optional[List[str]] = None,
                library_specific: Optional[Dict[str, str]] = None,
@@ -798,7 +798,7 @@ def _deploy_db(db_schema_name: str,
         * If you are creating the table in this function, you MUST pass in a primary key
     :param df: (Spark or Pandas DF) The dataframe used to train the model \n
                 | NOTE: The columns in this df are the ones that will be used to create the table unless specified by model_cols
-    :param create_model_table: Whether or not to create the table from the dataframe. Default false. This
+    :param create_model_table: Whether or not to create the table from the dataframe. Default True. This
                                 Will ONLY be used if the table does not exist and a dataframe is passed in
     :param model_cols: (List[str]) The columns from the table to use for the model. If None, all columns in the table
                                         will be passed to the model. If specified, the columns will be passed to the model
