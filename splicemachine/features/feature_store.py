@@ -122,7 +122,7 @@ class FeatureStore:
         :return: The list of features
         """
         # Format feature names into quotes strings for search
-        df = self.splice_ctx.df(SQL.get_features_by_name.format(",".join([f"'{i.upper()}'" for i in names])))
+        df = self.splice_ctx.df(SQL.get_features_by_name.format(feature_names=",".join([f"'{i.upper()}'" for i in names])))
         df = clean_df(df, Columns.feature)
         features = []
         for feat in df.collect():
