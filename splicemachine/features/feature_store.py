@@ -122,7 +122,7 @@ class FeatureStore:
         :return: The list of features
         """
         # Format feature names into quotes strings for search
-        df = self.splice_ctx.df(SQL.get_features_by_name.format(",".join([f"'{i.upper()}'" for i in names])))
+        df = self.splice_ctx.df(SQL.get_features_by_name.format(feature_names=",".join([f"'{i.upper()}'" for i in names])))
         df = clean_df(df, Columns.feature)
         features = []
         for feat in df.collect():
@@ -221,23 +221,26 @@ class FeatureStore:
         #TODO
         raise NotImplementedError
 
-    def get_training_set(self, training_context: str, features: List[Feature], start_time: Optional[datetime] = None,
+    def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]], start_time: Optional[datetime] = None,
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe
 
         :param training_context: (str) The name of the registered training context
-        :param features: (List[str]) the list of features from the feature store to be included in the training
+        :param features: (List[str] OR List[Feature]) the list of features from the feature store to be included in the training.
+            If a list of strings is passed in it will be converted to a list of Feature
             * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
              desired features
         :param start_time: (Optional[datetime]) The start time of the query (how far back in the data to start). Default None
             * NOTE: If start_time is None, query will start from beginning of history
+        :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
         :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
             * NOTE: If end_time is None, query will get most recently available data
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
         :return: Optional[SparkDF, str]
         """
 
+        features = self.get_features_by_name(features) if all([isinstance(i,str) for i in features]) else features
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
@@ -470,9 +473,7 @@ class FeatureStore:
         print('Available feature sets')
         for fset in self.get_feature_sets():
             print('-' * 200)
-            print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
-            print('\n\tAvailable features:')
-            display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
+            self.describe_feature_set(fset.schema_name, fset.table_name)
 
     def describe_feature_set(self, feature_set_schema: str, feature_set_table: str) -> None:
         """
@@ -484,7 +485,10 @@ class FeatureStore:
         :return: None
         """
         fset = self.get_feature_sets(_filter={'schema_name': feature_set_schema, 'table_name': feature_set_table})
+        if not fset: raise SpliceMachineException(f"Feature Set {feature_set_schema}.{feature_set_table} not found. Check name and try again.")
+        fset = fset[0]
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
+        print('\n\tAvailable features:')
         display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
 
     def describe_training_contexts(self) -> None:
@@ -497,9 +501,7 @@ class FeatureStore:
         print('Available training contexts')
         for tcx in self.get_training_contexts():
             print('-' * 200)
-            print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
-            print(f'Available features in {tcx.name}:')
-            display(pd.DataFrame(f.__dict__ for f in self.get_available_features(tcx.name)))
+            self.describe_training_context(tcx.name)
 
     def describe_training_context(self, training_context: str) -> None:
         """
@@ -512,11 +514,17 @@ class FeatureStore:
         if not tcx: raise SpliceMachineException(f"Training context {training_context} not found. Check name and try again.")
         tcx = tcx[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
-        print("Available Features")
-        display(pd.DataFrame(f.__dict__ for f in self.get_available_features(tcx.name)))
+        print(f'Available features in {tcx.name}:')
+        feats: List[Feature] = self.get_available_features(tcx.name)
+        # Grab the feature set info and their corresponding names (schema.table) for the display table
+        feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
+        feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
+        for f in feats:
+            f.feature_set_name = feat_sets[f.feature_set_id]
+        display(pd.DataFrame(f.__dict__ for f in feats))
 
     def set_feature_description(self):
-        pass
+        raise NotImplementedError
 
     def __get_pipeline(self, df, features, label, model_type):
         """

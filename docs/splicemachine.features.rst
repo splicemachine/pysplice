@@ -24,7 +24,7 @@ Submodules
      :undoc-members:
      :show-inheritance:
 
-splicemachine.features.feature_store module
+splicemachine.features.feature_store
 ----------------------------------
 
 This Module contains the classes adn APIs for interacting with the Splice Machine Feature Store.
@@ -34,7 +34,7 @@ This Module contains the classes adn APIs for interacting with the Splice Machin
    :undoc-members:
    :show-inheritance:
 
-splicemachine.features.feature_store module
+splicemachine.features.feature_set
 ----------------------------------
 
 This describes the Python representation of a Feature Set. A feature set is a database table that contains Features and their metadata
@@ -45,7 +45,7 @@ This describes the Python representation of a Feature Set. A feature set is a da
    :show-inheritance:
 
 
-splicemachine.features.feature_store module
+splicemachine.features.Feature
 ----------------------------------
 
 This describes the Python representation of a Feature. A feature is a column of a table with particular metadata
@@ -55,12 +55,12 @@ This describes the Python representation of a Feature. A feature is a column of 
    :undoc-members:
    :show-inheritance:
 
-splicemachine.features.training_context module
+splicemachine.features.training_context
 ----------------------------------
 
 This describes the Python representation of a Training Context. A Training Context is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that context
 
-.. automodule:: splicemachine.features.feature
+.. automodule:: splicemachine.features.training_context
    :members:
    :undoc-members:
    :show-inheritance:
