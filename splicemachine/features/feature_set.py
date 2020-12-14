@@ -13,7 +13,6 @@ class FeatureSet:
                  primary_keys: Dict[str, str], feature_set_id=None, deployed: bool = False, **kwargs):
         self.splice_ctx = splice_ctx
 
-        # FIXME: Set instance variables
         self.table_name = table_name
         self.schema_name = schema_name
         self.description = description
