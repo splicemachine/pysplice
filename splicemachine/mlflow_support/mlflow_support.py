@@ -408,9 +408,8 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
             os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
             mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
-    # active_run: ActiveRun = orig(status=status)
-    # return SpliceActiveRun(active_run)
     orig(status=status)
+
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -456,7 +455,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     if hasattr(mlflow,'_active_training_set'):
         mlflow._active_training_set._register_metadata(mlflow)
 
-    return active_run
+    return SpliceActiveRun(active_run)
 
 
 @_mlflow_patch('log_pipeline_stages')
