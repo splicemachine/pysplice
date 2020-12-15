@@ -400,7 +400,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
             mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
             typ,ext = ('html','html') if save_html else ('script','py')
             os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
-            mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.py')
+            mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
     orig(status=status)
 
