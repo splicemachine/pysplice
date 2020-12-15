@@ -57,6 +57,7 @@ import gorilla
 import h2o
 import mlflow
 import mlflow.pyfunc
+from mlflow.tracking.fluent import ActiveRun
 from mlflow.entities import RunStatus
 import pyspark
 import requests
@@ -104,6 +105,11 @@ mlflow.client = _CLIENT
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
+class SpliceActiveRun(ActiveRun):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        status = RunStatus.FINISHED if exc_type is None else RunStatus.FAILED
+        mlflow.end_run(RunStatus.to_string(status))
+        return exc_type is None
 
 def __try_auto_login():
     """
@@ -402,7 +408,8 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
             os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
             mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
-    orig(status=status)
+    active_run = orig(status=status)
+    return SpliceActiveRun(active_run)
 
 
 @_mlflow_patch('start_run')
