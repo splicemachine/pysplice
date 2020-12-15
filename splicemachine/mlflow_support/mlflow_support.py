@@ -106,6 +106,10 @@ _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
 class SpliceActiveRun(ActiveRun):
+    """
+    A wrapped active run for Splice Machine that calls our custom mlflow.end_run, so we can record the notebook
+    history
+    """
     def __exit__(self, exc_type, exc_val, exc_tb):
         status = RunStatus.FINISHED if exc_type is None else RunStatus.FAILED
         mlflow.end_run(RunStatus.to_string(status))
