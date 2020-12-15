@@ -49,7 +49,7 @@ from importlib import import_module
 from io import BytesIO
 from os import path
 from sys import version as py_version, stderr
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
 
@@ -57,6 +57,7 @@ import gorilla
 import h2o
 import mlflow
 import mlflow.pyfunc
+from mlflow.entities import RunStatus
 import pyspark
 import requests
 import sklearn
@@ -78,6 +79,15 @@ from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get
                                                     insert_artifact)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
+
+# For recording notebook history
+try:
+    from IPython import get_ipython
+    import nbformat as nbf
+    ipython = get_ipython()
+    mlflow._notebook_history = True
+except:
+    mlflow._notebook_history = False
 
 _TESTING = os.environ.get("TESTING", False)
 
@@ -349,6 +359,50 @@ def __get_current_transaction():
     timestamp = x.getLong(1)
     prepared_statement.close()
     return timestamp
+
+@_mlflow_patch('end_run')
+def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
+    """End an active MLflow run (if there is one).
+
+    .. code-block:: python
+        :caption: Example
+
+        import mlflow
+
+        # Start run and get status
+        mlflow.start_run()
+        run = mlflow.active_run()
+        print("run_id: {}; status: {}".format(run.info.run_id, run.info.status))
+
+        # End run and get status
+        mlflow.end_run()
+        run = mlflow.get_run(run.info.run_id)
+        print("run_id: {}; status: {}".format(run.info.run_id, run.info.status))
+        print("--")
+
+        # Check for any active runs
+        print("Active run: {}".format(mlflow.active_run()))
+
+    .. code-block:: text
+        :caption: Output
+
+        run_id: b47ee4563368419880b44ad8535f6371; status: RUNNING
+        run_id: b47ee4563368419880b44ad8535f6371; status: FINISHED
+        --
+        Active run: None
+    """
+    if mlflow._notebook_history:
+        with NamedTemporaryFile() as temp_file:
+            nb = nbf.v4.new_notebook()
+            nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
+            nbf.write(nb, temp_file.name)
+            run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
+            mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
+            typ,ext = ('html','html') if save_html else ('script','py')
+            os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
+            mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.py')
+    orig = gorilla.get_original_attribute(mlflow, "end_run")
+    orig(status=status)
 
 
 @_mlflow_patch('start_run')
