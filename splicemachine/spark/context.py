@@ -19,7 +19,7 @@ import os
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
-from pyspark.sql.types import _parse_datatype_json_string
+from pyspark.sql.types import _parse_datatype_json_string, StringType
 
 from splicemachine.spark.constants import CONVERSIONS
 from splicemachine import SpliceMachineException
@@ -116,6 +116,32 @@ class PySpliceContext:
         df = self.spark_session.createDataFrame(pd.read_csv(file_path))
         self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
         self.insert(df, schema_table_name, to_upper=True)
+
+    def pandasToSpark(self, pdf):
+        """
+        Convert a Pandas DF to Spark, and try to manage NANs from Pandas in case of failure. Spark cannot handle
+        Pandas NAN existing in String columns (as it considers it NaN Number ironically), so we replace the occurances
+        with a temporary value and then convert it back to null after it becomes a Spark DF
+
+        :param pdf: The Pandas dataframe
+        :return: The Spark DF
+        """
+        try: # Try to create the dataframe as it exists
+            return self.spark_session.createDataFrame(pdf)
+        except TypeError:
+            # This means there was an NaN conversion error
+            from pyspark.sql.functions import udf
+            for c in pdf.columns: # Replace non numeric/time columns with a custom null value
+                if pdf[c].dtype not in ('int64','float64', 'datetime64[ns]'):
+                    pdf[c].fillna('Splice_Temp_NA', inplace=True)
+            spark_df = self.spark_session.createDataFrame(pdf)
+            # Convert that custom null value back to null after converting to a spark dataframe
+            null_replace_udf = udf(lambda name: None if name == "Splice_Temp_NA" else name, StringType())
+            for field in spark_df.schema:
+                if field.dataType==StringType():
+                    spark_df = spark_df.withColumn(field.name, null_replace_udf(spark_df[field.name]))
+            return spark_df
+
 
     def getConnection(self):
         """
