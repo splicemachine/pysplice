@@ -132,12 +132,13 @@ class PySpliceContext:
         try: # Try to create the dataframe as it exists
             return self.spark_session.createDataFrame(pdf)
         except TypeError:
+            p_df = pdf.copy()
             # This means there was an NaN conversion error
             from pyspark.sql.functions import udf
-            for c in pdf.columns: # Replace non numeric/time columns with a custom null value
-                if pdf[c].dtype not in ('int64','float64', 'datetime64[ns]'):
-                    pdf[c].fillna('Splice_Temp_NA', inplace=True)
-            spark_df = self.spark_session.createDataFrame(pdf)
+            for c in p_df.columns: # Replace non numeric/time columns with a custom null value
+                if p_df[c].dtype not in ('int64','float64', 'datetime64[ns]'):
+                    p_df[c].fillna('Splice_Temp_NA', inplace=True)
+            spark_df = self.spark_session.createDataFrame(p_df)
             # Convert that custom null value back to null after converting to a spark dataframe
             null_replace_udf = udf(lambda name: None if name == "Splice_Temp_NA" else name, StringType())
             for field in spark_df.schema:
