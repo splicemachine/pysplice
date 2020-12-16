@@ -110,8 +110,10 @@ class PySpliceContext:
         :param file_path: The local file to load
         :param schema_table_name: The schema.table name
         :param primary_keys: List[str] of primary keys for the table. Default None
-        :param dropTable: Whether or not to drop the table. If this is False and the table already exists, the
+        :param drop_table: Whether or not to drop the table. If this is False and the table already exists, the
             function will fail. Default False
+        :param pandas_args: Extra parameters to be passed into the pd.read_csv function. Any parameters accepted
+        in pd.read_csv will work here
         :return: None
         """
         import pandas as pd
