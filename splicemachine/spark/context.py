@@ -16,6 +16,8 @@ limitations under the License.
 from __future__ import print_function
 
 import os
+import re
+from string import punctuation as bad_chars
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
@@ -141,6 +143,7 @@ class PySpliceContext:
             for field in spark_df.schema:
                 if field.dataType==StringType():
                     spark_df = spark_df.withColumn(field.name, null_replace_udf(spark_df[field.name]))
+                spark_df = spark_df.withColumnRenamed(field.name, re.sub(r'['+bad_chars+' ]', '_',field.name))
             return spark_df
 
 
