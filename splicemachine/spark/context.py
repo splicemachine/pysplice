@@ -113,7 +113,8 @@ class PySpliceContext:
         :return: None
         """
         import pandas as pd
-        df = self.spark_session.createDataFrame(pd.read_csv(file_path))
+        pdf = pd.read_csv(file_path)
+        df = self.pandasToSpark(pdf)
         self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
         self.insert(df, schema_table_name, to_upper=True)
 
