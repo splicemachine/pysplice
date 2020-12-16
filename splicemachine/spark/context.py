@@ -145,6 +145,8 @@ class PySpliceContext:
                 if field.dataType==StringType():
                     spark_df = spark_df.withColumn(field.name, null_replace_udf(spark_df[field.name]))
                 spark_df = spark_df.withColumnRenamed(field.name, re.sub(r'['+bad_chars+' ]', '_',field.name))
+            # Replace NaN numeric columns with null
+            spark_df = spark_df.replace(float('nan'), None)
             return spark_df
 
 
