@@ -102,7 +102,7 @@ class PySpliceContext:
         dataframe = dataframe.rdd.toDF(schema)
         return dataframe
 
-    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False):
+    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False, **pandas_args):
         """
         Load a file from the local filesystem and create a new table (or recreate an existing table), and load the data
         from the file into the new table
@@ -115,7 +115,7 @@ class PySpliceContext:
         :return: None
         """
         import pandas as pd
-        pdf = pd.read_csv(file_path)
+        pdf = pd.read_csv(file_path, **pandas_args)
         df = self.pandasToSpark(pdf)
         self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
         self.insert(df, schema_table_name, to_upper=True)
