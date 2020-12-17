@@ -16,10 +16,12 @@ limitations under the License.
 from __future__ import print_function
 
 import os
+import re
+from string import punctuation as bad_chars
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
-from pyspark.sql.types import _parse_datatype_json_string
+from pyspark.sql.types import _parse_datatype_json_string, StringType
 
 from splicemachine.spark.constants import CONVERSIONS
 from splicemachine import SpliceMachineException
@@ -100,7 +102,7 @@ class PySpliceContext:
         dataframe = dataframe.rdd.toDF(schema)
         return dataframe
 
-    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False):
+    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False, **pandas_args):
         """
         Load a file from the local filesystem and create a new table (or recreate an existing table), and load the data
         from the file into the new table
@@ -108,14 +110,47 @@ class PySpliceContext:
         :param file_path: The local file to load
         :param schema_table_name: The schema.table name
         :param primary_keys: List[str] of primary keys for the table. Default None
-        :param dropTable: Whether or not to drop the table. If this is False and the table already exists, the
+        :param drop_table: Whether or not to drop the table. If this is False and the table already exists, the
             function will fail. Default False
+        :param pandas_args: Extra parameters to be passed into the pd.read_csv function. Any parameters accepted
+        in pd.read_csv will work here
         :return: None
         """
         import pandas as pd
-        df = self.spark_session.createDataFrame(pd.read_csv(file_path))
+        pdf = pd.read_csv(file_path, **pandas_args)
+        df = self.pandasToSpark(pdf)
         self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
         self.insert(df, schema_table_name, to_upper=True)
+
+    def pandasToSpark(self, pdf):
+        """
+        Convert a Pandas DF to Spark, and try to manage NANs from Pandas in case of failure. Spark cannot handle
+        Pandas NAN existing in String columns (as it considers it NaN Number ironically), so we replace the occurances
+        with a temporary value and then convert it back to null after it becomes a Spark DF
+
+        :param pdf: The Pandas dataframe
+        :return: The Spark DF
+        """
+        try: # Try to create the dataframe as it exists
+            return self.spark_session.createDataFrame(pdf)
+        except TypeError:
+            p_df = pdf.copy()
+            # This means there was an NaN conversion error
+            from pyspark.sql.functions import udf
+            for c in p_df.columns: # Replace non numeric/time columns with a custom null value
+                if p_df[c].dtype not in ('int64','float64', 'datetime64[ns]'):
+                    p_df[c].fillna('Splice_Temp_NA', inplace=True)
+            spark_df = self.spark_session.createDataFrame(p_df)
+            # Convert that custom null value back to null after converting to a spark dataframe
+            null_replace_udf = udf(lambda name: None if name == "Splice_Temp_NA" else name, StringType())
+            for field in spark_df.schema:
+                if field.dataType==StringType():
+                    spark_df = spark_df.withColumn(field.name, null_replace_udf(spark_df[field.name]))
+                spark_df = spark_df.withColumnRenamed(field.name, re.sub(r'['+bad_chars+' ]', '_',field.name))
+            # Replace NaN numeric columns with null
+            spark_df = spark_df.replace(float('nan'), None)
+            return spark_df
+
 
     def getConnection(self):
         """
