@@ -39,10 +39,10 @@ Importing anything directly from mlflow before running the above statement will 
 
 ======================================================================================================================================================================================\n
 """
+import copy
 import glob
 import os
 import time
-import copy
 from collections import defaultdict
 from contextlib import contextmanager
 from importlib import import_module
@@ -50,8 +50,8 @@ from io import BytesIO
 from os import path
 from sys import version as py_version, stderr
 from tempfile import TemporaryDirectory
-from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import gorilla
 import h2o
@@ -71,12 +71,11 @@ from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
 
+from splicemachine import SpliceMachineException
 from splicemachine.features import FeatureStore
-from splicemachine.features.training_set import TrainingSet
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
                                                     insert_artifact)
-from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
@@ -106,6 +105,7 @@ def __try_auto_login():
     if user and password:
         mlflow.login_director(user, password)
 
+
 def _mlflow_patch(name):
     """
     Create a MLFlow Patch that applies the default gorilla settings
@@ -126,13 +126,16 @@ def _get_current_run_data():
     """
     return _CLIENT.get_run(mlflow.active_run().info.run_id).data
 
+
 def __get_active_user():
     if hasattr(mlflow, '_username'):
         return mlflow._username
     if get_user():
         return get_user()
-    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your database"
-                                  "username and password.")
+    return SpliceMachineException(
+        "Could not detect active user. Please run mlflow.login_director() and pass in your database"
+        "username and password.")
+
 
 @_mlflow_patch('get_run_ids_by_name')
 def _get_run_ids_by_name(run_name, experiment_id=None):
@@ -151,6 +154,7 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
 
+
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
@@ -162,6 +166,7 @@ def _register_splice_context(splice_context):
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
+
 @_mlflow_patch('register_feature_store')
 def _register_feature_store(fs: FeatureStore):
     """
@@ -172,6 +177,7 @@ def _register_feature_store(fs: FeatureStore):
     """
     mlflow._feature_store = fs
     mlflow._feature_store.mlflow_ctx = mlflow
+
 
 def _check_for_splice_ctx():
     """
@@ -322,11 +328,13 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
-
+    if conda_env:
+        mlflow.log_artifact(conda_env, name='conda_original.yaml')
     # Set the model metadata as tags after successful logging
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
     mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
+
 
 def __get_current_transaction():
     """
@@ -341,9 +349,10 @@ def __get_current_transaction():
     try:
         prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
     except:
-        raise SpliceMachineException("It looks like you don't have permission to call SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()."
-                        "You need this permission in order to start runs in mlflow. Please ask your DBA to run the following:\n"
-                        f"grant execute on procedure SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION to {usr}")
+        raise SpliceMachineException(
+            "It looks like you don't have permission to call SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()."
+            "You need this permission in order to start runs in mlflow. Please ask your DBA to run the following:\n"
+            f"grant execute on procedure SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION to {usr}")
     x = prepared_statement.executeQuery()
     x.next()
     timestamp = x.getLong(1)
@@ -392,7 +401,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
         mlflow.set_tag('Run ID', mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
-    if hasattr(mlflow,'_active_training_set'):
+    if hasattr(mlflow, '_active_training_set'):
         mlflow._active_training_set._register_metadata(mlflow)
 
     return active_run
@@ -519,6 +528,8 @@ def _download_artifact(name, local_path, run_id=None):
 
     with open(local_path, 'wb') as artifact_file:
         artifact_file.write(blob_data)
+
+    return local_path
 
 
 @_mlflow_patch('get_model_name')
@@ -886,6 +897,7 @@ def __get_logs(job_id: int):
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
 
+
 @_mlflow_patch('watch_job')
 def _watch_job(job_id: int):
     """
@@ -904,13 +916,13 @@ def _watch_job(job_id: int):
             if logs_retrieved[log_idx] in previous_lines:
                 break
 
-        idx = log_idx+1 if log_idx else log_idx # First time getting logs, go to 0th index, else log_idx+1
+        idx = log_idx + 1 if log_idx else log_idx  # First time getting logs, go to 0th index, else log_idx+1
         for n in logs_retrieved[idx:]:
-            print(f'\n{n}',end='')
+            print(f'\n{n}', end='')
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
-        if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1]  # Remove empty line
+        if 'TASK_COMPLETED' in previous_lines[-1]:  # Finishing Statement
             return
 
         time.sleep(1)
@@ -944,7 +956,8 @@ def apply_patches():
     Apply all the Gorilla Patches; \
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
-    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
+               _log_feature_transformations, _get_model_name,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
