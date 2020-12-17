@@ -300,6 +300,7 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
                                          'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
 
         mlflow.log_artifact(f'{mlmodel_dir}/conda.yaml', 'conda.yaml')
+        mlflow.log_artifact(f'{mlmodel_dir}/MLmodel', 'MLmodel')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
