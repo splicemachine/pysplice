@@ -41,15 +41,17 @@ Importing anything directly from mlflow before running the above statement will 
 """
 import copy
 import glob
+import inspect
 import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+import cloudpickle
 from importlib import import_module
 from io import BytesIO
 from os import path
 from sys import version as py_version, stderr
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from typing import Dict, Optional, List, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -951,6 +953,31 @@ def _get_deployed_models() -> PandasDF:
         """
     ).toPandas()
 
+
+
+@_mlflow_patch('schedule_retrain')
+def _schedule_retrain(retrainer):
+    if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
+            raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified")
+    elif retrainer.has_conda:
+        mlflow.log_artifact(retrainer.conda_env, name='conda-retrain.yaml')
+
+    conda_artifact = 'conda-retrain.yaml' if retrainer.has_conda else 'conda.yaml'
+
+    print("Saving Human Readable Version of Retrainer as an artifact...")
+    with NamedTemporaryFile(suffix='.py') as tmp_hrf:
+        tmp_hrf.write(inspect.getsource(retrainer.retrain))
+        mlflow.log_artifact(tmp_hrf.name, 'retrain_func.py')
+
+    print("Saving machine readable version of Retrainer as an artifact...")
+    with NamedTemporaryFile(suffix='.pkl') as tmp_bin:
+        tmp_bin.write(cloudpickle.dumps(retrainer), 'retrainer.pkl')
+
+    print("Submitting Job to the Director")
+    payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
+                   retrainer_artifact='retrainer.pkl')
+
+    print(payload)
 
 def apply_patches():
     """
