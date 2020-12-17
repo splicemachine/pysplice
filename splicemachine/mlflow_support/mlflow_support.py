@@ -297,6 +297,8 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
                                          'as well as \'pyfunc\' '
                                          'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
 
+        mlflow.log_artifact(f'{mlmodel_dir}/conda.yaml', 'conda.yaml')
+
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
 
@@ -328,8 +330,7 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
-    if conda_env:
-        mlflow.log_artifact(conda_env, name='conda_original.yaml')
+
     # Set the model metadata as tags after successful logging
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
     mlflow.set_tag('splice.model_type', model_class)
