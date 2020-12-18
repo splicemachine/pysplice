@@ -20,7 +20,7 @@ class Retrainer(ABC):
         """
         return bool(self.conda_env)
     
-    def __create_contexts(self):
+    def _create_contexts(self):
         """
         Internal method to create contexts for retraining
         """
