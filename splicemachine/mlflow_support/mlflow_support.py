@@ -978,7 +978,7 @@ def _schedule_retrain(retrainer):
     payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
                    retrainer_artifact='retrainer.pkl')
 
-    print(payload)
+    return __initiate_job(payload, '/api/rest/initiate')
 
 def apply_patches():
     """
