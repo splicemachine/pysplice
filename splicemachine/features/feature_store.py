@@ -410,7 +410,7 @@ class FeatureStore:
 
     def create_training_context(self, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
                                 ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
-                                desc: Optional[str] = None) -> None:
+                                desc: Optional[str] = None, verbose=False) -> None:
         """
         Registers a training context for use in generating training SQL
 
@@ -427,6 +427,7 @@ class FeatureStore:
         :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in
             get_training_set
         :param desc: (Optional[str]) An optional description of the training set
+        :param verbose: Whether or not to print the SQL before execution (default False)
         :return:
         """
         self._validate_training_context(name, sql, context_keys)
@@ -435,7 +436,7 @@ class FeatureStore:
         train_sql = SQL.training_context.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
                                                 label_col=label_col)
         print('Building training sql...')
-        print('\t', train_sql)
+        if verbose: print('\t', train_sql)
         self.splice_ctx.execute(train_sql)
         print('Done.')
 
@@ -446,14 +447,14 @@ class FeatureStore:
         for i in context_keys:
             key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='C')
             print(f'\tCreating Context Key {i}...')
-            print('\t', key_sql)
+            if verbose: print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
         print('Done.')
         print('Creating Primary Keys')
         for i in primary_keys:
             key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='P')
             print(f'\tCreating Primary Key {i}...')
-            print('\t', key_sql)
+            if verbose: print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
         print('Done.')
 
