@@ -401,7 +401,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
         --
         Active run: None
     """
-    if mlflow._notebook_history and hasattr(mlflow, '_splice_context'):
+    if mlflow._notebook_history and hasattr(mlflow, '_splice_context') and mlflow.active_run():
         with NamedTemporaryFile() as temp_file:
             nb = nbf.v4.new_notebook()
             nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
