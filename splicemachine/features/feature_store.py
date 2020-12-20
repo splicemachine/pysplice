@@ -139,7 +139,7 @@ class FeatureStore:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
-        :param training_context_id: (str) The name of the registered training context
+        :param training_context: (str) The name of the registered training context
         :param features: (List[str]) the list of features from the feature store to be included in the training
             * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
              desired features
@@ -486,7 +486,8 @@ class FeatureStore:
         if not fset: raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         fset = fset[0]
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
-        print('\n\tAvailable features:')
+        print('Primary keys:', fset.primary_keys)
+        print('\nAvailable features:')
         display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
 
     def describe_training_contexts(self) -> None:
