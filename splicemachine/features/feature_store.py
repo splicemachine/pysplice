@@ -308,45 +308,44 @@ class FeatureStore:
 
         :return: Dict[str, Optional[str]]
         """
-        pass
+        raise NotImplementedError("To see available training contexts, run fs.describe_training_contexts()")
 
-    def _validate_feature_set(self, schema, table):
+    def _validate_feature_set(self, schema_name, table_name):
         """
         Asserts a feature set doesn't already exist in the database
-        :param schema: schema name of the feature set
-        :param table: table name of the feature set
+        :param schema_name: schema name of the feature set
+        :param table_name: table name of the feature set
         :return: None
         """
-        str = f'Feature Set {schema}.{table} already exists. Use a different schema and/or table name.'
+        str = f'Feature Set {schema_name}.{table_name} already exists. Use a different schema and/or table name.'
         # Validate Table
-        assert not self.splice_ctx.tableExists(schema, table_name=table), str
+        assert not self.splice_ctx.tableExists(schema_name, table_name=table_name), str
         # Validate metadata
-        assert len(self.get_feature_sets(_filter={'table_name': table, 'schema_name': schema})) == 0, str
+        assert len(self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})) == 0, str
 
-    def create_feature_set(self, schema: str, table: str, primary_keys: Dict[str, str],
+    def create_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
                            desc: Optional[str] = None) -> FeatureSet:
         """
         Creates and returns a new feature set
 
-        :param schema:
-        :param name:
-        :param pk_columns:
-        :param feature_column:
-        :param desc:
+        :param schema_name: The schema under which to create the feature set table
+        :param table_name: The table name for this feature set
+        :param primary_keys: The primary key column(s) of this feature set
+        :param desc: The (optional) description
         :return: FeatureSet
         """
-        self._validate_feature_set(schema, table)
-        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema, table_name=table, primary_keys=primary_keys,
+        self._validate_feature_set(schema_name, table_name)
+        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name, primary_keys=primary_keys,
                           description=desc)
         self.feature_sets.append(fset)
-        print(f'Registering feature set {schema}.{table} in Feature Store')
+        print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
         fset._register_metadata()
         return fset
 
     def _validate_feature(self, name):
         """
         Ensures that the feature doesn't exist as all features have unique names
-        :param name:
+        :param name: the Feature name
         :return:
         """
         # TODO: Capitalization of feature name column
@@ -359,24 +358,23 @@ class FeatureStore:
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
-    def create_feature(self, *, feature_set_schema: str, feature_set_table: str,
-                       name: str, description: str, feature_data_type: str, feature_type: FeatureType, tags: List[str]):
+    def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
+                       feature_type: FeatureType, desc: str = None, tags: List[str] = None):
         """
         Add a feature to a feature set
-        :param feature_set_schema: The feature set schema
-        :param feature_set_table: The feature set table name to add the feature to
+        :param schema_name: The feature set schema
+        :param table_name: The feature set table name to add the feature to
         :param name: The feature name
-        :param description: The feature description
         :param feature_data_type: The datatype of the feature. Must be a valid SQL datatype
-        :param feature_type: FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous]
-        :param tags: List of (str) tag words
+        :param feature_type: splicemachine.features.FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous]
+        :param desc: The (optional) feature description (default None)
+        :param tags: (optional) List of (str) tag words (default None)
         :return:
         """
-        fset: FeatureSet = \
-        self.get_feature_sets(_filter={'table_name': feature_set_table, 'schema_name': feature_set_schema})[0]
+        fset: FeatureSet = self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})[0]
         self._validate_feature(name)
-        f = Feature(name=name, description=description, feature_data_type=feature_data_type,
-                    feature_type=feature_type, tags=tags, feature_set_id=fset.feature_set_id)
+        f = Feature(name=name, description=desc or '', feature_data_type=feature_data_type,
+                    feature_type=feature_type, tags=tags or [], feature_set_id=fset.feature_set_id)
         print(f'Registering feature {f.name} in Feature Store')
         f._register_metadata(self.splice_ctx)
         # TODO: Backfill the feature
@@ -384,10 +382,11 @@ class FeatureStore:
     def _validate_training_context(self, name, sql, context_keys):
         """
         Validates that the training context doesn't already exist.
-        #TODO: Validate the SQL for the training_sql (if possible?)
-        #TODO: Validate context_keys, primary_key etc...
+
         :param name: The training context name
-        :return: None
+        :param sql: The training context provided SQL
+        :param context_keys: The provided context keys when creating the training context
+        :return:
         """
         # Validate name doesn't exist
         assert len(self.get_training_contexts(_filter={'name': name})) == 0, f"Training context {name} already exists!"
@@ -403,14 +402,13 @@ class FeatureStore:
                                              f'validation:\n\n{str(e.java_exception)}') from None
             raise e
 
-        # FIXME: We cannot move forward here until https://splicemachine.atlassian.net/browse/DB-9556
         # Confirm that all context_keys provided correspond to primary keys of created feature sets
         pks = set(i[0].upper() for i in self.splice_ctx.df(SQL.get_fset_primary_keys).collect())
         missing_keys = set(i.upper() for i in context_keys) - pks
         assert not missing_keys, f"Not all provided context keys exist. Remove {missing_keys} or " \
                                  f"create a feature set that uses the missing keys"
 
-    def create_training_context(self, *, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
+    def create_training_context(self, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
                                 ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
                                 desc: Optional[str] = None) -> None:
         """
@@ -459,8 +457,8 @@ class FeatureStore:
             self.splice_ctx.execute(key_sql)
         print('Done.')
 
-    def deploy_feature_set(self, feature_set_schema, feature_set_table):
-        fset = self.get_feature_sets(_filter={'schema_name': feature_set_schema, 'table_name': feature_set_table})[0]
+    def deploy_feature_set(self, schema_name, table_name):
+        fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
         fset.deploy()
 
     def describe_feature_sets(self) -> None:
@@ -475,17 +473,17 @@ class FeatureStore:
             print('-' * 200)
             self.describe_feature_set(fset.schema_name, fset.table_name)
 
-    def describe_feature_set(self, feature_set_schema: str, feature_set_table: str) -> None:
+    def describe_feature_set(self, schema_name: str, table_name: str) -> None:
         """
         Prints out a description of a given feature set, with all features in the feature set and whether the feature
         set is deployed
 
-        :param feature_set_schema: feature set schema name
-        :param feature_set_table: feature set table name
+        :param schema_name: feature set schema name
+        :param table_name: feature set table name
         :return: None
         """
-        fset = self.get_feature_sets(_filter={'schema_name': feature_set_schema, 'table_name': feature_set_table})
-        if not fset: raise SpliceMachineException(f"Feature Set {feature_set_schema}.{feature_set_table} not found. Check name and try again.")
+        fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})
+        if not fset: raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         fset = fset[0]
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
         print('\n\tAvailable features:')
