@@ -966,18 +966,19 @@ def _schedule_retrain(retrainer):
     if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
             raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified")
     elif retrainer.has_conda:
-        mlflow.log_artifact(retrainer.conda_env, name='conda-retrain.yaml')
+        mlflow.log_artifact(retrainer.conda_env, run_uuid=retrainer.run_id, name='conda-retrain.yaml')
 
     conda_artifact = 'conda-retrain.yaml' if retrainer.has_conda else 'conda.yaml'
 
     print("Saving Human Readable Version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.py', mode='w+') as tmp_hrf:
         tmp_hrf.write(inspect.getsource(retrainer.retrain))
-        mlflow.log_artifact(tmp_hrf.name, 'retrain_func.py')
+        mlflow.log_artifact(tmp_hrf.name, run_uuid=retrainer.run_id, name='retrain_func.py')
 
     print("Saving machine readable version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.pkl') as tmp_bin:
         tmp_bin.write(cloudpickle.dumps(retrainer), 'retrainer.pkl')
+        mlflow.log_artifact(tmp_bin.name, run_uuid=retrainer.run_id, name='retrainer.pkl')
 
     print("Submitting Job to the Director")
     payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
