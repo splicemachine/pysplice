@@ -977,7 +977,7 @@ def _schedule_retrain(retrainer):
 
     print("Saving machine readable version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.pkl') as tmp_bin:
-        tmp_bin.write(cloudpickle.dumps(retrainer), 'retrainer.pkl')
+        tmp_bin.write(cloudpickle.dumps(retrainer))
         mlflow.log_artifact(tmp_bin.name, run_uuid=retrainer.run_id, name='retrainer.pkl')
 
     print("Submitting Job to the Director")
