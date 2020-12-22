@@ -971,7 +971,7 @@ def _schedule_retrain(retrainer):
     conda_artifact = 'conda-retrain.yaml' if retrainer.has_conda else 'conda.yaml'
 
     print("Saving Human Readable Version of Retrainer as an artifact...")
-    with NamedTemporaryFile(suffix='.py') as tmp_hrf:
+    with NamedTemporaryFile(suffix='.py', mode='w+') as tmp_hrf:
         tmp_hrf.write(inspect.getsource(retrainer.retrain))
         mlflow.log_artifact(tmp_hrf.name, 'retrain_func.py')
 
