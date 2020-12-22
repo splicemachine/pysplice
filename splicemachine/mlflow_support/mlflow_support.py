@@ -958,11 +958,14 @@ def _get_deployed_models() -> PandasDF:
 
 
 @_mlflow_patch('schedule_retrain')
-def _schedule_retrain(retrainer):
-    # try:
-    #     print(f"Creating retrain schedule for {get_description(retrainer.cron_exp)}")
-    # except FormatException:
-    #     raise SpliceMachineException(f'The provided cron "{retrainer.cron_exp}" is invalid. See above for more information')
+def _schedule_retrain(retrainer, name):
+    """
+    Schedule a retraining of a model
+    :param retrainer: a splicemachine.mlflow_support.Retrainer containing the retraining logic
+    :param name: The name of the retrainer. This must be unique for a given run_id (if you've already created a retrainer
+    for a given run, and you'd like to create a new one, this name must differ from the last one.
+    :return: The job ID of the retraining creation
+    """
     if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
             raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified."
                                          "If there is no model logged with this run, you must provide a conda.yaml"
@@ -986,7 +989,7 @@ def _schedule_retrain(retrainer):
     print("Submitting Job to the Director")
     payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
                    retrainer_artifact='retrainer.pkl', entity_id=retrainer.run_id,
-                   handler_name='SCHEDULE_RETRAIN')
+                   handler_name='SCHEDULE_RETRAIN', name=name)
 
     return __initiate_job(payload, '/api/rest/initiate')
 
