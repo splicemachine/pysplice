@@ -964,7 +964,10 @@ def _schedule_retrain(retrainer):
     # except FormatException:
     #     raise SpliceMachineException(f'The provided cron "{retrainer.cron_exp}" is invalid. See above for more information')
     if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
-            raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified")
+            raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified."
+                                         "If there is no model logged with this run, you must provide a conda.yaml"
+                                         "file to this function. If a model is logged, ensure it was logged with a "
+                                         "conda.yaml")
     elif retrainer.has_conda:
         mlflow.log_artifact(retrainer.conda_env, run_uuid=retrainer.run_id, name='conda-retrain.yaml')
 
@@ -982,7 +985,8 @@ def _schedule_retrain(retrainer):
 
     print("Submitting Job to the Director")
     payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
-                   retrainer_artifact='retrainer.pkl', entity_id=retrainer.run_id)
+                   retrainer_artifact='retrainer.pkl', entity_id=retrainer.run_id,
+                   handler_name='SCHEDULE_RETRAIN')
 
     return __initiate_job(payload, '/api/rest/initiate')
 
