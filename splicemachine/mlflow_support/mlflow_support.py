@@ -991,7 +991,7 @@ def apply_patches():
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
-               _log_feature_transformations, _get_model_name,
+               _log_feature_transformations, _get_model_name, _schedule_retrain,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
