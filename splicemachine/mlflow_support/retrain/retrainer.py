@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from cron_descriptor import get_description, FormatException
 
 class Retrainer(ABC):
     """
@@ -12,6 +12,15 @@ class Retrainer(ABC):
         self.cron_exp = cron_exp
         self.run_id = run_id
         self.conda_env = conda_env
+        self.__check_cron()
+
+    def __check_cron(self):
+        try:
+            print(f"You've created a retrainer scheduled for {get_description(self.cron_exp)}")
+        except FormatException:
+            raise Exception(f'The provided cron "{self.cron_exp}" is invalid. '
+                                         f'See above for more information')
+
     
     @property
     def has_conda(self):

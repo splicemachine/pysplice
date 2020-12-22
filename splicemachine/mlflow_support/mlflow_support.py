@@ -959,10 +959,10 @@ def _get_deployed_models() -> PandasDF:
 
 @_mlflow_patch('schedule_retrain')
 def _schedule_retrain(retrainer):
-    try:
-        print(f"Creating retrain schedule for {get_description(retrainer.cron_exp)}")
-    except FormatException:
-        raise SpliceMachineException(f'The provided cron "{retrainer.cron_exp}" is invalid. See above for more information')
+    # try:
+    #     print(f"Creating retrain schedule for {get_description(retrainer.cron_exp)}")
+    # except FormatException:
+    #     raise SpliceMachineException(f'The provided cron "{retrainer.cron_exp}" is invalid. See above for more information')
     if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
             raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified")
     elif retrainer.has_conda:
