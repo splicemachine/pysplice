@@ -17,3 +17,4 @@ h2o-pysparkling-2.4==3.28.1.2-1
 sphinx-tabs
 IPython
 cloudpickle==1.6.0
+cron_descriptor

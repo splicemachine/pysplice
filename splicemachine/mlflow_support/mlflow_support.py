@@ -72,6 +72,7 @@ from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
+from cron_descriptor import get_description, FormatException
 
 from splicemachine import SpliceMachineException
 from splicemachine.features import FeatureStore
@@ -958,6 +959,10 @@ def _get_deployed_models() -> PandasDF:
 
 @_mlflow_patch('schedule_retrain')
 def _schedule_retrain(retrainer):
+    try:
+        print(f"Creating retrain schedule for {get_description(retrainer.cron_exp)}")
+    except FormatException:
+        raise SpliceMachineException(f'The provided cron "{retrainer.cron_exp}" is invalid. See above for more information')
     if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
             raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified")
     elif retrainer.has_conda:
@@ -976,7 +981,7 @@ def _schedule_retrain(retrainer):
 
     print("Submitting Job to the Director")
     payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
-                   retrainer_artifact='retrainer.pkl')
+                   retrainer_artifact='retrainer.pkl', entity_id=retrainer.run_id)
 
     return __initiate_job(payload, '/api/rest/initiate')
 
