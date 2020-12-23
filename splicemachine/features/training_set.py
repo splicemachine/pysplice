@@ -14,8 +14,8 @@ class TrainingSet:
                  *,
                  training_context: TrainingContext,
                  features: List[Feature],
-                 start_time: Optional[datetime],
-                 end_time: Optional[datetime]
+                 start_time: Optional[datetime] = None,
+                 end_time: Optional[datetime] = None
                  ):
         self.training_context = training_context
         self.features = features

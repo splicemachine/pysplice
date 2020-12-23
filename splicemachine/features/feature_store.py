@@ -65,6 +65,74 @@ class FeatureStore:
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
+    def get_feature_dataset(self, features: Union[List[Feature], List[str]]):
+        """
+        Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering)
+        :param features: List of Features or strings of feature names
+        :return: Spark DF
+        """
+        features = self.get_features_by_name(names=features, as_list=True) \
+            if all([isinstance(i,str) for i in features]) else features
+
+        fset_keys: pd.DataFrame = self.splice_ctx.df(SQL.get_feature_set_join_keys).toPandas()
+        # Get max number of pk (join) columns from all feature sets
+        fset_keys['PK_COLUMNS_COUNT'] = fset_keys['PK_COLUMNS'].apply(lambda x: len(x.split('|')))
+        # Get "anchor" feature set. The one we will use to try to join to all others
+        ind = fset_keys['PK_COLUMNS_COUNT'].idxmax()
+        anchor_series = fset_keys.iloc[ind]
+        # Remove that from the list
+        fset_keys.drop(index=ind, inplace=True)
+        all_pk_cols = anchor_series.PK_COLUMNS.split('|')
+        # For each feature set, assert that all join keys exist in our "anchor" feature set
+        fset_keys['can_join'] = fset_keys['PK_COLUMNS'].map(lambda x: set(x.split('|')).issubset(all_pk_cols) )
+        if not fset_keys['can_join'].all():
+            bad_feature_set_ids = [t.FEATURE_SET_ID for _ , t in fset_keys[fset_keys['can_join'] != True].iterrows()]
+            bad_features = [f.name for f in features if f.feature_set_id in bad_feature_set_ids]
+            raise SpliceMachineException(f"The provided features do not have a common join key."
+                                         f"Remove features {bad_features} from your request")
+
+        # SELECT clause
+        sql = 'SELECT '
+
+        for feature in features:
+            sql += f'\n\tfset{feature.feature_set_id}.{feature.name},'
+
+        alias = f'fset{anchor_series.FEATURE_SET_ID}' # We use this a lot for joins
+        sql += f'\nFROM {anchor_series.SCHEMA_NAME}.{anchor_series.TABLE_NAME} {alias} '
+
+        # JOIN clause
+        for _, fset in fset_keys.iterrows():
+            # Join Feature Set
+            sql += f'\nLEFT OUTER JOIN {fset.SCHEMA_NAME}.{fset.TABLE_NAME} fset{fset.FEATURE_SET_ID} \n\tON '
+            for ind, pkcol in enumerate(fset.PK_COLUMNS.split('|')):
+                if ind > 0: sql += ' AND ' # In case of multiple columns
+                sql += f'fset{fset.feature_set_id}.{pkcol}={alias}.{pkcol}'
+
+        # Link this to mlflow for model deployment
+        # Here we create a null training context and pass it into the training set. We do this because this special kind
+        # of training set isn't standard. It's not based on a training context, on primary key columns, a label column,
+        # or a timestamp column . This is simply a joined set of features from different feature sets.
+        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
+        # a null training context that can be tracked with a "name" (although the name is None). This is a likely case
+        # for (non time based) clustering use cases.
+        null_tx = object
+        null_tx.name = None
+        ts = TrainingSet(training_context=null_tx, features=features)
+        if hasattr(self, 'mlflow_ctx'):
+            self.mlflow_ctx._active_training_set: TrainingSet = ts
+            ts._register_metadata(self.mlflow_ctx)
+        return self.splice_ctx.df(sql)
+
+
+
+    def remove_training_context(self):
+        """
+        Removes a training context. This will run 2 checks.
+        1. See if the training context is being used by a model in a deployment. If this is the case, the function will fail, always.
+        2. See if the training
+        """
+        pass
+
     def get_training_context(self, training_context: str) -> TrainingContext:
         """
         Gets a training context by name
@@ -114,16 +182,21 @@ class FeatureStore:
         """
         return self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
 
-    def get_features_by_name(self, names: List[str]) -> List[Feature]:
+    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
         """
-        Returns a list of features whose names are provided
+        Returns a dataframe or list of features whose names are provided
 
         :param names: The list of feature names
-        :return: The list of features
+        :param as_list: Whether or not to return a list of features. Default False
+        :return: The list of features or Spark Dataframe
         """
         # Format feature names into quotes strings for search
-        df = self.splice_ctx.df(SQL.get_features_by_name.format(feature_names=",".join([f"'{i.upper()}'" for i in names])))
-        df = clean_df(df, Columns.feature)
+        names = names or self.splice_ctx.df(SQL.get_all_features)
+        # If they don't pass in feature names, get all features
+        where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
+        df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause))
+        if not as_list: return df
+
         features = []
         for feat in df.collect():
             f = feat.asDict()
@@ -199,7 +272,7 @@ class FeatureStore:
         """
         pass
 
-    def get_available_features(self, training_context: str) -> List[Feature]:
+    def get_training_context_features(self, training_context: str) -> List[Feature]:
         """
         Returns the available features for the given a training context name
 
@@ -208,7 +281,7 @@ class FeatureStore:
         """
         where = f"tc.Name='{training_context}'"
 
-        df = self.splice_ctx.df(SQL.get_available_features.format(where=where))
+        df = self.splice_ctx.df(SQL.get_training_context_features.format(where=where))
 
         df = clean_df(df, Columns.feature)
         features = []
@@ -240,7 +313,7 @@ class FeatureStore:
         :return: Optional[SparkDF, str]
         """
 
-        features = self.get_features_by_name(features) if all([isinstance(i,str) for i in features]) else features
+        features = self.get_features_by_name(names=features, as_list=True) if all([isinstance(i,str) for i in features]) else features
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
@@ -358,6 +431,17 @@ class FeatureStore:
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
+    def __validate_feature_data_type(self, feature_data_type: str):
+        """
+        Validated that the provided feature data type is a valid SQL data type
+        :param feature_data_type: the feature data type
+        :return: None
+        """
+        from splicemachine.spark.constants import SQL_TYPES
+        if not feature_data_type.split('(')[0] in SQL_TYPES:
+            raise SpliceMachineException(f"The datatype you've passed in, {feature_data_type} is not a valid SQL type. "
+                                         f"Valid types are {SQL_TYPES}")
+
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
                        feature_type: FeatureType, desc: str = None, tags: List[str] = None):
         """
@@ -371,6 +455,10 @@ class FeatureStore:
         :param tags: (optional) List of (str) tag words (default None)
         :return:
         """
+        self.__validate_feature_data_type(feature_data_type)
+        if self.splice_ctx.tableExists(schema_name, table_name):
+            raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
+                                         f"add features to a deployed feature set.")
         fset: FeatureSet = self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})[0]
         self._validate_feature(name)
         f = Feature(name=name, description=desc or '', feature_data_type=feature_data_type,
@@ -430,6 +518,7 @@ class FeatureStore:
         :param verbose: Whether or not to print the SQL before execution (default False)
         :return:
         """
+        assert name != "None", "Name of training context cannot be None!"
         self._validate_training_context(name, sql, context_keys)
         # register_training_context()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
@@ -459,7 +548,18 @@ class FeatureStore:
         print('Done.')
 
     def deploy_feature_set(self, schema_name, table_name):
-        fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
+        """
+        Deploys a feature set to the database. This persists the feature stores existence.
+        As of now, once deployed you cannot delete the feature set or add/delete features.
+        The feature set must have already been created with create_feature_set
+        :param schema_name: The schema of the created feature set
+        :param table_name: The table of the created feature set
+        """
+        try:
+            fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
+        except:
+            raise SpliceMachineException(f"Cannot find feature set {schema_name}.{table_name}. Ensure you've created this"
+                                         f"feature set using fs.create_feature_set before deploying.")
         fset.deploy()
 
     def describe_feature_sets(self) -> None:
@@ -515,7 +615,7 @@ class FeatureStore:
         tcx = tcx[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print(f'Available features in {tcx.name}:')
-        feats: List[Feature] = self.get_available_features(tcx.name)
+        feats: List[Feature] = self.get_training_context_features(tcx.name)
         # Grab the feature set info and their corresponding names (schema.table) for the display table
         feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
         feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}

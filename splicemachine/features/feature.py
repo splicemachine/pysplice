@@ -29,7 +29,7 @@ class Feature:
         feature_sql = SQL.feature_metadata.format(
             feature_set_id=self.feature_set_id, name=self.name, desc=self.description,
             feature_data_type=self.feature_data_type,
-            feature_type=self.feature_type, tags=','.join(self.tags)
+            feature_type=self.feature_type, tags=','.join(self.tags) if isinstance(self.tags, list) else self.tags
         )
         splice.execute(feature_sql)
 

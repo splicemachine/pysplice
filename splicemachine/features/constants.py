@@ -54,8 +54,11 @@ class SQL:
     """
 
     get_features_by_name = f"""
-    select feature_id,feature_set_id,Name,Description,feature_data_type, feature_type,Tags,compliance_level, 
-    last_update_ts,last_update_username from {FEATURE_STORE_SCHEMA}.feature where Name in ({{feature_names}})
+    select fset.schema_name,fset.table_name,f.Name,f.Description,f.feature_data_type,f.feature_type,f.Tags,
+    f.compliance_level,f.last_update_ts,f.last_update_username,f.feature_id,f.feature_set_id
+    from {FEATURE_STORE_SCHEMA}.feature f
+    join {FEATURE_STORE_SCHEMA}.feature_set fset on f.feature_set_id=fset.feature_set_id
+    where {{where}}
     """
 
     get_features_in_feature_set = f"""
@@ -72,6 +75,7 @@ class SQL:
         FROM {FEATURE_STORE_SCHEMA}.feature_set_key GROUP BY 1) p 
         ON fset.feature_set_id=p.feature_set_id 
         """
+
     get_training_contexts = f"""
     SELECT tc.context_id, tc.Name, tc.Description, CAST(SQL_text AS VARCHAR(1000)) context_sql, 
        p.pk_columns, 
@@ -84,9 +88,20 @@ class SQL:
         (SELECT context_id, STRING_AGG(key_column_name,',') context_columns FROM {FEATURE_STORE_SCHEMA}.training_context_key WHERE key_type='C' GROUP BY 1)  c ON tc.context_id=c.context_id
     """
 
+    get_feature_set_join_keys = f"""
+    SELECT fset.feature_set_id, schema_name, table_name, pk_columns FROM {FEATURE_STORE_SCHEMA}.feature_set fset
+    INNER JOIN 
+        (
+            SELECT feature_set_id, STRING_AGG(key_column_name,'|') pk_columns, STRING_AGG(key_column_data_type,'|') pk_types 
+            FROM {FEATURE_STORE_SCHEMA}.feature_set_key GROUP BY 1
+        ) p 
+    ON fset.feature_set_id=p.feature_set_id 
+    where fset.feature_set_id in (select feature_set_id from {FEATURE_STORE_SCHEMA}.feature where name in {{names}})
+    """
+
     get_all_features = f"SELECT NAME FROM {FEATURE_STORE_SCHEMA}.feature WHERE Name='{{name}}'"
 
-    get_available_features = f"""
+    get_training_context_features = f"""
     SELECT f.feature_id, f.feature_set_id, f.NAME, f.DESCRIPTION, f.feature_data_type, f.feature_type, f.TAGS, f.compliance_level, f.last_update_ts, f.last_update_username
           FROM {FEATURE_STORE_SCHEMA}.Feature f
           WHERE feature_id IN
