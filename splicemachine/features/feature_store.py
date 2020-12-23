@@ -74,7 +74,8 @@ class FeatureStore:
         features = self.get_features_by_name(names=features, as_list=True) \
             if all([isinstance(i,str) for i in features]) else features
 
-        fset_keys: pd.DataFrame = self.splice_ctx.df(SQL.get_feature_set_join_keys).toPandas()
+        sql = SQL.get_feature_set_join_keys.format(names=tuple([f.name for f in features]))
+        fset_keys: pd.DataFrame = self.splice_ctx.df(sql).toPandas()
         # Get max number of pk (join) columns from all feature sets
         fset_keys['PK_COLUMNS_COUNT'] = fset_keys['PK_COLUMNS'].apply(lambda x: len(x.split('|')))
         # Get "anchor" feature set. The one we will use to try to join to all others

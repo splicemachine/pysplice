@@ -96,7 +96,7 @@ class SQL:
             FROM {FEATURE_STORE_SCHEMA}.feature_set_key GROUP BY 1
         ) p 
     ON fset.feature_set_id=p.feature_set_id 
-    where fset.feature_set_id in (select feature_set_id from {FEATURE_STORE_SCHEMA}.feature where name in {{names}})
+    where fset.feature_set_id in (select feature_set_id from {FEATURE_STORE_SCHEMA}.feature where name in {{names}} )
     """
 
     get_all_features = f"SELECT NAME FROM {FEATURE_STORE_SCHEMA}.feature WHERE Name='{{name}}'"
