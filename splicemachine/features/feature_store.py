@@ -124,12 +124,13 @@ class FeatureStore:
         return self.splice_ctx.df(sql)
 
 
-
-    def remove_training_context(self):
+    def remove_training_context(self, override=False):
         """
         Removes a training context. This will run 2 checks.
         1. See if the training context is being used by a model in a deployment. If this is the case, the function will fail, always.
-        2. See if the training
+        2. See if the training context is being used in any mlflow runs (non-deployed models). This will fail and return
+        a warning Telling the user that this training context is being used in mlflow runs (and the run_ids) and that
+        they will need to "override" this function to forcefully remove the training context.
         """
         pass
 
