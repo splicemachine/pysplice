@@ -191,8 +191,6 @@ class FeatureStore:
         :param as_list: Whether or not to return a list of features. Default False
         :return: The list of features or Spark Dataframe
         """
-        # Format feature names into quotes strings for search
-        names = names or self.splice_ctx.df(SQL.get_all_features)
         # If they don't pass in feature names, get all features
         where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
         df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause))
