@@ -199,7 +199,7 @@ class FeatureStore:
         features = []
         for feat in df.collect():
             f = feat.asDict()
-            f = dict((k.lower(), v) for k, v in f.items())
+            f = dict((k.lower(), v) for k, v in f.items()) # DB returns uppercase column names
             features.append(Feature(**f))
         return features
 
