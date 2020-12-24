@@ -328,28 +328,6 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     mlflow.set_tag('splice.model_type', model_class)
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
-def __get_current_transaction():
-    """
-    Gets the transaction ID of the started run. This enables time travel for model governance
-    :return: (int) the transaction ID
-    """
-    try:
-        usr = __get_active_user()
-    except SpliceMachineException:
-        usr = '<YOUR_USERNAME>'
-    db_connection = mlflow._splice_context.getConnection()
-    try:
-        prepared_statement = db_connection.prepareStatement('CALL SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()')
-    except:
-        raise SpliceMachineException("It looks like you don't have permission to call SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION()."
-                        "You need this permission in order to start runs in mlflow. Please ask your DBA to run the following:\n"
-                        f"grant execute on procedure SYSCS_UTIL.SYSCS_GET_CURRENT_TRANSACTION to {usr}")
-    x = prepared_statement.executeQuery()
-    x.next()
-    timestamp = x.getLong(1)
-    prepared_statement.close()
-    return timestamp
-
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -381,7 +359,6 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     _check_for_splice_ctx()
     tags = tags or {}
     tags['mlflow.user'] = __get_active_user()
-    tags['DB Transaction ID'] = __get_current_transaction()
 
     orig = gorilla.get_original_attribute(mlflow, "start_run")
     active_run = orig(run_id=run_id, experiment_id=experiment_id, run_name=run_name, nested=nested)
