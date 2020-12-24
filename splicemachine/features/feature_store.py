@@ -307,7 +307,6 @@ class FeatureStore:
         :param start_time: (Optional[datetime]) The start time of the query (how far back in the data to start). Default None
             * NOTE: If start_time is None, query will start from beginning of history
         :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
-        :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
             * NOTE: If end_time is None, query will get most recently available data
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
         :return: Optional[SparkDF, str]
@@ -510,9 +509,9 @@ class FeatureStore:
             * context key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
             * (optionally) the label expression - defining what the training set is trying to predict
         :param primary_keys: (List[str]) The list of columns from the training SQL that identify the training row
-        :param ts_col: (Optional[str]) The timestamp column of the training SQL that identifies the inference timestamp
+        :param ts_col: The timestamp column of the training SQL that identifies the inference timestamp
         :param label_col: (Optional[str]) The optional label column from the training SQL.
-        :param replace: (Optional[bool]) Whether to replace an existing training set
+        :param replace: (Optional[bool]) Whether to replace an existing training context
         :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in
             get_training_set
         :param desc: (Optional[str]) An optional description of the training set
