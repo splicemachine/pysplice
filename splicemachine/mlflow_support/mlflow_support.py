@@ -49,7 +49,7 @@ from importlib import import_module
 from io import BytesIO
 from os import path
 from sys import version as py_version, stderr
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
 
@@ -57,6 +57,8 @@ import gorilla
 import h2o
 import mlflow
 import mlflow.pyfunc
+from mlflow.tracking.fluent import ActiveRun
+from mlflow.entities import RunStatus
 import pyspark
 import requests
 import sklearn
@@ -79,6 +81,15 @@ from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
+# For recording notebook history
+try:
+    from IPython import get_ipython
+    import nbformat as nbf
+    ipython = get_ipython()
+    mlflow._notebook_history = True
+except:
+    mlflow._notebook_history = False
+
 _TESTING = os.environ.get("TESTING", False)
 
 try:
@@ -94,6 +105,15 @@ mlflow.client = _CLIENT
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
+class SpliceActiveRun(ActiveRun):
+    """
+    A wrapped active run for Splice Machine that calls our custom mlflow.end_run, so we can record the notebook
+    history
+    """
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        status = RunStatus.FINISHED if exc_type is None else RunStatus.FAILED
+        mlflow.end_run(RunStatus.to_string(status))
+        return exc_type is None
 
 def __try_auto_login():
     """
@@ -329,6 +349,50 @@ def _log_model(model, name='model', conda_env=None, model_lib=None):
     mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
 
+@_mlflow_patch('end_run')
+def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
+    """End an active MLflow run (if there is one).
+
+    .. code-block:: python
+        :caption: Example
+
+        import mlflow
+
+        # Start run and get status
+        mlflow.start_run()
+        run = mlflow.active_run()
+        print("run_id: {}; status: {}".format(run.info.run_id, run.info.status))
+
+        # End run and get status
+        mlflow.end_run()
+        run = mlflow.get_run(run.info.run_id)
+        print("run_id: {}; status: {}".format(run.info.run_id, run.info.status))
+        print("--")
+
+        # Check for any active runs
+        print("Active run: {}".format(mlflow.active_run()))
+
+    .. code-block:: text
+        :caption: Output
+
+        run_id: b47ee4563368419880b44ad8535f6371; status: RUNNING
+        run_id: b47ee4563368419880b44ad8535f6371; status: FINISHED
+        --
+        Active run: None
+    """
+    if mlflow._notebook_history and hasattr(mlflow, '_splice_context') and mlflow.active_run():
+        with NamedTemporaryFile() as temp_file:
+            nb = nbf.v4.new_notebook()
+            nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
+            nbf.write(nb, temp_file.name)
+            run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
+            mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
+            typ,ext = ('html','html') if save_html else ('script','py')
+            os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
+            mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
+    orig = gorilla.get_original_attribute(mlflow, "end_run")
+    orig(status=status)
+
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
     """
@@ -372,7 +436,7 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     if hasattr(mlflow,'_active_training_set'):
         mlflow._active_training_set._register_metadata(mlflow)
 
-    return active_run
+    return SpliceActiveRun(active_run)
 
 
 @_mlflow_patch('log_pipeline_stages')
@@ -924,7 +988,7 @@ def apply_patches():
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
