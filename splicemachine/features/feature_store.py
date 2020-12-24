@@ -446,6 +446,7 @@ class FeatureStore:
                        feature_type: FeatureType, desc: str = None, tags: List[str] = None):
         """
         Add a feature to a feature set
+
         :param schema_name: The feature set schema
         :param table_name: The feature set table name to add the feature to
         :param name: The feature name
