@@ -27,6 +27,11 @@ class FeatureSet:
         self.pk_columns = list(primary_keys.keys())
 
     def get_features(self) -> List[Feature]:
+        """
+        Get's all of the features from this featureset as a list of splicemachine.features.Feature
+
+        :return: List[Feature]
+        """
         features = []
         if self.feature_set_id:
             features_df = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id))
@@ -79,6 +84,9 @@ class FeatureSet:
 
 
     def deploy(self):
+        """
+        Deploys the current feature set. Equivalent to calling fs.deploy(schema_name, table_name)
+        """
         old_pk_cols = ','.join(f'OLDW.{p}' for p in self.pk_columns)
         old_feature_cols = ','.join(f'OLDW.{f.name}' for f in self.get_features())
 
