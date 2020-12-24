@@ -95,8 +95,7 @@ class FeatureStore:
         # SELECT clause
         sql = 'SELECT '
 
-        for feature in features:
-            sql += f'\n\tfset{feature.feature_set_id}.{feature.name},'
+        sql += ','.join([f'fset{feature.feature_set_id}.{feature.name})' for feature in features])
 
         alias = f'fset{anchor_series.FEATURE_SET_ID}' # We use this a lot for joins
         sql += f'\nFROM {anchor_series.SCHEMA_NAME}.{anchor_series.TABLE_NAME} {alias} '
