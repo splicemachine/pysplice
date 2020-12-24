@@ -107,7 +107,7 @@ class FeatureStore:
             sql += f'\nLEFT OUTER JOIN {fset.SCHEMA_NAME}.{fset.TABLE_NAME} fset{fset.FEATURE_SET_ID} \n\tON '
             for ind, pkcol in enumerate(fset.PK_COLUMNS.split('|')):
                 if ind > 0: sql += ' AND ' # In case of multiple columns
-                sql += f'fset{fset.feature_set_id}.{pkcol}={alias}.{pkcol}'
+                sql += f'fset{fset.FEATURE_SET_ID}.{pkcol}={alias}.{pkcol}'
 
         # Link this to mlflow for model deployment
         # Here we create a null training context and pass it into the training set. We do this because this special kind
