@@ -16,12 +16,15 @@ limitations under the License.
 from __future__ import print_function
 
 import os
+import re
+from string import punctuation as bad_chars
 
 from py4j.java_gateway import java_import
 from pyspark.sql import DataFrame
-from pyspark.sql.types import _parse_datatype_json_string
+from pyspark.sql.types import _parse_datatype_json_string, StringType
 
 from splicemachine.spark.constants import CONVERSIONS
+from splicemachine import SpliceMachineException
 
 
 class PySpliceContext:
@@ -99,7 +102,7 @@ class PySpliceContext:
         dataframe = dataframe.rdd.toDF(schema)
         return dataframe
 
-    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False):
+    def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False, **pandas_args):
         """
         Load a file from the local filesystem and create a new table (or recreate an existing table), and load the data
         from the file into the new table
@@ -107,14 +110,47 @@ class PySpliceContext:
         :param file_path: The local file to load
         :param schema_table_name: The schema.table name
         :param primary_keys: List[str] of primary keys for the table. Default None
-        :param dropTable: Whether or not to drop the table. If this is False and the table already exists, the
+        :param drop_table: Whether or not to drop the table. If this is False and the table already exists, the
             function will fail. Default False
+        :param pandas_args: Extra parameters to be passed into the pd.read_csv function. Any parameters accepted
+        in pd.read_csv will work here
         :return: None
         """
         import pandas as pd
-        df = self.spark_session.createDataFrame(pd.read_csv(file_path))
+        pdf = pd.read_csv(file_path, **pandas_args)
+        df = self.pandasToSpark(pdf)
         self.createTable(df, schema_table_name, primary_keys=primary_keys, drop_table=drop_table, to_upper=True)
         self.insert(df, schema_table_name, to_upper=True)
+
+    def pandasToSpark(self, pdf):
+        """
+        Convert a Pandas DF to Spark, and try to manage NANs from Pandas in case of failure. Spark cannot handle
+        Pandas NAN existing in String columns (as it considers it NaN Number ironically), so we replace the occurances
+        with a temporary value and then convert it back to null after it becomes a Spark DF
+
+        :param pdf: The Pandas dataframe
+        :return: The Spark DF
+        """
+        try: # Try to create the dataframe as it exists
+            return self.spark_session.createDataFrame(pdf)
+        except TypeError:
+            p_df = pdf.copy()
+            # This means there was an NaN conversion error
+            from pyspark.sql.functions import udf
+            for c in p_df.columns: # Replace non numeric/time columns with a custom null value
+                if p_df[c].dtype not in ('int64','float64', 'datetime64[ns]'):
+                    p_df[c].fillna('Splice_Temp_NA', inplace=True)
+            spark_df = self.spark_session.createDataFrame(p_df)
+            # Convert that custom null value back to null after converting to a spark dataframe
+            null_replace_udf = udf(lambda name: None if name == "Splice_Temp_NA" else name, StringType())
+            for field in spark_df.schema:
+                if field.dataType==StringType():
+                    spark_df = spark_df.withColumn(field.name, null_replace_udf(spark_df[field.name]))
+                spark_df = spark_df.withColumnRenamed(field.name, re.sub(r'['+bad_chars+' ]', '_',field.name))
+            # Replace NaN numeric columns with null
+            spark_df = spark_df.replace(float('nan'), None)
+            return spark_df
+
 
     def getConnection(self):
         """
@@ -160,9 +196,9 @@ class PySpliceContext:
         :return: None
         """
         if table_name:
-            return self.context.dropTable(schema_and_or_table_name, table_name)
+            self.context.dropTable(schema_and_or_table_name, table_name)
         else:
-            return self.context.dropTable(schema_and_or_table_name)
+            self.context.dropTable(schema_and_or_table_name)
 
     def df(self, sql):
         """
@@ -178,19 +214,28 @@ class PySpliceContext:
         """
         return DataFrame(self.context.df(sql), self.spark_sql_context)
 
-    def insert(self, dataframe, schema_table_name, to_upper=False):
+    def insert(self, dataframe, schema_table_name, to_upper=True, create_table=False):
         """
         Insert a dataframe into a table (schema.table).
 
         :param dataframe: (Dataframe) The dataframe you would like to insert
         :param schema_table_name: (str) The table in which you would like to insert the DF
         :param to_upper: (bool) If the dataframe columns should be converted to uppercase before table creation
-                            If False, the table will be created with lower case columns. [Default False]
+                            If False, the table will be created with lower case columns. [Default True]
+        :param create_table: If the table does not exists at the time of the call, the table will first be created
         :return: None
         """
         if to_upper:
             dataframe = self.toUpper(dataframe)
-        return self.context.insert(dataframe._jdf, schema_table_name)
+        if not self.tableExists(schema_table_name):
+            if not create_table:
+                raise SpliceMachineException("Table does not exist. Create the table first or set create_table=True "
+                                             "in this function, or call createAndInsertTable")
+            else:
+                print('Table does not yet exist, creating table... ',end='')
+                self.createTable(dataframe, schema_table_name, to_upper=to_upper)
+                print('Done.')
+        self.context.insert(dataframe._jdf, schema_table_name)
 
     def insertWithStatus(self, dataframe, schema_table_name, statusDirectory, badRecordsAllowed):
         """
@@ -206,7 +251,7 @@ class PySpliceContext:
         :return: None
         """
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
-        return self.context.insert(dataframe._jdf, schema_table_name, statusDirectory, badRecordsAllowed)
+        self.context.insert(dataframe._jdf, schema_table_name, statusDirectory, badRecordsAllowed)
 
     def insertRdd(self, rdd, schema, schema_table_name):
         """
@@ -217,7 +262,7 @@ class PySpliceContext:
         :param schema_table_name: (str) The table in which you would like to insert the RDD
         :return: None
         """
-        return self.insert(
+        self.insert(
             self.createDataFrame(rdd, schema),
             schema_table_name
         )
@@ -236,7 +281,7 @@ class PySpliceContext:
         :param badRecordsAllowed: (int) The number of bad records are allowed. -1 for unlimited
         :return: None
         """
-        return self.insertWithStatus(
+        self.insertWithStatus(
             self.createDataFrame(rdd, schema),
             schema_table_name,
             statusDirectory,
@@ -246,6 +291,7 @@ class PySpliceContext:
     def upsert(self, dataframe, schema_table_name):
         """
         Upsert the data from a dataframe into a table (schema.table).
+        If triggers fail when calling upsert, use the mergeInto function instead of upsert.
 
         :param dataframe: (Dataframe) The dataframe you would like to upsert
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
@@ -253,18 +299,50 @@ class PySpliceContext:
         """
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
-        return self.context.upsert(dataframe._jdf, schema_table_name)
+        self.context.upsert(dataframe._jdf, schema_table_name)
 
     def upsertWithRdd(self, rdd, schema, schema_table_name):
         """
         Upsert the data from an RDD into a table (schema.table).
+        If triggers fail when calling upsertWithRdd, use the mergeIntoWithRdd function instead of upsertWithRdd.
 
         :param rdd: (RDD) The RDD you would like to upsert
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
         :return: None
         """
-        return self.upsert(
+        self.upsert(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
+
+    def mergeInto(self, dataframe, schema_table_name):
+        """
+        Rows in the dataframe whose primary key is not in schemaTableName will be inserted into the table;
+        rows in the dataframe whose primary key is in schemaTableName will be used to update the table.
+
+        This implementation differs from upsert in a way that allows triggers to work.
+
+        :param dataframe: (Dataframe) The dataframe you would like to merge in
+        :param schema_table_name: (str) The table in which you would like to merge in the dataframe
+        :return: None
+        """
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        self.context.mergeInto(dataframe._jdf, schema_table_name)
+
+    def mergeIntoWithRdd(self, rdd, schema, schema_table_name):
+        """
+        Rows in the rdd whose primary key is not in schemaTableName will be inserted into the table;
+        rows in the rdd whose primary key is in schemaTableName will be used to update the table.
+
+        This implementation differs from upsertWithRdd in a way that allows triggers to work.
+
+        :param rdd: (RDD) The RDD you would like to merge in
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (str) The table in which you would like to merge in the RDD
+        :return: None
+        """
+        self.mergeInto(
             self.createDataFrame(rdd, schema),
             schema_table_name
         )
@@ -278,7 +356,7 @@ class PySpliceContext:
         :param schema_table_name: (str) Splice Machine Table
         :return: None
         """
-        return self.context.delete(dataframe._jdf, schema_table_name)
+        self.context.delete(dataframe._jdf, schema_table_name)
 
     def deleteWithRdd(self, rdd, schema, schema_table_name):
         """
@@ -290,7 +368,7 @@ class PySpliceContext:
         :param schema_table_name: (str) Splice Machine Table
         :return: None
         """
-        return self.delete(
+        self.delete(
             self.createDataFrame(rdd, schema),
             schema_table_name
         )
@@ -307,7 +385,7 @@ class PySpliceContext:
         """
         # make sure column names are in the correct case
         dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
-        return self.context.update(dataframe._jdf, schema_table_name)
+        self.context.update(dataframe._jdf, schema_table_name)
 
     def updateWithRdd(self, rdd, schema, schema_table_name):
         """
@@ -320,7 +398,7 @@ class PySpliceContext:
         :param schema_table_name: (str) Splice Machine Table
         :return: None
         """
-        return self.update(
+        self.update(
             self.createDataFrame(rdd, schema),
             schema_table_name
         )
@@ -346,7 +424,7 @@ class PySpliceContext:
         :param query_string: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
         :return: None
         '''
-        return self.context.execute(query_string)
+        self.context.execute(query_string)
 
     def executeUpdate(self, query_string):
         '''
@@ -360,7 +438,7 @@ class PySpliceContext:
         :param query_string: (string) SQL Query (eg. DROP TABLE table1)
         :return: None
         '''
-        return self.context.executeUpdate(query_string)
+        self.context.executeUpdate(query_string)
 
     def internalDf(self, query_string):
         '''
@@ -407,7 +485,7 @@ class PySpliceContext:
         :param schema_table_name: (str) the full table name in the format "schema.table_name" which will be truncated
         :return: None
         """
-        return self.context.truncateTable(schema_table_name)
+        self.context.truncateTable(schema_table_name)
 
     def analyzeSchema(self, schema_name):
         """
@@ -416,7 +494,7 @@ class PySpliceContext:
         :param schema_name: (str) schema name which stats info will be collected
         :return: None
         """
-        return self.context.analyzeSchema(schema_name)
+        self.context.analyzeSchema(schema_name)
 
     def analyzeTable(self, schema_table_name, estimateStatistics=False, samplePercent=10.0):
         """
@@ -427,7 +505,7 @@ class PySpliceContext:
         :param samplePercent: the percentage or rows to be sampled.
         :return: None
         """
-        return self.context.analyzeTable(schema_table_name, estimateStatistics, float(samplePercent))
+        self.context.analyzeTable(schema_table_name, estimateStatistics, float(samplePercent))
 
     def export(self,
                dataframe,
@@ -449,7 +527,7 @@ class PySpliceContext:
         :param quoteCharacter: (str) quoteCharacter or None, defaults to '"'
         :return: None
         """
-        return self.context.export(dataframe._jdf, location, compression, replicationCount,
+        self.context.export(dataframe._jdf, location, compression, replicationCount,
                                    fileEncoding, fieldSeparator, quoteCharacter)
 
     def exportBinary(self, dataframe, location, compression, e_format='parquet'):
@@ -462,7 +540,7 @@ class PySpliceContext:
         :param e_format: (str) Binary format to be used, currently only 'parquet' is supported. [Default 'parquet']
         :return: None
         """
-        return self.context.exportBinary(dataframe._jdf, location, compression, e_format)
+        self.context.exportBinary(dataframe._jdf, location, compression, e_format)
 
     def bulkImportHFile(self, dataframe, schema_table_name, options):
         """
@@ -476,7 +554,7 @@ class PySpliceContext:
         optionsMap = self.jvm.java.util.HashMap()
         for k, v in options.items():
             optionsMap.put(k, v)
-        return self.context.bulkImportHFile(dataframe._jdf, schema_table_name, optionsMap)
+        self.context.bulkImportHFile(dataframe._jdf, schema_table_name, optionsMap)
 
     def bulkImportHFileWithRdd(self, rdd, schema, schema_table_name, options):
         """
@@ -488,7 +566,7 @@ class PySpliceContext:
         :param options: (Dict) Dictionary of options to be passed to --splice-properties; bulkImportDirectory is required
         :return: None
         """
-        return self.bulkImportHFile(
+        self.bulkImportHFile(
             self.createDataFrame(rdd, schema),
             schema_table_name,
             options
@@ -506,7 +584,7 @@ class PySpliceContext:
         For example, specify 0.005 if you want 0.5% of the data sampled.
         :return: None
         """
-        return self.context.splitAndInsert(dataframe._jdf, schema_table_name, float(sample_fraction))
+        self.context.splitAndInsert(dataframe._jdf, schema_table_name, float(sample_fraction))
 
     def createDataFrame(self, rdd, schema):
         """
@@ -591,7 +669,8 @@ class PySpliceContext:
         """
         return self.spark_session._jsparkSession.parseDataType(schema.json())
 
-    def createTable(self, dataframe, schema_table_name, primary_keys=None, create_table_options=None, to_upper=False, drop_table=False):
+    def createTable(self, dataframe, schema_table_name, primary_keys=None,
+                    create_table_options=None, to_upper=True, drop_table=False):
         """
         Creates a schema.table (schema_table_name) from a dataframe
         
@@ -600,7 +679,7 @@ class PySpliceContext:
         :param primary_keys: List[str] the primary keys. Default None
         :param create_table_options: str The additional table-level SQL options default None
         :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation. \
-            If False, the table will be created with lower case columns. Default False
+            If False, the table will be created with lower case columns. Default True
         :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists, the function will throw an exception
         :return: None
 
@@ -634,6 +713,27 @@ class PySpliceContext:
             create_table_options
         )
 
+    def createAndInsertTable(self, dataframe, schema_table_name, primary_keys=None,
+                             create_table_options=None, to_upper=True):
+        """
+        Creates a schema.table (schema_table_name) from a dataframe and inserts the dataframe into the table
+
+        :param dataframe: The Spark DataFrame to base the table off
+        :param schema_table_name: str The schema.table to create
+        :param primary_keys: List[str] the primary keys. Default None
+        :param create_table_options: str The additional table-level SQL options default None
+        :param to_upper: bool If the dataframe columns should be converted to uppercase before table creation. \
+            If False, the table will be created with lower case columns. Default True
+        :param drop_table: bool whether to drop the table if it exists. Default False. If False and the table exists, the function will throw an exception
+        :return: None
+
+        """
+        if self.tableExists(schema_table_name):
+            raise SpliceMachineException(f'Table {schema_table_name} already exists. Drop the table first or call '
+                                         f'splice.insert with the provided dataframe')
+        self.context.createTable(dataframe, schema_table_name, primary_keys=primary_keys,
+                                 create_table_options=create_table_options, to_upper=to_upper)
+        self.context.insert(dataframe, schema_table_name, to_upper=to_upper)
 
 class ExtPySpliceContext(PySpliceContext):
     """
@@ -645,7 +745,8 @@ class ExtPySpliceContext(PySpliceContext):
         return self.jvm.com.splicemachine.spark2.splicemachine.SplicemachineContext(
             self.jdbcurl, self.kafkaServers, self.kafkaPollTimeout)
 
-    def __init__(self, sparkSession, JDBC_URL=None, kafkaServers='localhost:9092', kafkaPollTimeout=20000, _unit_testing=False):
+    def __init__(self, sparkSession, JDBC_URL=None, kafkaServers='localhost:9092',
+                 kafkaPollTimeout=20000, _unit_testing=False):
         """
         :param JDBC_URL: (string) The JDBC URL Connection String for your Splice Machine Cluster
         :param sparkSession: (sparkContext) A SparkSession object for talking to Spark
