@@ -116,8 +116,8 @@ class FeatureStore:
         # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
         # a null training context that can be tracked with a "name" (although the name is None). This is a likely case
         # for (non time based) clustering use cases.
-        null_tx = object
-        null_tx.name = None
+        null_tx = TrainingContext(pk_columns=[], ts_column=None, label_column=None, context_sql=None, name=None,
+                                  description=None)
         ts = TrainingSet(training_context=null_tx, features=features)
         if hasattr(self, 'mlflow_ctx'):
             self.mlflow_ctx._active_training_set: TrainingSet = ts
