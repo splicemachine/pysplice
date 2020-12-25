@@ -68,6 +68,7 @@ class FeatureStore:
     def get_feature_dataset(self, features: Union[List[Feature], List[str]]):
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering)
+
         :param features: List of Features or strings of feature names
         :return: Spark DF
         """
