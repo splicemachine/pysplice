@@ -67,7 +67,12 @@ class FeatureStore:
 
     def get_feature_dataset(self, features: Union[List[Feature], List[str]]):
         """
-        Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering)
+        Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
+        This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
+        fs.get_training_set(). The dataset's metadata and features used will be tracked in mlflow automatically (see
+        get_training_set for more details).
+
+
 
         :param features: List of Features or strings of feature names
         :return: Spark DF
@@ -298,7 +303,15 @@ class FeatureStore:
     def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]], start_time: Optional[datetime] = None,
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
-        Returns the training set as a Spark Dataframe
+        Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
+        the feature store with mlflow using mlflow.register_feature_store(fs)), the training dataset's metadata,
+        including:
+            * Training context
+            * Selected features
+            * Start time
+            * End time
+        will be tracked in mlflow automatically. This tracking will occur in the current run (if there is an active run)
+        or in the next run that is started after calling this function (if no run is currently active).
 
         :param training_context: (str) The name of the registered training context
         :param features: (List[str] OR List[Feature]) the list of features from the feature store to be included in the training.
