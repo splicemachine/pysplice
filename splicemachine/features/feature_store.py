@@ -65,14 +65,12 @@ class FeatureStore:
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
-    def get_feature_dataset(self, features: Union[List[Feature], List[str]]):
+    def get_feature_dataset(self, features: Union[List[Feature], List[str]]) -> SparkDF:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
         fs.get_training_set(). The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
-
-
 
         :param features: List of Features or strings of feature names
         :return: Spark DF
