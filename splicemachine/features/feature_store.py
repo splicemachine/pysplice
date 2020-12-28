@@ -69,7 +69,7 @@ class FeatureStore:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
-        :meth:`~splicemachine.features.FeatureStore.get_training_set`. The dataset's metadata and features used will be tracked in mlflow automatically (see
+        :meth:`~splicemachine.features.FeatureStore.get_training_set`_ . The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
 
         :param features: List of Features or strings of feature names
@@ -202,7 +202,7 @@ class FeatureStore:
         :param as_list: Whether or not to return a list of features. Default False
         :return: SparkDF or List[Feature] The list of Feature objects or Spark Dataframe of features and their metadata. Note, this is not the Feature
         values, simply the describing metadata about the features. To create a training dataset with Feature values, see
-        :meth:`~splicemachine.features.FeatureStore.get_training_set` or :meth:`~splicemachine.features.FeatureStore.get_feature_dataset`
+        :meth:`~splicemachine.features.FeatureStore.get_training_set`_ or :meth:`~splicemachine.features.FeatureStore.get_feature_dataset`_
         """
         # If they don't pass in feature names, get all features
         where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
@@ -313,7 +313,7 @@ class FeatureStore:
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
-        the feature store with mlflow using :meth:`~splicemachine.mlflow_support.register_training_context`
+        the feature store with mlflow using :meth:`~splicemachine.mlflow_support.register_training_context`_
         the training dataset's metadata,
         including:
             * Training context
@@ -581,7 +581,7 @@ class FeatureStore:
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
-        The feature set must have already been created with :meth:`~splicemachine.features.FeatureStore.create_feature_set`
+        The feature set must have already been created with :meth:`~splicemachine.features.FeatureStore.create_feature_set`_
 
         :param schema_name: The schema of the created feature set
         :param table_name: The table of the created feature set
