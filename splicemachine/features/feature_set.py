@@ -42,8 +42,11 @@ class FeatureSet:
         return features
 
     def remove_feature(self, feature: Feature or str):
-        #TODO
-        pass
+        """
+        Removes a Feature from the Feature Set. This is not yet implemented
+        :param feature: The feature to remove
+        """
+        raise NotImplementedError
 
     def get_pk_schema_str(self):
         return ','.join([f'\n\t{k} {self.primary_keys[k]}' for k in self.primary_keys])

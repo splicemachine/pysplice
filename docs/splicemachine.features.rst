@@ -41,7 +41,7 @@ This describes the Python representation of a Feature Set. A feature set is a da
 
 .. automodule:: splicemachine.features.feature_set
    :members:
-   :undoc-members:
+   :no-undoc-members:
    :show-inheritance:
 
 
@@ -58,7 +58,8 @@ This describes the Python representation of a Feature. A feature is a column of 
 splicemachine.features.training_context
 ----------------------------------
 
-This describes the Python representation of a Training Context. A Training Context is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that context
+This describes the Python representation of a Training Context. A Training Context is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that context.
+You can see the contents of a TrainingContext by printing it, returning it, or calling it's __dict__ function (tcx.__dict__)
 
 .. automodule:: splicemachine.features.training_context
    :members:

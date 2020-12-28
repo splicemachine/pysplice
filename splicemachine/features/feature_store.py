@@ -69,13 +69,15 @@ class FeatureStore:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
-        fs.get_training_set(). The dataset's metadata and features used will be tracked in mlflow automatically (see
+        :func:`~splicemachine.features.FeatureStore.get_training_set`. The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
 
         :param features: List of Features or strings of feature names
-            * NOTE: The Features Sets which the list of Features come from must have a common join (context) key,
-            otherwise the function will fail. If there is no common join key, it is recommended to
-            create a Training Context to specify the join conditions.
+            :NOTE:
+                .. code-block::text
+                    The Features Sets which the list of Features come from must have a common join (context) key,
+                    otherwise the function will fail. If there is no common join key, it is recommended to
+                    create a Training Context to specify the join conditions.
 
         :return: Spark DF
         """
@@ -197,7 +199,9 @@ class FeatureStore:
 
         :param names: The list of feature names
         :param as_list: Whether or not to return a list of features. Default False
-        :return: The list of features or Spark Dataframe
+        :return: The list of Feature objects or Spark Dataframe of features and their metadata. Note, this is not the Feature
+        values, simply the describing metadata about the features. To create a training dataset with Feature values, see
+        :func:`~splicemachine.features.FeatureStore.get_training_set` or :func:`~splicemachine.features.FeatureStore.get_feature_dataset`
         """
         # If they don't pass in feature names, get all features
         where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
@@ -222,8 +226,10 @@ class FeatureStore:
 
         :param training_context: (str) The name of the registered training context
         :param features: (List[str]) the list of features from the feature store to be included in the training
-            * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
-             desired features
+            :NOTE:
+                .. code-block:: text
+                    This function will error if the context SQL is missing a context key required to retrieve the\
+                    desired features
         :param include_insert: (Optional[bool]) determines whether insert into model table is included in the SQL statement
         :return : (str)
         """
@@ -273,10 +279,10 @@ class FeatureStore:
 
     def get_feature_context_keys(self, features: List[str]) -> Dict[str, List[str]]:
         """
-        Returns a dictionary mapping each individual feature to its primary key(s)
+        Returns a dictionary mapping each individual feature to its primary key(s). This function is not yet implemented.
 
         :param features: (List[str]) The list of features to get primary keys for
-        :return: Dict[str, List[str]]
+        :return: Dict[str, List[str]] A mapping of {feature name: [pk1, pk2, etc]}
         """
         pass
 
@@ -285,7 +291,7 @@ class FeatureStore:
         Returns the available features for the given a training context name
 
         :param training_context: The name of the training context
-        :return: A list of available features
+        :return: A list of available Feature objects
         """
         where = f"tc.Name='{training_context}'"
 
@@ -306,7 +312,8 @@ class FeatureStore:
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
-        the feature store with mlflow using mlflow.register_feature_store(fs)), the training dataset's metadata,
+        the feature store with mlflow using :func:`~splicemachine.mlflow_support.register_training_context`
+        the training dataset's metadata,
         including:
             * Training context
             * Selected features
@@ -318,14 +325,20 @@ class FeatureStore:
         :param training_context: (str) The name of the registered training context
         :param features: (List[str] OR List[Feature]) the list of features from the feature store to be included in the training.
             If a list of strings is passed in it will be converted to a list of Feature
-            * NOTE: This function will error if the context SQL is missing a context key required to retrieve the\
-             desired features
+            :NOTE:
+                .. code-block:: text
+                    This function will error if the context SQL is missing a context key required to retrieve the
+                    desired features
         :param start_time: (Optional[datetime]) The start time of the query (how far back in the data to start). Default None
-            * NOTE: If start_time is None, query will start from beginning of history
+            :NOTE:
+                .. code-block:: text
+                    If start_time is None, query will start from beginning of history
         :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
-            * NOTE: If end_time is None, query will get most recently available data
+            :NOTE:
+                .. code-block::text
+                    If end_time is None, query will get most recently available data
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
-        :return: Optional[SparkDF, str]
+        :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
         features = self.get_features_by_name(names=features, as_list=True) if all([isinstance(i,str) for i in features]) else features
@@ -567,7 +580,8 @@ class FeatureStore:
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
-        The feature set must have already been created with create_feature_set
+        The feature set must have already been created with :func:`~splicemachine.features.FeatureStore.create_feature_set`
+
         :param schema_name: The schema of the created feature set
         :param table_name: The table of the created feature set
         """

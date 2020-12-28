@@ -13,11 +13,17 @@ If you are running inside of the Splice Machine Cloud Service in a Jupyter Noteb
 External Installation
 ---------------------
 
-If you would like to install outside of the K8s cluster (and use the ExtPySpliceContext), you can install with
+If you would like to install outside of the K8s cluster (and use the ExtPySpliceContext), you can install the stable build with
 
 .. code-block:: sh
 
-    sudo pip install pysplice
+    sudo pip install git+http://www.github.com/splicemachine/pysplice@2.3.0-k8
+
+Or latest with
+
+.. code-block:: sh
+
+    sudo pip install git+http://www.github.com/splicemachine/pysplice
 
 Usage 
 -----

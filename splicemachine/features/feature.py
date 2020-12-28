@@ -13,18 +13,26 @@ class Feature:
         self.__dict__.update(args)
 
     def is_categorical(self):
+        """
+        Returns if the type of this feature is categorical
+        """
         return self.feature_type == FeatureType.categorical
 
     def is_continuous(self):
+        """
+        Returns if the type of this feature is continuous
+        """
         return self.feature_type == FeatureType.continuous
 
     def is_ordinal(self):
+        """
+        Returns if the type of this feature is ordinal
+        """
         return self.feature_type == FeatureType.ordinal
 
     def _register_metadata(self, splice):
         """
         Registers the feature's existence in the feature store
-        :return: None
         """
         feature_sql = SQL.feature_metadata.format(
             feature_set_id=self.feature_set_id, name=self.name, desc=self.description,
