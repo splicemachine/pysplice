@@ -16,7 +16,7 @@ limitations under the License.
 
 from setuptools import find_packages, setup
 
-REQUIREMENTS_FILE = "requirements.txt"
+REQUIREMENTS_FILE = "requirements-docs.txt"
 
 with open(REQUIREMENTS_FILE, "r") as dependencies_file:
     DEPENDENCIES = dependencies_file.readlines()
