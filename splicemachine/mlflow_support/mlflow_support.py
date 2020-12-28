@@ -734,11 +734,11 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     :param service_port: (default 80) the port that the prediction service runs on internally in the cluster
     :param autoscaling_enabled: (default False) whether or not to provision a Horizontal Pod Autoscaler to provision
             pods dynamically
-    :param max_replicas (default 2) [USED IF AUTOSCALING ENABLED] max number of pods to scale up to
+    :param max_replicas: (default 2) [USED IF AUTOSCALING ENABLED] max number of pods to scale up to
     :param target_cpu_utilization: (default 50) [USED IF AUTOSCALING ENABLED] the cpu utilization to scale up to
             new pods on
     :param disable_nginx: (default False) disable nginx inside of the pod (recommended)
-    :param gunicorn_workers: (default 1) [MUST BE 1 FOR SPARK TO PREVENT OOM] Number of web workers.
+    :param gunicorn_workers: (default 1) [MUST BE 1 FOR SPARK ML models TO PREVENT OOM] Number of web workers.
     :param resource_requests_enabled: (default False) whether or not to enable Kubernetes resource requests
     :param resource_limits_enabled: (default False) whether or not to enable Kubernetes resource limits
     :param cpu_request: (default 0.5) [USED IF RESOURCE REQUESTS ENABLED] number of CPU to request
