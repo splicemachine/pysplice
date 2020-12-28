@@ -34,7 +34,7 @@ This section covers importing and instantiating the Native Spark DataSource
    
     .. tab:: Native Spark DataSource
 
-        To use the Native Spark DataSource inside of the cloud service, first create a Spark Session and then import your PySpliceContext
+        To use the Native Spark DataSource inside of the `cloud service<https://cloud.splicemachine.io/register?utm_source=pydocs&utm_medium=header&utm_campaign=sandbox>`_., first create a Spark Session and then import your PySpliceContext
 
         .. code-block:: Python
 
