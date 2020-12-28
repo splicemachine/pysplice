@@ -41,9 +41,17 @@ class FeatureSet:
                 features.append(Feature(**f))
         return features
 
+    def is_deployed(self):
+        """
+        Returns whether or not this Feature Set has been deployed (the schema.table has been created in the database)
+        :return: (bool) True if the Feature Set is deployed
+        """
+        return self.deployed
+
     def remove_feature(self, feature: Feature or str):
         """
         Removes a Feature from the Feature Set. This is not yet implemented
+
         :param feature: The feature to remove
         """
         raise NotImplementedError

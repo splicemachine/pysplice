@@ -35,7 +35,7 @@ class FeatureStore:
         :param feature_set_ids: A list of feature set IDs. If none will return all FeatureSets
         :param _filter: Dictionary of filters to apply to the query. This filter can be on any attribute of FeatureSets.
             If None, will return all FeatureSets
-        :return: List[FeatureSet]
+        :return: List[FeatureSet] the list of Feature Sets
         """
         feature_sets = []
         feature_set_ids = feature_set_ids or []
@@ -69,7 +69,7 @@ class FeatureStore:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
-        :func:`~splicemachine.features.FeatureStore.get_training_set`. The dataset's metadata and features used will be tracked in mlflow automatically (see
+        :meth:`~splicemachine.features.FeatureStore.get_training_set`. The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
 
         :param features: List of Features or strings of feature names
@@ -136,13 +136,14 @@ class FeatureStore:
 
     def remove_training_context(self, override=False):
         """
+        Note: This function is not yet implemented.
         Removes a training context. This will run 2 checks.
-        1. See if the training context is being used by a model in a deployment. If this is the case, the function will fail, always.
-        2. See if the training context is being used in any mlflow runs (non-deployed models). This will fail and return
-        a warning Telling the user that this training context is being used in mlflow runs (and the run_ids) and that
-        they will need to "override" this function to forcefully remove the training context.
+            1. See if the training context is being used by a model in a deployment. If this is the case, the function will fail, always.
+            2. See if the training context is being used in any mlflow runs (non-deployed models). This will fail and return
+            a warning Telling the user that this training context is being used in mlflow runs (and the run_ids) and that
+            they will need to "override" this function to forcefully remove the training context.
         """
-        pass
+        raise NotImplementedError
 
     def get_training_context(self, training_context: str) -> TrainingContext:
         """
@@ -199,9 +200,9 @@ class FeatureStore:
 
         :param names: The list of feature names
         :param as_list: Whether or not to return a list of features. Default False
-        :return: The list of Feature objects or Spark Dataframe of features and their metadata. Note, this is not the Feature
+        :return: SparkDF or List[Feature] The list of Feature objects or Spark Dataframe of features and their metadata. Note, this is not the Feature
         values, simply the describing metadata about the features. To create a training dataset with Feature values, see
-        :func:`~splicemachine.features.FeatureStore.get_training_set` or :func:`~splicemachine.features.FeatureStore.get_feature_dataset`
+        :meth:`~splicemachine.features.FeatureStore.get_training_set` or :meth:`~splicemachine.features.FeatureStore.get_feature_dataset`
         """
         # If they don't pass in feature names, get all features
         where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
@@ -231,7 +232,7 @@ class FeatureStore:
                     This function will error if the context SQL is missing a context key required to retrieve the\
                     desired features
         :param include_insert: (Optional[bool]) determines whether insert into model table is included in the SQL statement
-        :return : (str)
+        :return: (str) the parameterized feature vector SQL
         """
 
         # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
@@ -312,7 +313,7 @@ class FeatureStore:
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
-        the feature store with mlflow using :func:`~splicemachine.mlflow_support.register_training_context`
+        the feature store with mlflow using :meth:`~splicemachine.mlflow_support.register_training_context`
         the training dataset's metadata,
         including:
             * Training context
@@ -580,7 +581,7 @@ class FeatureStore:
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
-        The feature set must have already been created with :func:`~splicemachine.features.FeatureStore.create_feature_set`
+        The feature set must have already been created with :meth:`~splicemachine.features.FeatureStore.create_feature_set`
 
         :param schema_name: The schema of the created feature set
         :param table_name: The table of the created feature set
