@@ -73,6 +73,10 @@ class FeatureStore:
         get_training_set for more details).
 
         :param features: List of Features or strings of feature names
+            * NOTE: The Features Sets which the list of Features come from must have a common join (context) key,
+            otherwise the function will fail. If there is no common join key, it is recommended to
+            create a Training Context to specify the join conditions.
+
         :return: Spark DF
         """
         features = self.get_features_by_name(names=features, as_list=True) \
