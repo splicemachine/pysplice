@@ -1,1 +1,1 @@
-from .retrainer import Retrainer
+from .retrainer import AbstractRetrainer
