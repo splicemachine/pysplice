@@ -46,15 +46,15 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-import cloudpickle
 from importlib import import_module
 from io import BytesIO
 from os import path
 from sys import version as py_version, stderr
 from tempfile import TemporaryDirectory, NamedTemporaryFile
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, ClassVar
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import cloudpickle
 import gorilla
 import h2o
 import mlflow
@@ -63,6 +63,7 @@ import pyspark
 import requests
 import sklearn
 import yaml
+from cron_descriptor import get_description, FormatException
 from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
@@ -72,7 +73,6 @@ from sklearn.base import BaseEstimator as ScikitModel
 from tensorflow import __version__ as tf_version
 from tensorflow.keras import Model as KerasModel
 from tensorflow.keras import __version__ as keras_version
-from cron_descriptor import get_description, FormatException
 
 from splicemachine import SpliceMachineException
 from splicemachine.features import FeatureStore
@@ -956,42 +956,53 @@ def _get_deployed_models() -> PandasDF:
     ).toPandas()
 
 
-
 @_mlflow_patch('schedule_retrain')
-def _schedule_retrain(retrainer, name):
+def _schedule_retrain(retrainer_class: ClassVar, name: str, run_id: str, cron_exp: str, conda_env: str = None):
     """
     Schedule a retraining of a model
-    :param retrainer: a splicemachine.mlflow_support.Retrainer containing the retraining logic
+    :param retrainer_class: a splicemachine.mlflow_support.Retrainer (non-instantiated class) containing the retraining logic
     :param name: The name of the retrainer. This must be unique for a given run_id (if you've already created a retrainer
-    for a given run, and you'd like to create a new one, this name must differ from the last one.
+    for a given run, and you'd like to create a new one, this name must differ from the last one).
+    :param cron_exp: a cron expression for your retrainer to run (see: https://crontab.guru/)
+    :param conda_env: path to a local conda file. If not supplied, the conda file associated with the model logged
+        (under run id specified will be used instead.
     :return: The job ID of the retraining creation
     """
-    if not retrainer.has_conda and not mlflow.get_model_name(run_id=retrainer.run_id):
-            raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified."
-                                         "If there is no model logged with this run, you must provide a conda.yaml"
-                                         "file to this function. If a model is logged, ensure it was logged with a "
-                                         "conda.yaml")
-    elif retrainer.has_conda:
-        mlflow.log_artifact(retrainer.conda_env, run_uuid=retrainer.run_id, name='conda-retrain.yaml')
+    try:
+        print(f"You've created a retrainer scheduled for {get_description(cron_exp)}")
+    except FormatException:
+        raise Exception(f'The provided cron "{cron_exp}" is invalid. See above for more information')
 
-    conda_artifact = 'conda-retrain.yaml' if retrainer.has_conda else 'conda.yaml'
+    if not conda_env and not mlflow.get_model_name(run_id=run_id):
+        raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified."
+                                     "If there is no model logged with this run, you must provide a conda.yaml"
+                                     "file to this function. If a model is logged, ensure it was logged with a "
+                                     "conda.yaml")
+    elif conda_env:
+        mlflow.log_artifact(conda_env, run_uuid=run_id, name='conda-retrain.yaml')
+
+    conda_artifact = 'conda-retrain.yaml' if conda_env else 'conda.yaml'
+
+    retrainer_class.CRON_EXP = cron_exp
+    retrainer_class.PARENT_RUN_ID = run_id
 
     print("Saving Human Readable Version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.py', mode='w+') as tmp_hrf:
-        tmp_hrf.write(inspect.getsource(retrainer.retrain))
-        mlflow.log_artifact(tmp_hrf.name, run_uuid=retrainer.run_id, name='retrain_func.py')
+        tmp_hrf.write(inspect.getsource(retrainer_class.retrain))
+        mlflow.log_artifact(tmp_hrf.name, run_uuid=run_id, name='retrain_func.py')
 
     print("Saving machine readable version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.pkl') as tmp_bin:
-        tmp_bin.write(cloudpickle.dumps(retrainer))
-        mlflow.log_artifact(tmp_bin.name, run_uuid=retrainer.run_id, name='retrainer.pkl')
+        tmp_bin.write(cloudpickle.dumps(retrainer_class))
+        mlflow.log_artifact(tmp_bin.name, run_uuid=run_id, name='retrainer.pkl')
 
     print("Submitting Job to the Director")
-    payload = dict(cron_exp=retrainer.cron_exp, run_id=retrainer.run_id, conda_artifact=conda_artifact,
-                   retrainer_artifact='retrainer.pkl', entity_id=retrainer.run_id,
+    payload = dict(cron_exp=cron_exp, conda_artifact=conda_artifact,
+                   retrainer_artifact='retrainer.pkl', entity_id=run_id,
                    handler_name='SCHEDULE_RETRAIN', name=name)
 
     return __initiate_job(payload, '/api/rest/initiate')
+
 
 def apply_patches():
     """

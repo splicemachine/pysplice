@@ -1,24 +1,23 @@
-from typing import List, Dict, Optional, Union
-from datetime import datetime
 import re
+from datetime import datetime
+from typing import List, Dict, Optional, Union
 
-from IPython.display import display
 import pandas as pd
-
-from pyspark.sql.dataframe import DataFrame as SparkDF
+from IPython.display import display
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
-from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.regression import RandomForestRegressor
+from pyspark.sql.dataframe import DataFrame as SparkDF
 
 from splicemachine import SpliceMachineException
-from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
-from .training_set import TrainingSet
-
+from splicemachine.spark import PySpliceContext
 from .constants import SQL, Columns, FeatureType
 from .training_context import TrainingContext
+from .training_set import TrainingSet
 from .utils import clean_df
+
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
@@ -122,7 +121,8 @@ class FeatureStore:
         :return: The list of features
         """
         # Format feature names into quotes strings for search
-        df = self.splice_ctx.df(SQL.get_features_by_name.format(feature_names=",".join([f"'{i.upper()}'" for i in names])))
+        df = self.splice_ctx.df(
+            SQL.get_features_by_name.format(feature_names=",".join([f"'{i.upper()}'" for i in names])))
         df = clean_df(df, Columns.feature)
         features = []
         for feat in df.collect():
@@ -218,10 +218,11 @@ class FeatureStore:
         return features
 
     def get_feature_description(self):
-        #TODO
+        # TODO
         raise NotImplementedError
 
-    def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]], start_time: Optional[datetime] = None,
+    def get_training_set(self, training_context: str, features: Union[List[Feature], List[str]],
+                         start_time: Optional[datetime] = None,
                          end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe
@@ -240,7 +241,7 @@ class FeatureStore:
         :return: Optional[SparkDF, str]
         """
 
-        features = self.get_features_by_name(features) if all([isinstance(i,str) for i in features]) else features
+        features = self.get_features_by_name(features) if all([isinstance(i, str) for i in features]) else features
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
@@ -295,7 +296,7 @@ class FeatureStore:
         # Link this to mlflow for model deployment
         if hasattr(self, 'mlflow_ctx'):
             ts = TrainingSet(training_context=tctx, features=features,
-                                                               start_time=start_time, end_time=end_time)
+                             start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
 
@@ -373,7 +374,7 @@ class FeatureStore:
         :return:
         """
         fset: FeatureSet = \
-        self.get_feature_sets(_filter={'table_name': feature_set_table, 'schema_name': feature_set_schema})[0]
+            self.get_feature_sets(_filter={'table_name': feature_set_table, 'schema_name': feature_set_schema})[0]
         self._validate_feature(name)
         f = Feature(name=name, description=description, feature_data_type=feature_data_type,
                     feature_type=feature_type, tags=tags, feature_set_id=fset.feature_set_id)
@@ -485,7 +486,8 @@ class FeatureStore:
         :return: None
         """
         fset = self.get_feature_sets(_filter={'schema_name': feature_set_schema, 'table_name': feature_set_table})
-        if not fset: raise SpliceMachineException(f"Feature Set {feature_set_schema}.{feature_set_table} not found. Check name and try again.")
+        if not fset: raise SpliceMachineException(
+            f"Feature Set {feature_set_schema}.{feature_set_table} not found. Check name and try again.")
         fset = fset[0]
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
         print('\n\tAvailable features:')
@@ -511,14 +513,15 @@ class FeatureStore:
         :return: None
         """
         tcx = self.get_training_contexts(_filter={'name': training_context})
-        if not tcx: raise SpliceMachineException(f"Training context {training_context} not found. Check name and try again.")
+        if not tcx: raise SpliceMachineException(
+            f"Training context {training_context} not found. Check name and try again.")
         tcx = tcx[0]
         print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print(f'Available features in {tcx.name}:')
         feats: List[Feature] = self.get_available_features(tcx.name)
         # Grab the feature set info and their corresponding names (schema.table) for the display table
         feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
-        feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
+        feat_sets: Dict[int, str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
         for f in feats:
             f.feature_set_name = feat_sets[f.feature_set_id]
         display(pd.DataFrame(f.__dict__ for f in feats))
@@ -612,7 +615,8 @@ class FeatureStore:
             model = self.__get_pipeline(train_df, remaining_features, label, model_type)
             print('Getting feature importance')
             feature_importances = self.__get_feature_importance(model.stages[-1].featureImportances,
-                                                                model.transform(train_df), "features").head(num_features)
+                                                                model.transform(train_df), "features").head(
+                num_features)
             remaining_features_and_label = list(feature_importances['name'].values) + [label]
             train_df = train_df.select(*remaining_features_and_label)
             remaining_features = [f for f in remaining_features if f.name in feature_importances['name'].values]
