@@ -2,7 +2,7 @@ import time
 from abc import ABC, abstractmethod
 
 
-class Retrainer(ABC):
+class AbstractRetrainer(ABC):
     """
     Splice Machine class for model retraining
     """
