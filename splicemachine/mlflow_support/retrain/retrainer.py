@@ -30,10 +30,10 @@ class AbstractRetrainer(ABC):
         self.create_spark()
         print("Creating Splice Context...")
         self.create_splice()
-        print("Creating MLFlow API...")
-        self.create_mlflow()
         print("Creating Feature Store API...")
         self.create_feature_store()
+        print("Creating MLFlow API...")
+        self.create_mlflow()
 
     def create_spark(self):
         """
@@ -54,8 +54,8 @@ class AbstractRetrainer(ABC):
         mlflow_support.main()
         global mlflow
         mlflow = mlflow_support.mlflow
-        mlflow.register_splice_context(splice)
-        mlflow.register_feature_store(fs)
+        mlflow.register_splice_context(self.splice)
+        mlflow.register_feature_store(self.fs)
         self.mlflow = mlflow
 
     def create_splice(self):
