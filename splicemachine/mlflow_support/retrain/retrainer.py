@@ -26,10 +26,14 @@ class AbstractRetrainer(ABC):
         """
         Internal method to create contexts for retraining
         """
+        print("Starting Spark...")
         self.create_spark()
+        print("Creating Splice Context...")
         self.create_splice()
-        self.create_feature_store()
+        print("Creating MLFlow API...")
         self.create_mlflow()
+        print("Creating Feature Store API...")
+        self.create_feature_store()
 
     def create_spark(self):
         """
@@ -57,7 +61,7 @@ class AbstractRetrainer(ABC):
     def create_splice(self):
         """
         Create a PySpliceContext for retraining. Its creation can be 
-        overriden by subclassing the `Retrainer` and redefining the function,
+        overriden by subclassing the `AbstractRetrainer` and redefining the function,
         which is required if you would like to establish a connection to a external
         Splice cluster using the ExtPySpliceContext.
         """
@@ -69,21 +73,21 @@ class AbstractRetrainer(ABC):
     def create_feature_store(self):
         """
         Create a FeatureStore object for retraining. Its creation
-        can be overriden by subclassing the `Retrainer` and redefining the function
+        can be overriden by subclassing the `AbstractRetrainer` and redefining the function
         """
         from splicemachine.features import FeatureStore
         global fs
         fs = FeatureStore(splice)
         self.fs = fs
 
-    @staticmethod
-    def test(run_id: str = None):
+    @classmethod
+    def test(cls, run_id: str = None):
         """
         Test the logic of your retraining (bypassing cron schedule)
         :param run_id: parent run id for testing purposes
         """
-        retrainer = Retrainer()
-        Retrainer.PARENT_RUN_ID = run_id
+        retrainer = cls()
+        AbstractRetrainer.PARENT_RUN_ID = run_id
         start_time = time.time()
         retrainer.retrain()
         end_time = time.time()
