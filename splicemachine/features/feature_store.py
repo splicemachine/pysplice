@@ -480,7 +480,12 @@ class FeatureStore:
         :param table_name: The feature set table name to add the feature to
         :param name: The feature name
         :param feature_data_type: The datatype of the feature. Must be a valid SQL datatype
-        :param feature_type: splicemachine.features.FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous]
+        :param feature_type: splicemachine.features.FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous].
+            You can see available feature types by running
+            .. code-block::text
+                    from splicemachine.features import FeatureType
+                    print(FeatureType.get_valid())
+
         :param desc: The (optional) feature description (default None)
         :param tags: (optional) List of (str) tag words (default None)
         :return:
