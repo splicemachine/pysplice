@@ -313,8 +313,9 @@ class FeatureStore:
         #TODO
         raise NotImplementedError
 
-    def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]], start_time: Optional[datetime] = None,
-                         end_time: Optional[datetime] = None, return_sql: bool = False) -> SparkDF or str:
+    def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]] = None,
+                         start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
+                         return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`.mlflow_support.register_training_context`
@@ -329,7 +330,7 @@ class FeatureStore:
 
         :param training_context: (str) The name of the registered training context
         :param features: (List[str] OR List[Feature]) the list of features from the feature store to be included in the training.
-            If a list of strings is passed in it will be converted to a list of Feature
+            If a list of strings is passed in it will be converted to a list of Feature. If not provided will return all available features.
 
             :NOTE:
                 .. code-block:: text
@@ -355,7 +356,7 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
-        features = self._process_features(features)
+        features = self._process_features(features) if features else self.get_training_context_features(training_context)
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
