@@ -94,7 +94,7 @@ class FeatureSet:
                                                                          feature_set_id=self.feature_set_id))
 
 
-    def deploy(self):
+    def deploy(self, verbose=False):
         """
         Deploys the current feature set. Equivalent to calling fs.deploy(schema_name, table_name)
         """
@@ -117,15 +117,15 @@ class FeatureSet:
             feature_list=self.get_feature_column_str(), old_pk_cols=old_pk_cols, old_feature_cols=old_feature_cols)
 
         print('Creating Feature Set...', end=' ')
-        # print('\n', feature_set_sql, '\n')
+        if verbose: print('\n', feature_set_sql, '\n')
         self.splice_ctx.execute(feature_set_sql)
         print('Done.')
         print('Creating Feature Set History...', end=' ')
-        # print('\n', history_sql, '\n')
+        if verbose: print('\n', history_sql, '\n')
         self.splice_ctx.execute(history_sql)
         print('Done.')
         print('Creating Historian Trigger...', end=' ')
-        # print('\n', trigger_sql, '\n')
+        if verbose: print('\n', trigger_sql, '\n')
         self.splice_ctx.execute(trigger_sql)
         print('Done.')
         print('Updating Metadata...')
