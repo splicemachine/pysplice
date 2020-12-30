@@ -16,9 +16,8 @@ from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
 
-from .constants import SQL, Columns, FeatureType
+from .constants import SQL, FeatureType
 from .training_context import TrainingContext
-from .utils import clean_df
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
@@ -54,8 +53,6 @@ class FeatureStore:
         sql = sql.rstrip('AND')
 
         feature_set_rows = self.splice_ctx.df(sql)
-        cols = Columns.feature_set
-        feature_set_rows = clean_df(feature_set_rows, cols)
 
         for fs in feature_set_rows.collect():
             d = fs.asDict()
@@ -174,10 +171,6 @@ class FeatureStore:
             sql = sql.rstrip('and')
 
         training_context_rows = self.splice_ctx.df(sql)
-
-        cols = Columns.training_context
-
-        training_context_rows = clean_df(training_context_rows, cols)
 
         for tc in training_context_rows.collect():
             t = tc.asDict()
@@ -302,7 +295,6 @@ class FeatureStore:
 
         df = self.splice_ctx.df(SQL.get_training_context_features.format(where=where))
 
-        df = clean_df(df, Columns.feature)
         features = []
         for feat in df.collect():
             f = feat.asDict()
@@ -415,7 +407,7 @@ class FeatureStore:
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
 
-        return sql if return_sql else clean_df(self.splice_ctx.df(sql), cols)
+        return sql if return_sql else self.splice_ctx.df(sql)
 
     def list_training_sets(self) -> Dict[str, Optional[str]]:
         """
