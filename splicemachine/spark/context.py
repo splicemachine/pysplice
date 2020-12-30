@@ -89,6 +89,18 @@ class PySpliceContext:
         # You need to re-generate the dataframe for the capital letters to take effect
         return dataframe.rdd.toDF(dataframe.schema)
 
+    def toLower(self, dataframe):
+        """
+        Returns a dataframe with all of the columns in lowercase
+
+        :param dataframe: (Dataframe) The dataframe to convert to lowercase
+        """
+        for s in dataframe.schema:
+            s.name = s.name.lower()
+        # You need to re-generate the dataframe for the capital letters to take effect
+        return dataframe.rdd.toDF(dataframe.schema)
+
+
     def replaceDataframeSchema(self, dataframe, schema_table_name):
         """
         Returns a dataframe with all column names replaced with the proper string case from the DB table
@@ -200,7 +212,7 @@ class PySpliceContext:
         else:
             self.context.dropTable(schema_and_or_table_name)
 
-    def df(self, sql):
+    def df(self, sql, to_lower=False):
         """
         Return a Spark Dataframe from the results of a Splice Machine SQL Query
 
@@ -210,9 +222,11 @@ class PySpliceContext:
                 df = splice.df('SELECT * FROM MYSCHEMA.TABLE1 WHERE COL2 > 3')
 
         :param sql: (str) SQL Query (eg. SELECT * FROM table1 WHERE col2 > 3)
+        :param to_lower: Whether or not to convert column names from the dataframe to lowercase
         :return: (Dataframe) A Spark DataFrame containing the results
         """
-        return DataFrame(self.context.df(sql), self.spark_sql_context)
+        df = DataFrame(self.context.df(sql), self.spark_sql_context)
+        return self.toLower(df) if to_lower else df
 
     def insert(self, dataframe, schema_table_name, to_upper=True, create_table=False):
         """

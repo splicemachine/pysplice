@@ -52,7 +52,7 @@ class FeatureStore:
             sql += f" fset.{fl}='{_filter[fl]}' AND"
         sql = sql.rstrip('AND')
 
-        feature_set_rows = self.splice_ctx.df(sql)
+        feature_set_rows = self.splice_ctx.df(sql, to_lower=True)
 
         for fs in feature_set_rows.collect():
             d = fs.asDict()
@@ -170,7 +170,7 @@ class FeatureStore:
                 sql += f"tc.{k}='{_filter[k]}' and"
             sql = sql.rstrip('and')
 
-        training_context_rows = self.splice_ctx.df(sql)
+        training_context_rows = self.splice_ctx.df(sql, to_lower=True)
 
         for tc in training_context_rows.collect():
             t = tc.asDict()
@@ -200,7 +200,7 @@ class FeatureStore:
         """
         # If they don't pass in feature names, get all features
         where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
-        df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause))
+        df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause), to_lower=True)
         if not as_list: return df
 
         features = []
@@ -293,7 +293,7 @@ class FeatureStore:
         """
         where = f"tc.Name='{training_context}'"
 
-        df = self.splice_ctx.df(SQL.get_training_context_features.format(where=where))
+        df = self.splice_ctx.df(SQL.get_training_context_features.format(where=where), to_lower=True)
 
         features = []
         for feat in df.collect():
@@ -462,7 +462,7 @@ class FeatureStore:
         l = self.splice_ctx.df(SQL.get_all_features.format(name=name.upper())).count()
         assert l == 0, str
 
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name):
+        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name, re.IGNORECASE):
             raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
                                          'and can only contains letters, numbers and underscores')
 
