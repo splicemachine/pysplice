@@ -957,12 +957,13 @@ def _get_deployed_models() -> PandasDF:
 
 
 @_mlflow_patch('schedule_retrain')
-def _schedule_retrain(retrainer_class: ClassVar, name: str, run_id: str, cron_exp: str, conda_env: str = None):
+def _schedule_retrain(retrainer_class: ClassVar, name: str, cron_exp: str, run_id: str = None, conda_env: str = None):
     """
     Schedule a retraining of a model
     :param retrainer_class: a splicemachine.mlflow_support.Retrainer (non-instantiated class) containing the retraining logic
     :param name: The name of the retrainer. This must be unique for a given run_id (if you've already created a retrainer
     for a given run, and you'd like to create a new one, this name must differ from the last one).
+    :param run_id: either the active run id or an existing run id with a model logged
     :param cron_exp: a cron expression for your retrainer to run (see: https://crontab.guru/)
     :param conda_env: path to a local conda file. If not supplied, the conda file associated with the model logged
         (under run id specified will be used instead.
@@ -972,6 +973,9 @@ def _schedule_retrain(retrainer_class: ClassVar, name: str, run_id: str, cron_ex
         print(f"You've created a retrainer scheduled for {get_description(cron_exp)}")
     except FormatException:
         raise Exception(f'The provided cron "{cron_exp}" is invalid. See above for more information')
+
+    if not (run_id or mlflow.active_run()):
+        raise SpliceMachineException("Error: Either a run id must be specified or there must be an active run")
 
     if not conda_env and not mlflow.get_model_name(run_id=run_id):
         raise SpliceMachineException("Error: Retrainer run does not have a conda.yaml, one was not specified."
@@ -998,7 +1002,7 @@ def _schedule_retrain(retrainer_class: ClassVar, name: str, run_id: str, cron_ex
 
     print("Submitting Job to the Director")
     payload = dict(cron_exp=cron_exp, conda_artifact=conda_artifact,
-                   retrainer_artifact='retrainer.pkl', entity_id=run_id,
+                   retrainer_artifact='retrainer.pkl', run_id=run_id,
                    handler_name='SCHEDULE_RETRAIN', name=name)
 
     return __initiate_job(payload, '/api/rest/initiate')
