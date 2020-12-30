@@ -72,7 +72,7 @@ class FeatureStore:
         :param features: List of Features or strings of feature names
 
             :NOTE:
-                .. code-block::text
+                .. code-block:: text
 
                     The Features Sets which the list of Features come from must have a common join (context) key,
                     otherwise the function will fail. If there is no common join key, it is recommended to
@@ -340,7 +340,7 @@ class FeatureStore:
         :param end_time: (Optional[datetime]) The end time of the query (how far recent in the data to get). Default None
 
             :NOTE:
-                .. code-block::text
+                .. code-block:: text
 
                     If end_time is None, query will get most recently available data
 
@@ -489,7 +489,7 @@ class FeatureStore:
         :param feature_type: splicemachine.features.FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous].
             You can see available feature types by running
 
-            .. code-block::python
+            .. code-block:: python
 
                     from splicemachine.features import FeatureType
                     print(FeatureType.get_valid())
@@ -749,6 +749,7 @@ class FeatureStore:
         :param n: The number of features desired. Default 10
         :param verbose: The level of verbosity. 0 indicated no printing. 1 indicates printing remaining features after
             each round. 2 indicates print features and relative importances after each round. Default 0
+        :param model_type: Whether the model to test with will be a regression or classification model. Default classification
         :param log_mlflow: Whether or not to log results to mlflow as nested runs. Default false
         :param mlflow_run_name: The name of the parent run under which all subsequent runs will live. The children run
             names will be {mlflow_run_name}_{num_features}_features. ie testrun_5_features, testrun_4_features etc
