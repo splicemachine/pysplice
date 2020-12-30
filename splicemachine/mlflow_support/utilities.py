@@ -240,7 +240,7 @@ def __process_job_row(row):
     :return: The mapped row
     """
     row['JOB_ID'] = row['ID']
-    if row['MLFLOW_URL'] != 'N/A':
+    if row['MLFLOW_URL'] == 'N/A':
          row['RUN_ID'] = None
     else:
         row['RUN_ID'] = re.search(RUN_URL_REGEX, row['MLFLOW_URL']).group(1)
