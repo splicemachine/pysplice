@@ -78,7 +78,7 @@ from splicemachine import SpliceMachineException
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
-                                                    insert_artifact)
+                                                    insert_artifact, __process_job_row)
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
@@ -635,7 +635,7 @@ def __initiate_job(payload, endpoint):
     :return: (str) Response text from request
     """
     if not hasattr(mlflow, '_basic_auth'):
-        raise Exception(
+        raise SpliceMachineException(
             "You have not logged into MLManager director."
             " Please run mlflow.login_director(username, password)"
         )
@@ -955,6 +955,26 @@ def _get_deployed_models() -> PandasDF:
         """
     ).toPandas()
 
+@_mlflow_patch('list_jobs')
+def _list_jobs():
+    """
+    Lists all jobs submitted to mlflow as a Pandas dataframe
+    :return: Pandas dataframe of all the jobs
+    """
+    params = {
+        'searchPhrase': '',
+        'current': 1,
+        'rowCount': -1,
+        'sort[TIMESTAMP]': 'desc'
+    }
+    headers = {
+        'content-type': 'application/x-www-form-urlencoded'
+    }
+    url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
+    # print(requests.post(url, params, auth=mlflow._basic_auth, headers=headers).json())
+    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth, headers=headers).json()['rows'])
+    df = df.apply(__process_job_row, axis=1)
+    return df[['TIMESTAMP','USER','JOB_ID','HANDLER_NAME','STATUS','RUN_ID','TARGET_SERVICE']]
 
 @_mlflow_patch('schedule_retrain')
 def _schedule_retrain(retrainer_class: ClassVar, name: str, cron_exp: str, run_id: str = None, conda_env: str = None):
@@ -993,11 +1013,13 @@ def _schedule_retrain(retrainer_class: ClassVar, name: str, cron_exp: str, run_i
     print("Saving Human Readable Version of Retrainer as an artifact...")
     with NamedTemporaryFile(suffix='.py', mode='w+') as tmp_hrf:
         tmp_hrf.write(inspect.getsource(retrainer_class.retrain))
+        tmp_hrf.flush()
         mlflow.log_artifact(tmp_hrf.name, run_uuid=run_id, name='retrain_func.py')
 
     print("Saving machine readable version of Retrainer as an artifact...")
-    with NamedTemporaryFile(suffix='.pkl') as tmp_bin:
+    with NamedTemporaryFile(suffix='.pkl', mode='wb') as tmp_bin:
         tmp_bin.write(cloudpickle.dumps(retrainer_class))
+        tmp_bin.flush()
         mlflow.log_artifact(tmp_bin.name, run_uuid=run_id, name='retrainer.pkl')
 
     print("Submitting Job to the Director")
@@ -1014,7 +1036,7 @@ def apply_patches():
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
-               _log_feature_transformations, _get_model_name, _schedule_retrain,
+               _log_feature_transformations, _get_model_name, _schedule_retrain, _list_jobs,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
