@@ -673,7 +673,9 @@ class FeatureStore:
         feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
         for f in feats:
             f.feature_set_name = feat_sets[f.feature_set_id]
-        display(pd.DataFrame(f.__dict__ for f in feats))
+        col_order = ['name','description','feature_data_type','feature_set_name','feature_type','tags','last_update_ts',
+                     'last_update_username','compliance_level','feature_set_id','feature_id']
+        display(pd.DataFrame(f.__dict__ for f in feats)[col_order])
 
     def set_feature_description(self):
         raise NotImplementedError
