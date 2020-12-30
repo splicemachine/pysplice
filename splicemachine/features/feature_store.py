@@ -83,8 +83,7 @@ class FeatureStore:
 
         :return: Spark DF
         """
-        features = self.get_features_by_name(names=features, as_list=True) \
-            if all([isinstance(i,str) for i in features]) else features
+        features = self._process_features(features)
 
         sql = SQL.get_feature_set_join_keys.format(names=tuple([f.name for f in features]))
         fset_keys: pd.DataFrame = self.splice_ctx.df(sql).toPandas()
@@ -356,7 +355,7 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
-        features = self.get_features_by_name(names=features, as_list=True) if all([isinstance(i,str) for i in features]) else features
+        features = self._process_features(features)
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
@@ -534,7 +533,7 @@ class FeatureStore:
         # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, context_keys, tscol and label_col
         from py4j.protocol import Py4JJavaError
         try:
-            context_sql_df = self.splice_ctx.df(sql)
+            self.splice_ctx.df(sql)
         except Py4JJavaError as e:
             if 'SQLSyntaxErrorException' in str(e.java_exception):
                 raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
@@ -597,6 +596,16 @@ class FeatureStore:
             if verbose: print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
         print('Done.')
+
+    def _process_features(self, features: List[Union[Feature,str]]):
+        """
+        Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
+        :param features:
+        :return: List[Feature]
+        """
+        converted = self.get_features_by_name(names=features, as_list=True) \
+            if all([isinstance(i,str) for i in features]) else features
+        return converted
 
     def deploy_feature_set(self, schema_name, table_name):
         """
@@ -734,7 +743,7 @@ class FeatureStore:
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
 
-    def run_feature_elimination(self, df, features, label: str = 'label', n: int = 10, verbose: int = 0,
+    def run_feature_elimination(self, df, features: List[Union[str,Feature]], label: str = 'label', n: int = 10, verbose: int = 0,
                                 model_type: str = 'classification', step: int = 1, log_mlflow: bool = False,
                                 mlflow_run_name: str = None, return_importances: bool = False):
 
@@ -742,7 +751,8 @@ class FeatureStore:
         Runs feature elimination using a Spark decision tree on the dataframe passed in. Optionally logs results to mlflow
 
         :param df: The dataframe with features and label
-        :param label: the label column
+        :param features: The list of feature names (or Feature objects) to run elimination on
+        :param label: the label column names
         :param n: The number of features desired. Default 10
         :param verbose: The level of verbosity. 0 indicated no printing. 1 indicates printing remaining features after
             each round. 2 indicates print features and relative importances after each round. Default 0
@@ -753,6 +763,7 @@ class FeatureStore:
         """
 
         train_df = df
+        features = self._process_features(features)
         remaining_features = features
         rnd = 0
         mlflow_results = []
