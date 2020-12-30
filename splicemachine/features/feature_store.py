@@ -401,7 +401,7 @@ class FeatureStore:
             sql = sql.rstrip('AND')
 
         # Link this to mlflow for model deployment
-        if hasattr(self, 'mlflow_ctx'):
+        if hasattr(self, 'mlflow_ctx') and not return_sql:
             ts = TrainingSet(training_context=tctx, features=features,
                                                                start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
