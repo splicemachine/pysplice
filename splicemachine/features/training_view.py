@@ -14,7 +14,7 @@ class TrainingView:
 
 
     def __repr__(self):
-        return f'TrainingContext(' \
+        return f'TrainingView(' \
                f'PKColumns={self.pk_columns}, ' \
                f'TSColumn={self.ts_column}, ' \
                f'LabelColumn={self.label_column}, \n' \
