@@ -65,8 +65,8 @@ To see the full contents of your Feature, you can print, return, or .__dict__ yo
 splicemachine.features.training_view
 ----------------------------------
 
-This describes the Python representation of a Training Context. A Training Context is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that context.
-To see the full contents of your Training Context, you can print, return, or .__dict__ your Training Context object.
+This describes the Python representation of a Training View. A Training View is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that view.
+To see the full contents of your Training View, you can print, return, or .__dict__ your Training View object.
 
 .. automodule:: splicemachine.features.training_view
    :members:
