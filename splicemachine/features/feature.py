@@ -51,8 +51,19 @@ class Feature:
 
     def __repr__(self):
         return self.__str__()
+
     def __str__(self):
         return f'Feature(FeatureID={self.__dict__.get("feature_id","None")}, ' \
                f'FeatureSetID={self.__dict__.get("feature_set_id","None")}, Name={self.name}, \n' \
                f'Description={self.description}, FeatureDataType={self.feature_data_type}, ' \
                f'FeatureType={self.feature_type}, Tags={self.tags})\n'
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __lt__(self, other):
+        if isinstance(other, str):
+            return self.name < other
+        elif isinstance(other, Feature):
+            return self.name < other.name
+        raise TypeError(f"< not supported between instances of Feature and {type(other)}")
