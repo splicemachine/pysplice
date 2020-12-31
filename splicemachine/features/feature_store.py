@@ -600,7 +600,7 @@ class FeatureStore:
         :param features:
         :return: List[Feature]
         """
-        str_to_feat = self.get_features_by_name(names=[f for f in features if isinstance(f, str)])
+        str_to_feat = self.get_features_by_name(names=[f for f in features if isinstance(f, str)], as_list=True)
         all_features = str_to_feat + [f for f in features if not isinstance(f, str)]
         assert all([isinstance(i,Feature) for i in all_features]), "It seems you've passed in Features that are neither" \
                                                                    " a feature name (string) or a Feature object"
