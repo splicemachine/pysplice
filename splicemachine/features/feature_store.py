@@ -596,6 +596,7 @@ class FeatureStore:
     def _process_features(self, features: List[Union[Feature,str]]):
         """
         Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
+
         :param features:
         :return: List[Feature]
         """
@@ -744,6 +745,7 @@ class FeatureStore:
     def __prune_features_for_elimination(self, features) -> List[Feature]:
         """
         Removes incompatible features from the provided list if they are not compatible with SparkML modeling
+
         :param features: List[Feature] the provided list
         :return: List[Features] the pruned list
         """
