@@ -510,13 +510,14 @@ class FeatureStore:
         f._register_metadata(self.splice_ctx)
         # TODO: Backfill the feature
 
-    def _validate_training_context(self, name, sql, context_keys):
+    def _validate_training_context(self, name, sql, context_keys, label_col = None):
         """
         Validates that the training context doesn't already exist.
 
         :param name: The training context name
         :param sql: The training context provided SQL
         :param context_keys: The provided context keys when creating the training context
+        :param label_col: The label column
         :return:
         """
         # Validate name doesn't exist
@@ -526,13 +527,15 @@ class FeatureStore:
         # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, context_keys, tscol and label_col
         from py4j.protocol import Py4JJavaError
         try:
-            self.splice_ctx.df(sql)
+            valid_df = self.splice_ctx.df(sql)
         except Py4JJavaError as e:
             if 'SQLSyntaxErrorException' in str(e.java_exception):
                 raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
                                              f'validation:\n\n{str(e.java_exception)}') from None
             raise e
 
+        # Ensure the label column specified is in the output of the SQL
+        if label_col: assert label_col in valid_df.columns, f"Provided label column {label_col} is not available in the provided SQL"
         # Confirm that all context_keys provided correspond to primary keys of created feature sets
         pks = set(i[0].upper() for i in self.splice_ctx.df(SQL.get_fset_primary_keys).collect())
         missing_keys = set(i.upper() for i in context_keys) - pks
@@ -562,7 +565,7 @@ class FeatureStore:
         :return:
         """
         assert name != "None", "Name of training context cannot be None!"
-        self._validate_training_context(name, sql, context_keys)
+        self._validate_training_context(name, sql, context_keys, label_col)
         # register_training_context()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
         train_sql = SQL.training_context.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
