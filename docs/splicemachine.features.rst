@@ -19,7 +19,7 @@ Submodules
      :undoc-members:
      :show-inheritance:
 
-  .. automodule:: splicemachine.features.training_context
+  .. automodule:: splicemachine.features.training_view
      :members:
      :undoc-members:
      :show-inheritance:
@@ -62,13 +62,13 @@ To see the full contents of your Feature, you can print, return, or .__dict__ yo
    :undoc-members:
    :show-inheritance:
 
-splicemachine.features.training_context
+splicemachine.features.training_view
 ----------------------------------
 
 This describes the Python representation of a Training Context. A Training Context is a SQL statement defining an event of interest, and metadata around how to create a training dataset with that context.
 To see the full contents of your Training Context, you can print, return, or .__dict__ your Training Context object.
 
-.. automodule:: splicemachine.features.training_context
+.. automodule:: splicemachine.features.training_view
    :members:
    :undoc-members:
    :show-inheritance:

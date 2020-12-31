@@ -1,11 +1,11 @@
 from typing import List
 
-class TrainingContext:
-    def __init__(self, *, pk_columns: List[str], ts_column, label_column, context_sql, name, description, **kwargs):
+class TrainingView:
+    def __init__(self, *, pk_columns: List[str], ts_column, label_column, view_sql, name, description, **kwargs):
         self.pk_columns = pk_columns
         self.ts_column = ts_column
         self.label_column = label_column
-        self.context_sql = context_sql
+        self.view_sql = view_sql
         self.name = name
         self.description = description
         args = {k.lower(): kwargs[k] for k in kwargs} # Make all keys lowercase
@@ -18,7 +18,7 @@ class TrainingContext:
                f'PKColumns={self.pk_columns}, ' \
                f'TSColumn={self.ts_column}, ' \
                f'LabelColumn={self.label_column}, \n' \
-               f'ContextSQL={self.context_sql}'
+               f'ViewSQL={self.view_sql}'
 
     def __str__(self):
         return self.__repr__()

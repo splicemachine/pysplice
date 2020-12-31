@@ -17,7 +17,7 @@ from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
 
 from .constants import SQL, FeatureType
-from .training_context import TrainingContext
+from .training_view import TrainingView
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
@@ -62,7 +62,7 @@ class FeatureStore:
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
 
-    def get_feature_dataset(self, features: Union[List[Feature], List[str]]) -> SparkDF:
+    def get_training_set(self, features: Union[List[Feature], List[str]]) -> SparkDF:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -74,9 +74,9 @@ class FeatureStore:
             :NOTE:
                 .. code-block:: text
 
-                    The Features Sets which the list of Features come from must have a common join (context) key,
+                    The Features Sets which the list of Features come from must have common join keys,
                     otherwise the function will fail. If there is no common join key, it is recommended to
-                    create a Training Context to specify the join conditions.
+                    create a Training View to specify the join conditions.
 
         :return: Spark DF
         """
@@ -117,52 +117,52 @@ class FeatureStore:
                 sql += f'fset{fset.FEATURE_SET_ID}.{pkcol}={alias}.{pkcol}'
 
         # Link this to mlflow for model deployment
-        # Here we create a null training context and pass it into the training set. We do this because this special kind
-        # of training set isn't standard. It's not based on a training context, on primary key columns, a label column,
+        # Here we create a null training view and pass it into the training set. We do this because this special kind
+        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
         # or a timestamp column . This is simply a joined set of features from different feature sets.
         # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
-        # a null training context that can be tracked with a "name" (although the name is None). This is a likely case
+        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
         # for (non time based) clustering use cases.
-        null_tx = TrainingContext(pk_columns=[], ts_column=None, label_column=None, context_sql=None, name=None,
-                                  description=None)
-        ts = TrainingSet(training_context=null_tx, features=features)
+        null_tx = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
+                               description=None)
+        ts = TrainingSet(training_view=null_tx, features=features)
         if hasattr(self, 'mlflow_ctx'):
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
         return self.splice_ctx.df(sql)
 
 
-    def remove_training_context(self, override=False):
+    def remove_training_view(self, override=False):
         """
         Note: This function is not yet implemented.
-        Removes a training context. This will run 2 checks.
-            1. See if the training context is being used by a model in a deployment. If this is the case, the function will fail, always.
-            2. See if the training context is being used in any mlflow runs (non-deployed models). This will fail and return
-            a warning Telling the user that this training context is being used in mlflow runs (and the run_ids) and that
-            they will need to "override" this function to forcefully remove the training context.
+        Removes a training view. This will run 2 checks.
+            1. See if the training view is being used by a model in a deployment. If this is the case, the function will fail, always.
+            2. See if the training view is being used in any mlflow runs (non-deployed models). This will fail and return
+            a warning Telling the user that this training view is being used in mlflow runs (and the run_ids) and that
+            they will need to "override" this function to forcefully remove the training view.
         """
         raise NotImplementedError
 
-    def get_training_context(self, training_context: str) -> TrainingContext:
+    def get_training_view(self, training_view: str) -> TrainingView:
         """
-        Gets a training context by name
+        Gets a training view by name
 
-        :param training_context: Training context name
-        :return: TrainingContext
+        :param training_view: Training view name
+        :return: TrainingView
         """
-        return self.get_training_contexts(_filter={'name': training_context})[0]
+        return self.get_training_views(_filter={'name': training_view})[0]
 
-    def get_training_contexts(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingContext]:
+    def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
         """
-        Returns a list of all available training contexts with an optional filter
+        Returns a list of all available training views with an optional filter
 
         :param _filter: Dictionary container the filter keyword (label, description etc) and the value to filter on
-            If None, will return all TrainingContexts
-        :return: List[TrainingContext]
+            If None, will return all TrainingViews
+        :return: List[TrainingView]
         """
-        training_contexts = []
+        training_views = []
 
-        sql = SQL.get_training_contexts
+        sql = SQL.get_training_views
 
         if _filter:
             sql += ' WHERE '
@@ -170,23 +170,23 @@ class FeatureStore:
                 sql += f"tc.{k}='{_filter[k]}' and"
             sql = sql.rstrip('and')
 
-        training_context_rows = self.splice_ctx.df(sql, to_lower=True)
+        training_view_rows = self.splice_ctx.df(sql, to_lower=True)
 
-        for tc in training_context_rows.collect():
+        for tc in training_view_rows.collect():
             t = tc.asDict()
             # DB doesn't support lists so it stores , separated vals in a string
             t['pk_columns'] = t.pop('pk_columns').split(',')
-            training_contexts.append(TrainingContext(**t))
-        return training_contexts
+            training_views.append(TrainingView(**t))
+        return training_views
 
-    def get_training_context_id(self, name: str) -> int:
+    def get_training_view_id(self, name: str) -> int:
         """
-        Returns the unique context ID from a name
+        Returns the unique view ID from a name
 
-        :param name: The training context name
-        :return: The training context id
+        :param name: The training view name
+        :return: The training view id
         """
-        return self.splice_ctx.df(SQL.get_training_context_id.format(name=name)).collect()[0][0]
+        return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
 
     def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
         """
@@ -214,27 +214,27 @@ class FeatureStore:
         # TODO
         raise NotImplementedError
 
-    def get_feature_vector_sql(self, training_context: str, features: List[Feature],
+    def get_feature_vector_sql(self, training_view: str, features: List[Feature],
                                include_insert: Optional[bool] = True) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
-        :param training_context: (str) The name of the registered training context
+        :param training_view: (str) The name of the registered training view
         :param features: (List[str]) the list of features from the feature store to be included in the training
 
             :NOTE:
                 .. code-block:: text
 
-                    This function will error if the context SQL is missing a context key required to retrieve the\
+                    This function will error if the view SQL is missing a view key required to retrieve the\
                     desired features
 
         :param include_insert: (Optional[bool]) determines whether insert into model table is included in the SQL statement
         :return: (str) the parameterized feature vector SQL
         """
 
-        # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
-        cid = self.get_training_context_id(training_context)
-        tctx = self.get_training_contexts(_filter={'context_id': cid})[0]
+        # Get training view information (ctx primary key column(s), ctx primary key inference ts column, )
+        vid = self.get_training_view_id(training_view)
+        tctx = self.get_training_views(_filter={'view_id': vid})[0]
 
         # optional INSERT prefix
         if (include_insert):
@@ -275,7 +275,7 @@ class FeatureStore:
 
         return sql
 
-    def get_feature_context_keys(self, features: List[str]) -> Dict[str, List[str]]:
+    def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
         """
         Returns a dictionary mapping each individual feature to its primary key(s). This function is not yet implemented.
 
@@ -284,16 +284,16 @@ class FeatureStore:
         """
         pass
 
-    def get_training_context_features(self, training_context: str) -> List[Feature]:
+    def get_training_view_features(self, training_view: str) -> List[Feature]:
         """
-        Returns the available features for the given a training context name
+        Returns the available features for the given a training view name
 
-        :param training_context: The name of the training context
+        :param training_view: The name of the training view
         :return: A list of available Feature objects
         """
-        where = f"tc.Name='{training_context}'"
+        where = f"tc.Name='{training_view}'"
 
-        df = self.splice_ctx.df(SQL.get_training_context_features.format(where=where), to_lower=True)
+        df = self.splice_ctx.df(SQL.get_training_view_features.format(where=where), to_lower=True)
 
         features = []
         for feat in df.collect():
@@ -305,29 +305,29 @@ class FeatureStore:
         #TODO
         raise NotImplementedError
 
-    def get_training_set(self, training_context: str, features: Union[List[Feature],List[str]] = None,
-                         start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
-                         return_sql: bool = False) -> SparkDF or str:
+    def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
+                                   start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
+                                   return_sql: bool = False) -> SparkDF or str:
         """
-        Returns the training set as a Spark Dataframe. When a user calls this function (assuming they have registered
-        the feature store with mlflow using :py:meth:`.mlflow_support.register_training_context`
+        Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
+        the feature store with mlflow using :py:meth:`.mlflow_support.register_training_view`
         the training dataset's metadata,
         including:
-            * Training context
+            * Training View
             * Selected features
             * Start time
             * End time
         will be tracked in mlflow automatically. This tracking will occur in the current run (if there is an active run)
         or in the next run that is started after calling this function (if no run is currently active).
 
-        :param training_context: (str) The name of the registered training context
+        :param training_view: (str) The name of the registered training view
         :param features: (List[str] OR List[Feature]) the list of features from the feature store to be included in the training.
             If a list of strings is passed in it will be converted to a list of Feature. If not provided will return all available features.
 
             :NOTE:
                 .. code-block:: text
 
-                    This function will error if the context SQL is missing a context key required to retrieve the
+                    This function will error if the view SQL is missing a join key required to retrieve the
                     desired features
 
         :param start_time: (Optional[datetime]) The start time of the query (how far back in the data to start). Default None
@@ -348,12 +348,12 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
-        features = self._process_features(features) if features else self.get_training_context_features(training_context)
+        features = self._process_features(features) if features else self.get_training_view_features(training_view)
         # DB-9556 loss of column names on complex sql for NSDS
         cols = []
 
-        # Get training context information (ctx primary key column(s), ctx primary key inference ts column, )
-        tctx = self.get_training_context(training_context)
+        # Get training view information (view primary key column(s), inference ts column, )
+        tctx = self.get_training_view(training_view)
         # SELECT clause
         sql = 'SELECT '
         for pkcol in tctx.pk_columns:  # Select primary key column(s)
@@ -373,7 +373,7 @@ class FeatureStore:
         if tctx.label_column: cols.append(tctx.label_column)
 
         # FROM clause
-        sql += f'\nFROM ({tctx.context_sql}) ctx '
+        sql += f'\nFROM ({tctx.view_sql}) ctx '
 
         # JOIN clause
         feature_set_ids = list({f.feature_set_id for f in features})  # Distinct set of IDs
@@ -402,7 +402,7 @@ class FeatureStore:
 
         # Link this to mlflow for model deployment
         if hasattr(self, 'mlflow_ctx') and not return_sql:
-            ts = TrainingSet(training_context=tctx, features=features,
+            ts = TrainingSet(training_view=tctx, features=features,
                                                                start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
@@ -416,7 +416,7 @@ class FeatureStore:
 
         :return: Dict[str, Optional[str]]
         """
-        raise NotImplementedError("To see available training contexts, run fs.describe_training_contexts()")
+        raise NotImplementedError("To see available training views, run fs.describe_training_views()")
 
     def _validate_feature_set(self, schema_name, table_name):
         """
@@ -510,21 +510,21 @@ class FeatureStore:
         f._register_metadata(self.splice_ctx)
         # TODO: Backfill the feature
 
-    def _validate_training_context(self, name, sql, context_keys, label_col = None):
+    def _validate_training_view(self, name, sql, join_keys, label_col = None):
         """
-        Validates that the training context doesn't already exist.
+        Validates that the training view doesn't already exist.
 
-        :param name: The training context name
-        :param sql: The training context provided SQL
-        :param context_keys: The provided context keys when creating the training context
+        :param name: The training view name
+        :param sql: The training view provided SQL
+        :param join_keys: The provided join keys when creating the training view
         :param label_col: The label column
         :return:
         """
         # Validate name doesn't exist
-        assert len(self.get_training_contexts(_filter={'name': name})) == 0, f"Training context {name} already exists!"
+        assert len(self.get_training_views(_filter={'name': name})) == 0, f"Training View {name} already exists!"
 
         # Column comparison
-        # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, context_keys, tscol and label_col
+        # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, join_keys, tscol and label_col
         from py4j.protocol import Py4JJavaError
         try:
             valid_df = self.splice_ctx.df(sql)
@@ -536,58 +536,58 @@ class FeatureStore:
 
         # Ensure the label column specified is in the output of the SQL
         if label_col: assert label_col in valid_df.columns, f"Provided label column {label_col} is not available in the provided SQL"
-        # Confirm that all context_keys provided correspond to primary keys of created feature sets
+        # Confirm that all join_keys provided correspond to primary keys of created feature sets
         pks = set(i[0].upper() for i in self.splice_ctx.df(SQL.get_fset_primary_keys).collect())
-        missing_keys = set(i.upper() for i in context_keys) - pks
-        assert not missing_keys, f"Not all provided context keys exist. Remove {missing_keys} or " \
+        missing_keys = set(i.upper() for i in join_keys) - pks
+        assert not missing_keys, f"Not all provided join keys exist. Remove {missing_keys} or " \
                                  f"create a feature set that uses the missing keys"
 
-    def create_training_context(self, name: str, sql: str, primary_keys: List[str], context_keys: List[str],
+    def create_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
                                 ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
                                 desc: Optional[str] = None, verbose=False) -> None:
         """
-        Registers a training context for use in generating training SQL
+        Registers a training view for use in generating training SQL
 
         :param name: The training set name. This must be unique to other existing training sets unless replace is True
         :param sql: (str) a SELECT statement that includes:
             * the primary key column(s) - uniquely identifying a training row/case
             * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
-            * context key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
+            * join key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
             * (optionally) the label expression - defining what the training set is trying to predict
         :param primary_keys: (List[str]) The list of columns from the training SQL that identify the training row
         :param ts_col: The timestamp column of the training SQL that identifies the inference timestamp
         :param label_col: (Optional[str]) The optional label column from the training SQL.
-        :param replace: (Optional[bool]) Whether to replace an existing training context
-        :param context_keys: (List[str]) A list of context keys in the sql that are used to get the desired features in
+        :param replace: (Optional[bool]) Whether to replace an existing training view
+        :param join_keys: (List[str]) A list of join keys in the sql that are used to get the desired features in
             get_training_set
         :param desc: (Optional[str]) An optional description of the training set
         :param verbose: Whether or not to print the SQL before execution (default False)
         :return:
         """
-        assert name != "None", "Name of training context cannot be None!"
-        self._validate_training_context(name, sql, context_keys, label_col)
-        # register_training_context()
+        assert name != "None", "Name of training view cannot be None!"
+        self._validate_training_view(name, sql, join_keys, label_col)
+        # register_training_view()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
-        train_sql = SQL.training_context.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
+        train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
                                                 label_col=label_col)
         print('Building training sql...')
         if verbose: print('\t', train_sql)
         self.splice_ctx.execute(train_sql)
         print('Done.')
 
-        # Get generated context ID
-        cid = self.get_training_context_id(name)
+        # Get generated view ID
+        vid = self.get_training_view_id(name)
 
-        print('Creating Context Keys')
-        for i in context_keys:
-            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='C')
-            print(f'\tCreating Context Key {i}...')
+        print('Creating Join Keys')
+        for i in join_keys:
+            key_sql = SQL.training_view_keys.format(view_id=vid, key_column=i.upper(), key_type='J')
+            print(f'\tCreating Join Key {i}...')
             if verbose: print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
         print('Done.')
-        print('Creating Primary Keys')
+        print('Creating Training View Primary Keys')
         for i in primary_keys:
-            key_sql = SQL.training_context_keys.format(context_id=cid, key_column=i.upper(), key_type='P')
+            key_sql = SQL.training_view_keys.format(view_id=vid, key_column=i.upper(), key_type='P')
             print(f'\tCreating Primary Key {i}...')
             if verbose: print('\t', key_sql)
             self.splice_ctx.execute(key_sql)
@@ -599,9 +599,11 @@ class FeatureStore:
         :param features:
         :return: List[Feature]
         """
-        converted = self.get_features_by_name(names=features, as_list=True) \
-            if all([isinstance(i,str) for i in features]) else features
-        return converted
+        str_to_feat = self.get_features_by_name(names=[f for f in features if isinstance(f, str)])
+        all_features = str_to_feat + [f for f in features if not isinstance(f, str)]
+        assert all([isinstance(i,Feature) for i in all_features]), "It seems you've passed in Features that are neither" \
+                                                                   " a feature name (string) or a Feature object"
+        return all_features
 
     def deploy_feature_set(self, schema_name, table_name):
         """
@@ -648,31 +650,31 @@ class FeatureStore:
         print('\nAvailable features:')
         display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
 
-    def describe_training_contexts(self) -> None:
+    def describe_training_views(self) -> None:
         """
-        Prints out a description of all training contexts, the ID, name, description and optional label
+        Prints out a description of all training views, the ID, name, description and optional label
 
-        :param training_context: The training context name
+        :param training_view: The training view name
         :return: None
         """
-        print('Available training contexts')
-        for tcx in self.get_training_contexts():
+        print('Available training views')
+        for tcx in self.get_training_views():
             print('-' * 200)
-            self.describe_training_context(tcx.name)
+            self.describe_training_view(tcx.name)
 
-    def describe_training_context(self, training_context: str) -> None:
+    def describe_training_view(self, training_view: str) -> None:
         """
-        Prints out a description of a given training context, the ID, name, description and optional label
+        Prints out a description of a given training view, the ID, name, description and optional label
 
-        :param training_context: The training context name
+        :param training_view: The training view name
         :return: None
         """
-        tcx = self.get_training_contexts(_filter={'name': training_context})
-        if not tcx: raise SpliceMachineException(f"Training context {training_context} not found. Check name and try again.")
+        tcx = self.get_training_views(_filter={'name': training_view})
+        if not tcx: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         tcx = tcx[0]
-        print(f'ID({tcx.context_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
+        print(f'ID({tcx.view_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print(f'Available features in {tcx.name}:')
-        feats: List[Feature] = self.get_training_context_features(tcx.name)
+        feats: List[Feature] = self.get_training_view_features(tcx.name)
         # Grab the feature set info and their corresponding names (schema.table) for the display table
         feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
         feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
@@ -739,9 +741,23 @@ class FeatureStore:
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
 
-    def run_feature_elimination(self, df, features: List[Union[str,Feature]], label: str = 'label', n: int = 10, verbose: int = 0,
-                                model_type: str = 'classification', step: int = 1, log_mlflow: bool = False,
-                                mlflow_run_name: str = None, return_importances: bool = False):
+    def __prune_features_for_elimination(self, features) -> List[Feature]:
+        """
+        Removes incompatible features from the provided list if they are not compatible with SparkML modeling
+        :param features: List[Feature] the provided list
+        :return: List[Features] the pruned list
+        """
+        from splicemachine.spark.constants import SQL_MODELING_TYPES
+        invalid_features = {f for f in features if f.feature_data_type not in SQL_MODELING_TYPES}
+        valid_features = list(set(features) - invalid_features)
+        if invalid_features: print('The following features are invalid for modeling based on their Data Types:\n')
+        for f in invalid_features:
+            print(f.name, f.feature_data_type)
+        return valid_features
+
+    def run_feature_elimination(self, df, features: List[Union[str,Feature]], label: str = 'label', n: int = 10,
+                                verbose: int = 0,model_type: str = 'classification', step: int = 1,
+                                log_mlflow: bool = False,mlflow_run_name: str = None, return_importances: bool = False):
 
         """
         Runs feature elimination using a Spark decision tree on the dataframe passed in. Optionally logs results to mlflow
@@ -761,7 +777,7 @@ class FeatureStore:
 
         train_df = df
         features = self._process_features(features)
-        remaining_features = features
+        remaining_features = self.__prune_features_for_elimination(features)
         rnd = 0
         mlflow_results = []
         assert len(
