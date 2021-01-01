@@ -310,7 +310,7 @@ class FeatureStore:
                                    return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
-        the feature store with mlflow using :py:meth:`.mlflow_support.register_training_view`
+        the feature store with mlflow using :py:meth:`.mlflow.register_training_view`
         the training dataset's metadata,
         including:
             * Training View
