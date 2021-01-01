@@ -19,6 +19,7 @@ from .training_set import TrainingSet
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
 
+
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
@@ -93,9 +94,9 @@ class FeatureStore:
         fset_keys.drop(index=ind, inplace=True)
         all_pk_cols = anchor_series.PK_COLUMNS.split('|')
         # For each feature set, assert that all join keys exist in our "anchor" feature set
-        fset_keys['can_join'] = fset_keys['PK_COLUMNS'].map(lambda x: set(x.split('|')).issubset(all_pk_cols) )
+        fset_keys['can_join'] = fset_keys['PK_COLUMNS'].map(lambda x: set(x.split('|')).issubset(all_pk_cols))
         if not fset_keys['can_join'].all():
-            bad_feature_set_ids = [t.FEATURE_SET_ID for _ , t in fset_keys[fset_keys['can_join'] != True].iterrows()]
+            bad_feature_set_ids = [t.FEATURE_SET_ID for _, t in fset_keys[fset_keys['can_join'] != True].iterrows()]
             bad_features = [f.name for f in features if f.feature_set_id in bad_feature_set_ids]
             raise SpliceMachineException(f"The provided features do not have a common join key."
                                          f"Remove features {bad_features} from your request")
@@ -105,7 +106,7 @@ class FeatureStore:
 
         sql += ','.join([f'fset{feature.feature_set_id}.{feature.name}' for feature in features])
 
-        alias = f'fset{anchor_series.FEATURE_SET_ID}' # We use this a lot for joins
+        alias = f'fset{anchor_series.FEATURE_SET_ID}'  # We use this a lot for joins
         sql += f'\nFROM {anchor_series.SCHEMA_NAME}.{anchor_series.TABLE_NAME} {alias} '
 
         # JOIN clause
@@ -113,7 +114,7 @@ class FeatureStore:
             # Join Feature Set
             sql += f'\nLEFT OUTER JOIN {fset.SCHEMA_NAME}.{fset.TABLE_NAME} fset{fset.FEATURE_SET_ID} \n\tON '
             for ind, pkcol in enumerate(fset.PK_COLUMNS.split('|')):
-                if ind > 0: sql += ' AND ' # In case of multiple columns
+                if ind > 0: sql += ' AND '  # In case of multiple columns
                 sql += f'fset{fset.FEATURE_SET_ID}.{pkcol}={alias}.{pkcol}'
 
         # Link this to mlflow for model deployment
@@ -130,7 +131,6 @@ class FeatureStore:
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
         return self.splice_ctx.df(sql)
-
 
     def remove_training_view(self, override=False):
         """
@@ -206,7 +206,7 @@ class FeatureStore:
         features = []
         for feat in df.collect():
             f = feat.asDict()
-            f = dict((k.lower(), v) for k, v in f.items()) # DB returns uppercase column names
+            f = dict((k.lower(), v) for k, v in f.items())  # DB returns uppercase column names
             features.append(Feature(**f))
         return features
 
@@ -302,7 +302,7 @@ class FeatureStore:
         return features
 
     def get_feature_description(self):
-        #TODO
+        # TODO
         raise NotImplementedError
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
@@ -403,7 +403,7 @@ class FeatureStore:
         # Link this to mlflow for model deployment
         if hasattr(self, 'mlflow_ctx') and not return_sql:
             ts = TrainingSet(training_view=tctx, features=features,
-                                                               start_time=start_time, end_time=end_time)
+                             start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
 
@@ -443,7 +443,8 @@ class FeatureStore:
         :return: FeatureSet
         """
         self._validate_feature_set(schema_name, table_name)
-        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name, primary_keys=primary_keys,
+        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name,
+                          primary_keys=primary_keys,
                           description=desc)
         self.feature_sets.append(fset)
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
@@ -510,7 +511,7 @@ class FeatureStore:
         f._register_metadata(self.splice_ctx)
         # TODO: Backfill the feature
 
-    def _validate_training_view(self, name, sql, join_keys, label_col = None):
+    def _validate_training_view(self, name, sql, join_keys, label_col=None):
         """
         Validates that the training view doesn't already exist.
 
@@ -543,8 +544,8 @@ class FeatureStore:
                                  f"create a feature set that uses the missing keys"
 
     def create_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
-                                ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
-                                desc: Optional[str] = None, verbose=False) -> None:
+                             ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
+                             desc: Optional[str] = None, verbose=False) -> None:
         """
         Registers a training view for use in generating training SQL
 
@@ -569,7 +570,7 @@ class FeatureStore:
         # register_training_view()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
         train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
-                                                label_col=label_col)
+                                             label_col=label_col)
         print('Building training sql...')
         if verbose: print('\t', train_sql)
         self.splice_ctx.execute(train_sql)
@@ -593,7 +594,7 @@ class FeatureStore:
             self.splice_ctx.execute(key_sql)
         print('Done.')
 
-    def _process_features(self, features: List[Union[Feature,str]]):
+    def _process_features(self, features: List[Union[Feature, str]]):
         """
         Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
 
@@ -602,8 +603,9 @@ class FeatureStore:
         """
         str_to_feat = self.get_features_by_name(names=[f for f in features if isinstance(f, str)], as_list=True)
         all_features = str_to_feat + [f for f in features if not isinstance(f, str)]
-        assert all([isinstance(i,Feature) for i in all_features]), "It seems you've passed in Features that are neither" \
-                                                                   " a feature name (string) or a Feature object"
+        assert all(
+            [isinstance(i, Feature) for i in all_features]), "It seems you've passed in Features that are neither" \
+                                                             " a feature name (string) or a Feature object"
         return all_features
 
     def deploy_feature_set(self, schema_name, table_name):
@@ -618,8 +620,9 @@ class FeatureStore:
         try:
             fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
         except:
-            raise SpliceMachineException(f"Cannot find feature set {schema_name}.{table_name}. Ensure you've created this"
-                                         f"feature set using fs.create_feature_set before deploying.")
+            raise SpliceMachineException(
+                f"Cannot find feature set {schema_name}.{table_name}. Ensure you've created this"
+                f"feature set using fs.create_feature_set before deploying.")
         fset.deploy()
 
     def describe_feature_sets(self) -> None:
@@ -631,7 +634,7 @@ class FeatureStore:
         """
         print('Available feature sets')
         for fset in self.get_feature_sets():
-            print('-' * 200)
+            print('-' * 23)
             self.describe_feature_set(fset.schema_name, fset.table_name)
 
     def describe_feature_set(self, schema_name: str, table_name: str) -> None:
@@ -644,7 +647,8 @@ class FeatureStore:
         :return: None
         """
         fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})
-        if not fset: raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
+        if not fset: raise SpliceMachineException(
+            f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         fset = fset[0]
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
         print('Primary keys:', fset.primary_keys)
@@ -660,7 +664,7 @@ class FeatureStore:
         """
         print('Available training views')
         for tcx in self.get_training_views():
-            print('-' * 200)
+            print('-' * 23)
             self.describe_training_view(tcx.name)
 
     def describe_training_view(self, training_view: str) -> None:
@@ -678,11 +682,12 @@ class FeatureStore:
         feats: List[Feature] = self.get_training_view_features(tcx.name)
         # Grab the feature set info and their corresponding names (schema.table) for the display table
         feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
-        feat_sets: Dict[int,str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
+        feat_sets: Dict[int, str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
         for f in feats:
             f.feature_set_name = feat_sets[f.feature_set_id]
-        col_order = ['name','description','feature_data_type','feature_set_name','feature_type','tags','last_update_ts',
-                     'last_update_username','compliance_level','feature_set_id','feature_id']
+        col_order = ['name', 'description', 'feature_data_type', 'feature_set_name', 'feature_type', 'tags',
+                     'last_update_ts',
+                     'last_update_username', 'compliance_level', 'feature_set_id', 'feature_id']
         display(pd.DataFrame(f.__dict__ for f in feats)[col_order])
 
     def set_feature_description(self):
@@ -757,9 +762,10 @@ class FeatureStore:
             print(f.name, f.feature_data_type)
         return valid_features
 
-    def run_feature_elimination(self, df, features: List[Union[str,Feature]], label: str = 'label', n: int = 10,
-                                verbose: int = 0,model_type: str = 'classification', step: int = 1,
-                                log_mlflow: bool = False,mlflow_run_name: str = None, return_importances: bool = False):
+    def run_feature_elimination(self, df, features: List[Union[str, Feature]], label: str = 'label', n: int = 10,
+                                verbose: int = 0, model_type: str = 'classification', step: int = 1,
+                                log_mlflow: bool = False, mlflow_run_name: str = None,
+                                return_importances: bool = False):
 
         """
         Runs feature elimination using a Spark decision tree on the dataframe passed in. Optionally logs results to mlflow
@@ -792,7 +798,8 @@ class FeatureStore:
             model = self.__get_pipeline(train_df, remaining_features, label, model_type)
             print('Getting feature importance')
             feature_importances = self.__get_feature_importance(model.stages[-1].featureImportances,
-                                                                model.transform(train_df), "features").head(num_features)
+                                                                model.transform(train_df), "features").head(
+                num_features)
             remaining_features_and_label = list(feature_importances['name'].values) + [label]
             train_df = train_df.select(*remaining_features_and_label)
             remaining_features = [f for f in remaining_features if f.name in feature_importances['name'].values]
