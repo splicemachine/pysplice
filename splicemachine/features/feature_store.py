@@ -310,14 +310,14 @@ class FeatureStore:
                                    return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
-        the feature store with mlflow using :py:meth:`.mlflow.register_training_view`
-        the training dataset's metadata,
+        the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
+        the training dataset's metadata will be tracked in mlflow automatically. The following will be tracked:
         including:
             * Training View
             * Selected features
             * Start time
             * End time
-        will be tracked in mlflow automatically. This tracking will occur in the current run (if there is an active run)
+        This tracking will occur in the current run (if there is an active run)
         or in the next run that is started after calling this function (if no run is currently active).
 
         :param training_view: (str) The name of the registered training view
