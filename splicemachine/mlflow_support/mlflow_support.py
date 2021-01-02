@@ -922,18 +922,16 @@ def _watch_job(job_id: int):
     while True:
         logs_retrieved = __get_logs(job_id)
         logs_retrieved.remove('')
-        log_idx = len(logs_retrieved)
         # searching from the end is faster, because unless the logs double in the interval, it will be closer
-        for log_idx in range(len(logs_retrieved) - 1, -1, -1):
-            if logs_retrieved[log_idx] in previous_lines:
+        for log_idx in range(len(logs_retrieved), 0, -1):
+            if logs_retrieved[log_idx-1] in previous_lines:
                 break
 
-        idx = log_idx + 1 if log_idx else log_idx  # First time getting logs, go to 0th index, else log_idx+1
-        for n in logs_retrieved[idx:]:
+        for n in logs_retrieved[log_idx:]:
             print(f'\n{n}', end='')
 
-        previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1]  # Remove empty line
+        previous_lines = copy.deepcopy(logs_retrieved)
+
         if 'TASK_COMPLETED' in previous_lines[-1]:  # Finishing Statement
             return
 
@@ -976,7 +974,7 @@ def _list_jobs(limit=1000, include_payload=False) -> PandasDF:
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
     df = PandasDF(requests.post(url, json=params, auth=mlflow._basic_auth).json()['jobs'])
-    return_cols = ['timestamp','user','handler_name','job_id','parent_job_id','run_id','experiment_id','target_service']
+    return_cols = ['timestamp','user','handler_name','status','job_id','parent_job_id','run_id','experiment_id','target_service']
     if include_payload:
         return_cols.append('payload')
     return df[return_cols] if not df.empty else df
