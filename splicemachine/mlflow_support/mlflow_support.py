@@ -195,6 +195,17 @@ def _check_for_splice_ctx():
             "you can run this mlflow operation!"
         )
 
+def _check_for_basic_auth():
+    """
+    Check to make sure that the user has logged into the system with basic auth before running APIs that require it
+    """
+
+    if not hasattr(mlflow, '_basic_auth'):
+        raise SpliceMachineException(
+            "You have not logged into MLManager director."
+            " Please run mlflow.login_director(username, password)"
+        )
+
 
 @_mlflow_patch('current_run_id')
 def _current_run_id():
@@ -634,11 +645,7 @@ def __initiate_job(payload, endpoint):
     :param endpoint: (str) REST endpoint to target
     :return: (str) Response text from request
     """
-    if not hasattr(mlflow, '_basic_auth'):
-        raise SpliceMachineException(
-            "You have not logged into MLManager director."
-            " Please run mlflow.login_director(username, password)"
-        )
+    _check_for_basic_auth()
     request = requests.post(
         get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
         auth=mlflow._basic_auth,
@@ -956,25 +963,42 @@ def _get_deployed_models() -> PandasDF:
     ).toPandas()
 
 @_mlflow_patch('list_jobs')
-def _list_jobs():
+def _list_jobs(limit=1000, include_payload=False) -> PandasDF:
     """
     Lists all jobs submitted to mlflow as a Pandas dataframe
+    :param limit: The number of jobs to return. Default 1000
+    :param include_payload: Whether or not to include the job payload (parameters) in the table. Default False
     :return: Pandas dataframe of all the jobs
     """
+    _check_for_basic_auth()
     params = {
-        'searchPhrase': '',
-        'current': 1,
-        'rowCount': -1,
-        'sort[TIMESTAMP]': 'desc'
-    }
-    headers = {
-        'content-type': 'application/x-www-form-urlencoded'
+        'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
-    # print(requests.post(url, params, auth=mlflow._basic_auth, headers=headers).json())
-    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth, headers=headers).json()['rows'])
-    df = df.apply(__process_job_row, axis=1)
-    return df[['TIMESTAMP','USER','JOB_ID','HANDLER_NAME','STATUS','RUN_ID','TARGET_SERVICE']]
+    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json())
+    return_cols = ['timestamp','user','handler_name','job_id','parent_job_id','run_id','experiment_id','target_service']
+    if include_payload:
+        return_cols.append('payload')
+    return df[return_cols]
+
+@_mlflow_patch('list_recurring_jobs')
+def _list_recurring_jobs(limit=1000, include_payload=False) -> PandasDF:
+    """
+    Lists all recurring jobs submitted to mlflow as a Pandas dataframe
+    :param limit: The number of recurring jobs to return. Default 1000
+    :param include_payload: Whether or not to include the job payload (parameters) in the table. Default False
+    :return: Pandas dataframe of all the jobs
+    """
+    _check_for_basic_auth()
+    params = {
+        'limit': limit,
+    }
+    url = get_pod_uri('mlflow',5003) + '/api/rest/get_recurring_jobs'
+    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json())
+    return_cols = ['creation_timestamp','name','job_id','entity_id','status']
+    if include_payload:
+        return_cols.append('payload')
+    return df[return_cols]
 
 @_mlflow_patch('schedule_retrain')
 def _schedule_retrain(retrainer_class: ClassVar, name: str, cron_exp: str, run_id: str = None, conda_env: str = None):

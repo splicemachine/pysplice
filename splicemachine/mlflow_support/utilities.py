@@ -233,16 +233,3 @@ def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
     return url
 
-def __process_job_row(row):
-    """
-    Processes the row from the jobs API to format nicely for a Pandas dataframe
-    :param row: The row that is being applied
-    :return: The mapped row
-    """
-    row['JOB_ID'] = row['ID']
-    if row['MLFLOW_URL'] == 'N/A':
-         row['RUN_ID'] = None
-    else:
-        row['RUN_ID'] = re.search(RUN_URL_REGEX, row['MLFLOW_URL']).group(1)
-    return row
-

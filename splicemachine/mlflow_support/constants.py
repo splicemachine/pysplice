@@ -1,6 +1,3 @@
-import re
-
-RUN_URL_REGEX = re.compile('/runs/([a-z0-9].*?)\'')
 
 class FileExtensions:
     """
