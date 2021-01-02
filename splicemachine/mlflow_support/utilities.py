@@ -7,7 +7,6 @@ from typing import Dict, List
 from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.pipeline import PipelineModel
 from pyspark.ml.wrapper import JavaModel
-from .constants import RUN_URL_REGEX
 from ..spark.context import PySpliceContext
 
 
