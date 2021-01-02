@@ -975,7 +975,7 @@ def _list_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
-    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json())
+    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['timestamp','user','handler_name','job_id','parent_job_id','run_id','experiment_id','target_service']
     if include_payload:
         return_cols.append('payload')
@@ -994,7 +994,7 @@ def _list_recurring_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_recurring_jobs'
-    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json())
+    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['creation_timestamp','name','job_id','entity_id','status']
     if include_payload:
         return_cols.append('payload')
@@ -1060,7 +1060,7 @@ def apply_patches():
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
-               _log_feature_transformations, _get_model_name, _schedule_retrain, _list_jobs,
+               _log_feature_transformations, _get_model_name, _schedule_retrain, _list_jobs, _list_recurring_jobs,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job]
