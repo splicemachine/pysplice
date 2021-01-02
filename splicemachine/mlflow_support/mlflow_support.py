@@ -924,7 +924,7 @@ def _watch_job(job_id: int):
         logs_retrieved.remove('')
         log_idx = len(logs_retrieved)
         # searching from the end is faster, because unless the logs double in the interval, it will be closer
-        for log_idx in range(len(logs_retrieved), 0, -1):
+        for log_idx in range(len(logs_retrieved), -1, -1):
             if logs_retrieved[log_idx-1] in previous_lines:
                 break
 
