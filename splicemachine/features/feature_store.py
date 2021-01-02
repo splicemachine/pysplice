@@ -711,7 +711,7 @@ class FeatureStore:
         si = [StringIndexer(inputCol=n, outputCol=f'{n}_index', handleInvalid='keep') for n in categorical_features]
         all_features = numeric_features + indexed_features
 
-        v = VectorAssembler(inputCols=all_features, outputCol='features', handleInvalid='skip')
+        v = VectorAssembler(inputCols=all_features, outputCol='features', handleInvalid='keep')
         if model_type == 'classification':
             si += [StringIndexer(inputCol=label, outputCol=f'{label}_index', handleInvalid='keep')]
             clf = RandomForestClassifier(labelCol=f'{label}_index')
