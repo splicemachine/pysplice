@@ -78,7 +78,7 @@ from splicemachine import SpliceMachineException
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
-                                                    insert_artifact, __process_job_row)
+                                                    insert_artifact)
 from splicemachine.spark.context import PySpliceContext
 
 _TESTING = os.environ.get("TESTING", False)
