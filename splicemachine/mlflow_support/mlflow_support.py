@@ -975,7 +975,7 @@ def _list_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
-    df = PandasDF(requests.post(url, data=params, auth=mlflow._basic_auth).json()['jobs'])
+    df = PandasDF(requests.post(url, json=params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['timestamp','user','handler_name','job_id','parent_job_id','run_id','experiment_id','target_service']
     if include_payload:
         return_cols.append('payload')
@@ -994,7 +994,7 @@ def _list_recurring_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_recurring_jobs'
-    df = PandasDF(requests.post(url, data=params, auth=mlflow._basic_auth).json()['jobs'])
+    df = PandasDF(requests.post(url, json=params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['creation_timestamp','name','job_id','entity_id','status']
     if include_payload:
         return_cols.append('payload')
