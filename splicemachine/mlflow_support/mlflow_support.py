@@ -975,11 +975,11 @@ def _list_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_jobs'
-    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json()['jobs'])
+    df = PandasDF(requests.post(url, data=params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['timestamp','user','handler_name','job_id','parent_job_id','run_id','experiment_id','target_service']
     if include_payload:
         return_cols.append('payload')
-    return df[return_cols]
+    return df[return_cols] if not df.empty else df
 
 @_mlflow_patch('list_recurring_jobs')
 def _list_recurring_jobs(limit=1000, include_payload=False) -> PandasDF:
@@ -994,11 +994,11 @@ def _list_recurring_jobs(limit=1000, include_payload=False) -> PandasDF:
         'limit': limit,
     }
     url = get_pod_uri('mlflow',5003) + '/api/rest/get_recurring_jobs'
-    df = PandasDF(requests.post(url, params, auth=mlflow._basic_auth).json()['jobs'])
+    df = PandasDF(requests.post(url, data=params, auth=mlflow._basic_auth).json()['jobs'])
     return_cols = ['creation_timestamp','name','job_id','entity_id','status']
     if include_payload:
         return_cols.append('payload')
-    return df[return_cols]
+    return df[return_cols] if not df.empty else df
 
 @_mlflow_patch('schedule_retrain')
 def _schedule_retrain(retrainer_class: ClassVar, name: str, cron_exp: str, run_id: str = None, conda_env: str = None):
