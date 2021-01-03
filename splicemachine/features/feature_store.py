@@ -189,7 +189,7 @@ class FeatureStore:
         """
         return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
 
-    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
+    def get_features_by_name(self, names: Optional[List[str]], as_list=False) -> Union[List[Feature], SparkDF]:
         """
         Returns a dataframe or list of features whose names are provided
 
@@ -200,7 +200,7 @@ class FeatureStore:
         :py:meth:`features.FeatureStore.get_training_set` or :py:meth:`features.FeatureStore.get_feature_dataset`
         """
         # If they don't pass in feature names, get all features
-        where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")" if names else "1=1"
+        where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")"
         df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause), to_lower=True)
         if not as_list: return df
 
@@ -644,10 +644,11 @@ class FeatureStore:
         """
         Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
 
-        :param features:
+        :param features: The list of Feature names or Feature objects
         :return: List[Feature]
         """
-        str_to_feat = self.get_features_by_name(names=[f for f in features if isinstance(f, str)], as_list=True)
+        feat_str = [f for f in features if isinstance(f, str)]
+        str_to_feat = self.get_features_by_name(names=feat_str, as_list=True) if feat_str else []
         all_features = str_to_feat + [f for f in features if not isinstance(f, str)]
         assert all(
             [isinstance(i, Feature) for i in all_features]), "It seems you've passed in Features that are neither" \
