@@ -4,6 +4,7 @@ import re
 
 from IPython.display import display
 import pandas as pd
+from pandas import DataFrame as PandasDF
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from pyspark.ml import Pipeline
@@ -15,7 +16,7 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-
+from .utils import dict_to_lower
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
 
@@ -214,7 +215,52 @@ class FeatureStore:
         # TODO
         raise NotImplementedError
 
-    def get_feature_vector_sql(self, training_view: str, features: List[Feature],
+    def _validate_feature_vector_keys(self, join_key_values, feature_sets) -> None:
+        """
+        Validates that all necessary primary keys are provided when requesting a feature vector
+
+        :param join_key_values: dict The primary (join) key columns and values provided by the user
+        :param feature_sets: List[FeatureSet] the list of Feature Sets derived from the requested Features
+        :return: None. Raise Exception on bad validation
+        """
+
+        feature_set_key_columns = {fkey.lower() for fset in feature_sets for fkey in fset.primary_keys.keys()}
+        missing_keys = feature_set_key_columns - join_key_values.keys()
+        assert not missing_keys, f"The following keys were not provided and must be: {missing_keys}"
+
+    def get_feature_vector(self, features: List[Union[str,Feature]],
+                           join_key_values: Dict[str,str], return_sql=False) -> Union[str, PandasDF]:
+        """
+        Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
+
+        :param features: List of str Feature names or Features
+        :param join_key_values: (dict) join key vals to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
+        :return: Pandas Dataframe or str (SQL statement)
+        """
+        feats: List[Feature] = self._process_features(features)
+        # Match the case of the keys
+        join_keys = dict_to_lower(join_key_values)
+
+        # Get the feature sets and their primary key column names
+        feature_sets = self.get_feature_sets([f.feature_set_id for f in feats])
+        self._validate_feature_vector_keys(join_keys, feature_sets)
+
+
+        feature_names = ','.join([f.name for f in feats])
+        fset_tables = ','.join([f'{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}' for fset in feature_sets])
+        sql = "SELECT {feature_names} FROM {fset_tables} ".format(feature_names=feature_names, fset_tables=fset_tables)
+
+        # For each Feature Set, for each primary key in the given feature set, get primary key value from the user provided dictionary
+        pk_conditions = [f"fset{fset.feature_set_id}.{pk_col} = {join_keys[pk_col.lower()]}"
+                         for fset in feature_sets for pk_col in fset.primary_keys]
+        pk_conditions = ' AND '.join(pk_conditions)
+
+        sql += f"WHERE {pk_conditions}"
+
+        return sql if return_sql else self.splice_ctx.df(sql).toPandas()
+
+    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature],
                                include_insert: Optional[bool] = True) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
@@ -594,7 +640,7 @@ class FeatureStore:
             self.splice_ctx.execute(key_sql)
         print('Done.')
 
-    def _process_features(self, features: List[Union[Feature, str]]):
+    def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
         Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
 

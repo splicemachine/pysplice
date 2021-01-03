@@ -186,6 +186,10 @@ class SQL:
     ({{model_schema_name}}, {{model_table_name}}, {{model_start_ts}}, {{model_end_ts}}, {{feature_id}}, {{feature_cardinality}}, {{feature_histogram}}, {{feature_mean}}, {{feature_median}}, {{feature_count}}, {{feature_stddev}}) 
     """
 
+    get_feature_vector = """
+    SELECT {feature_names} FROM {feature_sets} WHERE 
+    """
+
 class Columns:
     feature = ['feature_id', 'feature_set_id', 'name', 'description', 'feature_data_type', 'feature_type',
                'tags', 'compliance_level', 'last_update_ts', 'last_update_username']
