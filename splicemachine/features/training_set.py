@@ -23,6 +23,13 @@ class TrainingSet:
         self.end_time = end_time or datetime.today()
 
     def _register_metadata(self, mlflow_ctx):
+        """
+        Registers training set with mlflow if the user has registered the feature store in their mlflow session,
+        and has called either get_training_set or get_training_set_from_view before or during an mlflow run
+
+        :param mlflow_ctx: the mlflow context
+        :return: None
+        """
         if mlflow_ctx.active_run():
             print("There is an active mlflow run, your training set will be logged to that run.")
             mlflow_ctx.lp("splice.feature_store.training_set",self.training_view.name)

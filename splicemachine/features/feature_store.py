@@ -16,7 +16,8 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils import dict_to_lower
+from .utils import (dict_to_lower, _generate_training_set_history_sql,
+                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
 
@@ -63,75 +64,6 @@ class FeatureStore:
             d['primary_keys'] = {c: k for c, k in zip(pkcols, pktypes)}
             feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
         return feature_sets
-
-    def get_training_set(self, features: Union[List[Feature], List[str]]) -> SparkDF:
-        """
-        Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
-        This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
-        :py:meth:`features.FeatureStore.get_training_set` . The dataset's metadata and features used will be tracked in mlflow automatically (see
-        get_training_set for more details).
-
-        :param features: List of Features or strings of feature names
-
-            :NOTE:
-                .. code-block:: text
-
-                    The Features Sets which the list of Features come from must have common join keys,
-                    otherwise the function will fail. If there is no common join key, it is recommended to
-                    create a Training View to specify the join conditions.
-
-        :return: Spark DF
-        """
-        features = self._process_features(features)
-
-        sql = SQL.get_feature_set_join_keys.format(names=tuple([f.name for f in features]))
-        fset_keys: pd.DataFrame = self.splice_ctx.df(sql).toPandas()
-        # Get max number of pk (join) columns from all feature sets
-        fset_keys['PK_COLUMNS_COUNT'] = fset_keys['PK_COLUMNS'].apply(lambda x: len(x.split('|')))
-        # Get "anchor" feature set. The one we will use to try to join to all others
-        ind = fset_keys['PK_COLUMNS_COUNT'].idxmax()
-        anchor_series = fset_keys.iloc[ind]
-        # Remove that from the list
-        fset_keys.drop(index=ind, inplace=True)
-        all_pk_cols = anchor_series.PK_COLUMNS.split('|')
-        # For each feature set, assert that all join keys exist in our "anchor" feature set
-        fset_keys['can_join'] = fset_keys['PK_COLUMNS'].map(lambda x: set(x.split('|')).issubset(all_pk_cols))
-        if not fset_keys['can_join'].all():
-            bad_feature_set_ids = [t.FEATURE_SET_ID for _, t in fset_keys[fset_keys['can_join'] != True].iterrows()]
-            bad_features = [f.name for f in features if f.feature_set_id in bad_feature_set_ids]
-            raise SpliceMachineException(f"The provided features do not have a common join key."
-                                         f"Remove features {bad_features} from your request")
-
-        # SELECT clause
-        sql = 'SELECT '
-
-        sql += ','.join([f'fset{feature.feature_set_id}.{feature.name}' for feature in features])
-
-        alias = f'fset{anchor_series.FEATURE_SET_ID}'  # We use this a lot for joins
-        sql += f'\nFROM {anchor_series.SCHEMA_NAME}.{anchor_series.TABLE_NAME} {alias} '
-
-        # JOIN clause
-        for _, fset in fset_keys.iterrows():
-            # Join Feature Set
-            sql += f'\nLEFT OUTER JOIN {fset.SCHEMA_NAME}.{fset.TABLE_NAME} fset{fset.FEATURE_SET_ID} \n\tON '
-            for ind, pkcol in enumerate(fset.PK_COLUMNS.split('|')):
-                if ind > 0: sql += ' AND '  # In case of multiple columns
-                sql += f'fset{fset.FEATURE_SET_ID}.{pkcol}={alias}.{pkcol}'
-
-        # Link this to mlflow for model deployment
-        # Here we create a null training view and pass it into the training set. We do this because this special kind
-        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
-        # or a timestamp column . This is simply a joined set of features from different feature sets.
-        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
-        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
-        # for (non time based) clustering use cases.
-        null_tx = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
-                               description=None)
-        ts = TrainingSet(training_view=null_tx, features=features)
-        if hasattr(self, 'mlflow_ctx'):
-            self.mlflow_ctx._active_training_set: TrainingSet = ts
-            ts._register_metadata(self.mlflow_ctx)
-        return self.splice_ctx.df(sql)
 
     def remove_training_view(self, override=False):
         """
@@ -228,8 +160,8 @@ class FeatureStore:
         missing_keys = feature_set_key_columns - join_key_values.keys()
         assert not missing_keys, f"The following keys were not provided and must be: {missing_keys}"
 
-    def get_feature_vector(self, features: List[Union[str,Feature]],
-                           join_key_values: Dict[str,str], return_sql=False) -> Union[str, PandasDF]:
+    def get_feature_vector(self, features: List[Union[str, Feature]],
+                           join_key_values: Dict[str, str], return_sql=False) -> Union[str, PandasDF]:
         """
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
@@ -246,9 +178,9 @@ class FeatureStore:
         feature_sets = self.get_feature_sets([f.feature_set_id for f in feats])
         self._validate_feature_vector_keys(join_keys, feature_sets)
 
-
         feature_names = ','.join([f.name for f in feats])
-        fset_tables = ','.join([f'{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}' for fset in feature_sets])
+        fset_tables = ','.join(
+            [f'{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}' for fset in feature_sets])
         sql = "SELECT {feature_names} FROM {fset_tables} ".format(feature_names=feature_names, fset_tables=fset_tables)
 
         # For each Feature Set, for each primary key in the given feature set, get primary key value from the user provided dictionary
@@ -261,7 +193,7 @@ class FeatureStore:
         return sql if return_sql else self.splice_ctx.df(sql).toPandas()
 
     def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature],
-                               include_insert: Optional[bool] = True) -> str:
+                                                  include_insert: Optional[bool] = True) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
@@ -351,6 +283,72 @@ class FeatureStore:
         # TODO
         raise NotImplementedError
 
+    def get_training_set(self, features: Union[List[Feature], List[str]], retrieve_history: bool = False,
+                         start_time: datetime = None, end_time: datetime = None, return_sql: bool = False) -> SparkDF:
+        """
+        Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
+        This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
+        :py:meth:`features.FeatureStore.get_training_set` . The dataset's metadata and features used will be tracked in mlflow automatically (see
+        get_training_set for more details).
+
+        The way point-in-time correctness is guaranteed here is by choosing one of the Feature Sets as the "anchor" dataset.
+        This means that the points in time that the query is based off of will be the points in time in which the anchor
+        Feature Set recorded changes. The anchor Feature Set is the Feature Set that contains the superset of all primary key
+        columns across all Feature Sets from all Features provided. If more than 1 Feature Set has the superset of
+        all Feature Sets, the Feature Set with the most primary keys is selected. If more than 1 Feature Set has the same
+        maximum number of primary keys, the Feature Set is chosen by alphabetical order (schema_name, table_name).
+
+        :param features: List of Features or strings of feature names
+
+            :NOTE:
+                .. code-block:: text
+
+                    The Features Sets which the list of Features come from must have common join keys,
+                    otherwise the function will fail. If there is no common join key, it is recommended to
+                    create a Training View to specify the join conditions.
+
+        :param retrieve_history: Whether to retrieve the history of all requested Feature values
+        :param start_time: How far back in history you want Feature values. If not specified (and retrieve_history is True), all history will be returned.
+            This parameter only takes effect if retrieve_history is True.
+        :param end_time: The most recent values for each selected Feature. This will be the cutoff time, such that any Feature values that
+            were updated after this point in time won't be selected. If not specified (and retrieve_history is True),
+            Feature values up to the moment in time you call the function (now) will be retrieved. This parameter
+            only takes effect if retrieve_history is True.
+        :return: Spark DF
+        """
+        # Get List[Feature]
+        features = self._process_features(features)
+
+        # Get the Feature Sets
+        fsets = self.get_feature_sets(list({f.feature_set_id for f in features}))
+
+        if retrieve_history:
+            temp_vw = _create_temp_training_view(features, fsets)
+            sql = _generate_training_set_history_sql(temp_vw, features, fsets, start_time=start_time, end_time=end_time)
+        else:
+            sql = _generate_training_set_sql(features, fsets)
+
+        # Here we create a null training view and pass it into the training set. We do this because this special kind
+        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
+        # or a timestamp column . This is simply a joined set of features from different feature sets.
+        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
+        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
+        # for (non time based) clustering use cases.
+        null_tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
+                                description=None)
+        ts = TrainingSet(training_view=null_tvw, features=features, start_time=start_time, end_time=end_time)
+
+        # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
+        # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
+        # For metadata purposes
+        if not retrieve_history:
+            ts.start_time = ts.end_time
+
+        if hasattr(self, 'mlflow_ctx'):
+            self.mlflow_ctx._active_training_set: TrainingSet = ts
+            ts._register_metadata(self.mlflow_ctx)
+        return sql if return_sql else self.splice_ctx.df(sql)
+
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
                                    return_sql: bool = False) -> SparkDF or str:
@@ -394,61 +392,21 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
+        # Get features as list of Features
         features = self._process_features(features) if features else self.get_training_view_features(training_view)
-        # DB-9556 loss of column names on complex sql for NSDS
-        cols = []
 
-        # Get training view information (view primary key column(s), inference ts column, )
-        tctx = self.get_training_view(training_view)
-        # SELECT clause
-        sql = 'SELECT '
-        for pkcol in tctx.pk_columns:  # Select primary key column(s)
-            sql += f'\n\tctx.{pkcol},'
-            cols.append(pkcol)
-
-        sql += f'\n\tctx.{tctx.ts_column}, '  # Select timestamp column
-        cols.append(tctx.ts_column)
-
-        # TODO: ensure these features exist and fail gracefully if not
-        for feature in features:
-            sql += f'\n\tCOALESCE(fset{feature.feature_set_id}.{feature.name},fset{feature.feature_set_id}h.{feature.name}) {feature.name},'  # Collect all features over time
-            cols.append(feature.name)
-
-        sql = sql + f'\n\tctx.{tctx.label_column}' if tctx.label_column else sql.rstrip(
-            ',')  # Select the optional label col
-        if tctx.label_column: cols.append(tctx.label_column)
-
-        # FROM clause
-        sql += f'\nFROM ({tctx.view_sql}) ctx '
-
-        # JOIN clause
+        # Get List of necessary Feature Sets
         feature_set_ids = list({f.feature_set_id for f in features})  # Distinct set of IDs
         feature_sets = self.get_feature_sets(feature_set_ids)
-        for fset in feature_sets:
-            # Join Feature Set
-            sql += f'\nLEFT OUTER JOIN {fset.schema_name}.{fset.table_name} fset{fset.feature_set_id} \n\tON '
-            for pkcol in fset.pk_columns:
-                sql += f'fset{fset.feature_set_id}.{pkcol}=ctx.{pkcol} AND '
-            sql += f' ctx.{tctx.ts_column} >= fset{fset.feature_set_id}.LAST_UPDATE_TS '
 
-            # Join Feature Set History
-            sql += f'\nLEFT OUTER JOIN {fset.schema_name}.{fset.table_name}_history fset{fset.feature_set_id}h \n\tON '
-            for pkcol in fset.pk_columns:
-                sql += f' fset{fset.feature_set_id}h.{pkcol}=ctx.{pkcol} AND '
-            sql += f' ctx.{tctx.ts_column} >= fset{fset.feature_set_id}h.ASOF_TS AND ctx.{tctx.ts_column} < fset{fset.feature_set_id}h.UNTIL_TS'
-
-        # WHERE clause on optional start and end times
-        if start_time or end_time:
-            sql += '\nWHERE '
-            if start_time:
-                sql += f"\n\tctx.{tctx.ts_column} >= '{str(start_time)}' AND"
-            if end_time:
-                sql += f"\n\tctx.{tctx.ts_column} <= '{str(end_time)}'"
-            sql = sql.rstrip('AND')
+        # Get training view information (view primary key column(s), inference ts column, )
+        tvw = self.get_training_view(training_view)
+        # Generate the SQL needed to create the dataset
+        sql = _generate_training_set_history_sql(tvw, features, feature_sets, start_time=start_time, end_time=end_time)
 
         # Link this to mlflow for model deployment
         if hasattr(self, 'mlflow_ctx') and not return_sql:
-            ts = TrainingSet(training_view=tctx, features=features,
+            ts = TrainingSet(training_view=tvw, features=features,
                              start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
