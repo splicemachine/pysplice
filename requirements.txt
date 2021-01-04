@@ -8,7 +8,7 @@ requests
 gorilla==0.3.0
 tqdm
 pyspark-dist-explore==0.1.8
-numpy==1.18.2
+numpy>=1.18.2
 pandas==1.0.3
 scipy>=1.4.1
 tensorflow>=2.2.0
