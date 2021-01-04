@@ -1,6 +1,7 @@
 from splicemachine import SpliceMachineException
 from typing import List
-from splicemachine.features import Feature, FeatureSet
+from .feature import Feature
+from .feature_set import FeatureSet
 from splicemachine.features.training_view import TrainingView
 
 

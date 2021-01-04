@@ -1,6 +1,5 @@
 from splicemachine.features import Feature
 from .constants import SQL, Columns
-from .utils import clean_df
 from splicemachine.spark import PySpliceContext
 from typing import List, Dict
 
@@ -34,8 +33,8 @@ class FeatureSet:
         """
         features = []
         if self.feature_set_id:
-            features_df = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id))
-            features_df = clean_df(features_df, Columns.feature).collect()
+            features_df = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id),
+                                             to_lower=True)
             for f in features_df:
                 f = f.asDict()
                 features.append(Feature(**f))
