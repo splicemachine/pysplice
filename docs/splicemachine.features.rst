@@ -27,7 +27,7 @@ Submodules
 splicemachine.features.feature_store
 ----------------------------------
 
-This Module contains the classes adn APIs for interacting with the Splice Machine Feature Store.
+This Module contains the classes and APIs for interacting with the Splice Machine Feature Store.
 
 .. automodule:: splicemachine.features.feature_store
    :members:

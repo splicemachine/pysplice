@@ -533,7 +533,7 @@ class FeatureStore:
         :param table_name: The feature set table name to add the feature to
         :param name: The feature name
         :param feature_data_type: The datatype of the feature. Must be a valid SQL datatype
-        :param feature_type: splicemachine.features.FeatureType of the feature. Available are FeatureType.[categorical, ordinal, continuous].
+        :param feature_type: splicemachine.features.FeatureType of the feature. The available types are from the FeatureType class: FeatureType.[categorical, ordinal, continuous].
             You can see available feature types by running
 
             .. code-block:: python
@@ -543,7 +543,7 @@ class FeatureStore:
 
         :param desc: The (optional) feature description (default None)
         :param tags: (optional) List of (str) tag words (default None)
-        :return:
+        :return: Feature created
         """
         self.__validate_feature_data_type(feature_data_type)
         if self.splice_ctx.tableExists(schema_name, table_name):
@@ -555,6 +555,7 @@ class FeatureStore:
                     feature_type=feature_type, tags=tags or [], feature_set_id=fset.feature_set_id)
         print(f'Registering feature {f.name} in Feature Store')
         f._register_metadata(self.splice_ctx)
+        return f
         # TODO: Backfill the feature
 
     def _validate_training_view(self, name, sql, join_keys, label_col=None):
