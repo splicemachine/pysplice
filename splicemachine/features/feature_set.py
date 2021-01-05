@@ -27,6 +27,11 @@ class FeatureSet:
         self.pk_columns = list(primary_keys.keys())
 
     def get_features(self) -> List[Feature]:
+        """
+        Get's all of the features from this featureset as a list of splicemachine.features.Feature
+
+        :return: List[Feature]
+        """
         features = []
         if self.feature_set_id:
             features_df = self.splice_ctx.df(SQL.get_features_in_feature_set.format(feature_set_id=self.feature_set_id))
@@ -36,9 +41,20 @@ class FeatureSet:
                 features.append(Feature(**f))
         return features
 
+    def is_deployed(self):
+        """
+        Returns whether or not this Feature Set has been deployed (the schema.table has been created in the database)
+        :return: (bool) True if the Feature Set is deployed
+        """
+        return self.deployed
+
     def remove_feature(self, feature: Feature or str):
-        #TODO
-        pass
+        """
+        Removes a Feature from the Feature Set. This is not yet implemented
+
+        :param feature: The feature to remove
+        """
+        raise NotImplementedError
 
     def get_pk_schema_str(self):
         return ','.join([f'\n\t{k} {self.primary_keys[k]}' for k in self.primary_keys])
@@ -78,7 +94,10 @@ class FeatureSet:
                                                                          feature_set_id=self.feature_set_id))
 
 
-    def deploy(self):
+    def deploy(self, verbose=False):
+        """
+        Deploys the current feature set. Equivalent to calling fs.deploy(schema_name, table_name)
+        """
         old_pk_cols = ','.join(f'OLDW.{p}' for p in self.pk_columns)
         old_feature_cols = ','.join(f'OLDW.{f.name}' for f in self.get_features())
 
@@ -98,15 +117,15 @@ class FeatureSet:
             feature_list=self.get_feature_column_str(), old_pk_cols=old_pk_cols, old_feature_cols=old_feature_cols)
 
         print('Creating Feature Set...', end=' ')
-        print('\n', feature_set_sql, '\n')
+        if verbose: print('\n', feature_set_sql, '\n')
         self.splice_ctx.execute(feature_set_sql)
         print('Done.')
         print('Creating Feature Set History...', end=' ')
-        print('\n', history_sql, '\n')
+        if verbose: print('\n', history_sql, '\n')
         self.splice_ctx.execute(history_sql)
         print('Done.')
         print('Creating Historian Trigger...', end=' ')
-        print('\n', trigger_sql, '\n')
+        if verbose: print('\n', trigger_sql, '\n')
         self.splice_ctx.execute(trigger_sql)
         print('Done.')
         print('Updating Metadata...')

@@ -14,5 +14,6 @@ scipy==1.4.1
 tensorflow==2.2.1
 pyspark
 h2o-pysparkling-2.4==3.28.1.2-1
+sphinx-tabs
 IPython
 cloudpickle==1.6.0

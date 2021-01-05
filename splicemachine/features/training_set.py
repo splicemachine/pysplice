@@ -1,4 +1,4 @@
-from .training_context import TrainingContext
+from .training_view import TrainingView
 from .feature import Feature
 from typing import List, Optional
 from datetime import datetime
@@ -12,12 +12,12 @@ class TrainingSet:
     """
     def __init__(self,
                  *,
-                 training_context: TrainingContext,
+                 training_view: TrainingView,
                  features: List[Feature],
-                 start_time: Optional[datetime],
-                 end_time: Optional[datetime]
+                 start_time: Optional[datetime] = None,
+                 end_time: Optional[datetime] = None
                  ):
-        self.training_context = training_context
+        self.training_view = training_view
         self.features = features
         self.start_time = start_time or datetime.min
         self.end_time = end_time or datetime.today()
@@ -25,7 +25,7 @@ class TrainingSet:
     def _register_metadata(self, mlflow_ctx):
         if mlflow_ctx.active_run():
             print("There is an active mlflow run, your training set will be logged to that run.")
-            mlflow_ctx.lp("splice.feature_store.training_set",self.training_context.name)
+            mlflow_ctx.lp("splice.feature_store.training_set",self.training_view.name)
             mlflow_ctx.lp("splice.feature_store.training_set_start_time",str(self.start_time))
             mlflow_ctx.lp("splice.feature_store.training_set_end_time",str(self.end_time))
             mlflow_ctx.lp("splice.feature_store.training_set_num_features", len(self.features))

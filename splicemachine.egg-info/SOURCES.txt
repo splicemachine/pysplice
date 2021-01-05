@@ -14,7 +14,7 @@ splicemachine/features/constants.py
 splicemachine/features/feature.py
 splicemachine/features/feature_set.py
 splicemachine/features/feature_store.py
-splicemachine/features/training_context.py
+splicemachine/features/training_view.py
 splicemachine/features/utils.py
 splicemachine/mlflow_support/__init__.py
 splicemachine/mlflow_support/constants.py
