@@ -121,6 +121,7 @@ def _generate_training_set_sql(features: List[Feature], feature_sets: List[Featu
     anchor_fset: FeatureSet = _get_anchor_feature_set(features, feature_sets)
     alias = f'fset{anchor_fset.feature_set_id}'  # We use this a lot for joins
     anchor_fset_schema = f'{anchor_fset.schema_name}.{anchor_fset.table_name} {alias} '
+    remaining_fsets: List[FeatureSet] = [fset for fset in feature_sets if fset.feature_set_id != anchor_fset.feature_set_id]
 
     # SELECT clause
     feature_names = ','.join([f'fset{feature.feature_set_id}.{feature.name}' for feature in features])
@@ -131,7 +132,7 @@ def _generate_training_set_sql(features: List[Feature], feature_sets: List[Featu
     sql = f'SELECT {all_feature_columns} \nFROM {anchor_fset_schema}'
 
     # JOIN clause
-    for fset in feature_sets:
+    for fset in remaining_fsets:
         # Join Feature Set
         sql += f'\nLEFT OUTER JOIN {fset.schema_name}.{fset.table_name} fset{fset.feature_set_id} \n\tON '
         for ind, pkcol in enumerate(fset.pk_columns):
