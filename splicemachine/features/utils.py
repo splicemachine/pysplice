@@ -125,8 +125,8 @@ def _generate_training_set_sql(features: List[Feature], feature_sets: List[Featu
     # Include the pk columns of the anchor feature set
     feature_names += anchor_fset.pk_columns
     alias = f'fset{anchor_fset.feature_set_id}'  # We use this a lot for joins
-    anchor_fset_schema = f'\nFROM {anchor_fset.schema_name}.{anchor_fset.table_name} {alias} '
-    sql = f'SELECT {feature_names} FROM {anchor_fset_schema}'
+    anchor_fset_schema = f'{anchor_fset.schema_name}.{anchor_fset.table_name} {alias} '
+    sql = f'SELECT {feature_names} \nFROM {anchor_fset_schema}'
 
     # JOIN clause
     for fset in feature_sets:
