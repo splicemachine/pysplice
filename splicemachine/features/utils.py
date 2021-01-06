@@ -119,14 +119,16 @@ def _generate_training_set_sql(features: List[Feature], feature_sets: List[Featu
     :return: str the SQL necessary to execute
     """
     anchor_fset: FeatureSet = _get_anchor_feature_set(features, feature_sets)
+    alias = f'fset{anchor_fset.feature_set_id}'  # We use this a lot for joins
+    anchor_fset_schema = f'{anchor_fset.schema_name}.{anchor_fset.table_name} {alias} '
 
     # SELECT clause
     feature_names = ','.join([f'fset{feature.feature_set_id}.{feature.name}' for feature in features])
     # Include the pk columns of the anchor feature set
-    feature_names += anchor_fset.pk_columns
-    alias = f'fset{anchor_fset.feature_set_id}'  # We use this a lot for joins
-    anchor_fset_schema = f'{anchor_fset.schema_name}.{anchor_fset.table_name} {alias} '
-    sql = f'SELECT {feature_names} \nFROM {anchor_fset_schema}'
+    pk_cols = ','.join([f'{alias}.{pk}' for pk in anchor_fset.pk_columns])
+    all_feature_columns = feature_names + ',' + pk_cols
+
+    sql = f'SELECT {all_feature_columns} \nFROM {anchor_fset_schema}'
 
     # JOIN clause
     for fset in feature_sets:
