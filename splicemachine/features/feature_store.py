@@ -283,7 +283,7 @@ class FeatureStore:
         # TODO
         raise NotImplementedError
 
-    def get_training_set(self, features: Union[List[Feature], List[str]], retrieve_history: bool = False,
+    def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
                          start_time: datetime = None, end_time: datetime = None, return_sql: bool = False) -> SparkDF:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
@@ -307,13 +307,13 @@ class FeatureStore:
                     otherwise the function will fail. If there is no common join key, it is recommended to
                     create a Training View to specify the join conditions.
 
-        :param retrieve_history: Whether to retrieve the history of all requested Feature values
-        :param start_time: How far back in history you want Feature values. If not specified (and retrieve_history is True), all history will be returned.
-            This parameter only takes effect if retrieve_history is True.
+        :param current_values_only: If you only want the most recent values of the features, set this to true. Otherwise, all history will be returned. Default False
+        :param start_time: How far back in history you want Feature values. If not specified (and current_values_only is False), all history will be returned.
+            This parameter only takes effect if current_values_only is False.
         :param end_time: The most recent values for each selected Feature. This will be the cutoff time, such that any Feature values that
-            were updated after this point in time won't be selected. If not specified (and retrieve_history is True),
+            were updated after this point in time won't be selected. If not specified (and current_values_only is False),
             Feature values up to the moment in time you call the function (now) will be retrieved. This parameter
-            only takes effect if retrieve_history is True.
+            only takes effect if current_values_only is False.
         :return: Spark DF
         """
         # Get List[Feature]
@@ -322,11 +322,12 @@ class FeatureStore:
         # Get the Feature Sets
         fsets = self.get_feature_sets(list({f.feature_set_id for f in features}))
 
-        if retrieve_history:
+        if current_values_only:
+            sql = _generate_training_set_sql(features, fsets)
+        else:
             temp_vw = _create_temp_training_view(features, fsets)
             sql = _generate_training_set_history_sql(temp_vw, features, fsets, start_time=start_time, end_time=end_time)
-        else:
-            sql = _generate_training_set_sql(features, fsets)
+
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -341,7 +342,7 @@ class FeatureStore:
         # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
         # For metadata purposes
-        if not retrieve_history:
+        if current_values_only:
             ts.start_time = ts.end_time
 
         if hasattr(self, 'mlflow_ctx'):
