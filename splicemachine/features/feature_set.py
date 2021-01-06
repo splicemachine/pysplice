@@ -133,7 +133,8 @@ class FeatureSet:
 
     def __eq__(self, other):
         if isinstance(other, FeatureSet):
-            return self.table_name == other.table_name and self.schema_name == other.schema_name
+            return self.table_name.lower() == other.table_name.lower() and \
+                   self.schema_name.lower() == other.schema_name.lower()
         return False
 
     def __repr__(self):
