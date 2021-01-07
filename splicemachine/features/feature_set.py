@@ -23,7 +23,7 @@ class FeatureSet:
         args = {k: args[k].split(',') if 'columns' in k else args[k] for k in
                 args}  # Make value a list for specific pkcolumns because Splice doesn't support Arrays
         self.__dict__.update(args)
-        self.pk_columns: List = list(primary_keys.keys())
+        self.pk_columns = list(primary_keys.keys())
 
     def get_features(self) -> List[Feature]:
         """
