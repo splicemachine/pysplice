@@ -10,7 +10,6 @@ def clean_df(df, cols):
         df = df.withColumnRenamed(old, new)
     return df
 
-
 def dict_to_lower(dict):
     """
     Converts a dictionary to all lowercase keys
@@ -157,3 +156,4 @@ def _create_temp_training_view(features: List[Feature], feature_sets: List[Featu
     view_sql = f'SELECT {anchor_pk_column_sql}, ASOF_TS as {ts_col} FROM {schema_table_name}'
     return TrainingView(pk_columns=anchor_fset.pk_columns, ts_column=ts_col, view_sql=view_sql,
                         description=None, name=None, label_column=None)
+

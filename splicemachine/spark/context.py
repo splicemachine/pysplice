@@ -78,6 +78,14 @@ class PySpliceContext:
             self.jvm = ''
             self.context = MockedScalaContext(self.jdbcurl)
 
+    def columnNamesCaseSensitive(self, caseSensitive):
+        """
+        Sets whether column names should be treated as case sensitive.
+
+        :param caseSensitive: (boolean) True for case sensitive, False for not case sensitive
+        """
+        self.context.columnNamesCaseSensitive(caseSensitive)
+
     def toUpper(self, dataframe):
         """
         Returns a dataframe with all of the columns in uppercase
@@ -305,6 +313,7 @@ class PySpliceContext:
     def upsert(self, dataframe, schema_table_name):
         """
         Upsert the data from a dataframe into a table (schema.table).
+        If triggers fail when calling upsert, use the mergeInto function instead of upsert.
 
         :param dataframe: (Dataframe) The dataframe you would like to upsert
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
@@ -317,6 +326,7 @@ class PySpliceContext:
     def upsertWithRdd(self, rdd, schema, schema_table_name):
         """
         Upsert the data from an RDD into a table (schema.table).
+        If triggers fail when calling upsertWithRdd, use the mergeIntoWithRdd function instead of upsertWithRdd.
 
         :param rdd: (RDD) The RDD you would like to upsert
         :param schema: (StructType) The schema of the rows in the RDD
@@ -324,6 +334,37 @@ class PySpliceContext:
         :return: None
         """
         self.upsert(
+            self.createDataFrame(rdd, schema),
+            schema_table_name
+        )
+
+    def mergeInto(self, dataframe, schema_table_name):
+        """
+        Rows in the dataframe whose primary key is not in schemaTableName will be inserted into the table;
+        rows in the dataframe whose primary key is in schemaTableName will be used to update the table.
+
+        This implementation differs from upsert in a way that allows triggers to work.
+
+        :param dataframe: (Dataframe) The dataframe you would like to merge in
+        :param schema_table_name: (str) The table in which you would like to merge in the dataframe
+        :return: None
+        """
+        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        self.context.mergeInto(dataframe._jdf, schema_table_name)
+
+    def mergeIntoWithRdd(self, rdd, schema, schema_table_name):
+        """
+        Rows in the rdd whose primary key is not in schemaTableName will be inserted into the table;
+        rows in the rdd whose primary key is in schemaTableName will be used to update the table.
+
+        This implementation differs from upsertWithRdd in a way that allows triggers to work.
+
+        :param rdd: (RDD) The RDD you would like to merge in
+        :param schema: (StructType) The schema of the rows in the RDD
+        :param schema_table_name: (str) The table in which you would like to merge in the RDD
+        :return: None
+        """
+        self.mergeInto(
             self.createDataFrame(rdd, schema),
             schema_table_name
         )
