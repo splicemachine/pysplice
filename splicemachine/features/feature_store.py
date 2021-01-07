@@ -192,8 +192,7 @@ class FeatureStore:
 
         return sql if return_sql else self.splice_ctx.df(sql).toPandas()
 
-    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature],
-                                                  include_insert: Optional[bool] = True) -> str:
+    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature]) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
@@ -206,7 +205,6 @@ class FeatureStore:
                     This function will error if the view SQL is missing a view key required to retrieve the\
                     desired features
 
-        :param include_insert: (Optional[bool]) determines whether insert into model table is included in the SQL statement
         :return: (str) the parameterized feature vector SQL
         """
 
@@ -214,17 +212,7 @@ class FeatureStore:
         vid = self.get_training_view_id(training_view)
         tctx = self.get_training_views(_filter={'view_id': vid})[0]
 
-        # optional INSERT prefix
-        if (include_insert):
-            sql = 'INSERT INTO {target_model_table} ('
-            for pkcol in tctx.pk_columns:  # Select primary key column(s)
-                sql += f'{pkcol}, '
-            for feature in features:
-                sql += f'{feature.name}, '  # Collect all features over time
-            sql = sql.rstrip(', ')
-            sql += ')\nSELECT '
-        else:
-            sql = 'SELECT '
+        sql = 'SELECT '
 
         # SELECT expressions
         for pkcol in tctx.pk_columns:  # Select primary key column(s)
