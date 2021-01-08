@@ -19,7 +19,7 @@ class TrainingSet:
                  ):
         self.training_view = training_view
         self.features = features
-        self.start_time = start_time or datetime.min
+        self.start_time = start_time or datetime(year=1990,month=1,day=1) # Saw problems with spark handling datetime.min
         self.end_time = end_time or datetime.today()
 
     def _register_metadata(self, mlflow_ctx):
