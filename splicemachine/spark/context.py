@@ -124,8 +124,9 @@ class PySpliceContext:
 
     def fileToTable(self, file_path, schema_table_name, primary_keys=None, drop_table=False, **pandas_args):
         """
-        Load a file from the local filesystem and create a new table (or recreate an existing table), and load the data
-        from the file into the new table
+        Load a file from the local filesystem or from a remote location and create a new table
+        (or recreate an existing table), and load the data from the file into the new table. Any file_path that can be
+        read by pandas should work here.
 
         :param file_path: The local file to load
         :param schema_table_name: The schema.table name
@@ -133,7 +134,7 @@ class PySpliceContext:
         :param drop_table: Whether or not to drop the table. If this is False and the table already exists, the
             function will fail. Default False
         :param pandas_args: Extra parameters to be passed into the pd.read_csv function. Any parameters accepted
-        in pd.read_csv will work here
+            in pd.read_csv will work here
         :return: None
         """
         import pandas as pd
