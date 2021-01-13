@@ -25,6 +25,7 @@ from .training_view import TrainingView
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
+        self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
@@ -166,7 +167,7 @@ class FeatureStore:
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
         :param features: List of str Feature names or Features
-        :param join_key_values: (dict) join key vals to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param join_key_values: (dict) join key values to get the proper Feature values formatted as {join_key_column_name: join_key_value}
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
@@ -333,7 +334,7 @@ class FeatureStore:
         if current_values_only:
             ts.start_time = ts.end_time
 
-        if hasattr(self, 'mlflow_ctx'):
+        if self.mlflow_ctx and not return_sql:
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
         return sql if return_sql else self.splice_ctx.df(sql)
@@ -394,7 +395,7 @@ class FeatureStore:
         sql = _generate_training_set_history_sql(tvw, features, feature_sets, start_time=start_time, end_time=end_time)
 
         # Link this to mlflow for model deployment
-        if hasattr(self, 'mlflow_ctx') and not return_sql:
+        if self.mlflow_ctx and not return_sql:
             ts = TrainingSet(training_view=tvw, features=features,
                              start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
@@ -735,12 +736,16 @@ class FeatureStore:
         :param name: MLflow run name
         :param rounds: Number of rounds of feature elimination that were run
         :param mlflow_results: The params / metrics to log
-        :return:
         """
-        with self.mlflow_ctx.start_run(run_name=name):
+        try:
+            if self.mlflow_ctx.active_run():
+                self.mlflow_ctx.start_run(run_name=name)
             for r in range(rounds):
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
+        finally:
+            self.mlflow_ctx.end_run()
+
 
     def __prune_features_for_elimination(self, features) -> List[Feature]:
         """
@@ -814,7 +819,7 @@ class FeatureStore:
                 round_metrics[row['name']] = row['score']
             mlflow_results.append(round_metrics)
 
-        if log_mlflow and hasattr(self, 'mlflow_ctx'):
+        if log_mlflow and self.mlflow_ctx:
             run_name = mlflow_run_name or f'feature_elimination_{label}'
             self.__log_mlflow_results(run_name, rnd, mlflow_results)
 
