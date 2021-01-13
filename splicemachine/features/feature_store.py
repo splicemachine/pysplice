@@ -16,8 +16,8 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils import (dict_to_lower, _generate_training_set_history_sql,
-                    _generate_training_set_sql, _create_temp_training_view)
+from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
+                                   _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
 
