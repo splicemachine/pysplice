@@ -25,7 +25,6 @@ from .training_view import TrainingView
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
-        self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
@@ -167,7 +166,7 @@ class FeatureStore:
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
         :param features: List of str Feature names or Features
-        :param join_key_values: (dict) join key values to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param join_key_values: (dict) join key vals to get the proper Feature values formatted as {join_key_column_name: join_key_value}
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
@@ -316,7 +315,6 @@ class FeatureStore:
         else:
             temp_vw = _create_temp_training_view(features, fsets)
             sql = _generate_training_set_history_sql(temp_vw, features, fsets, start_time=start_time, end_time=end_time)
-
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -689,6 +687,166 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
+    def _retrieve_training_set_from_deployment(self, schema_name, table_name):
+        metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
+        features = metadata['FEATURES'].split(',')
+        tv_name = metadata['NAME']
+        start_time = metadata['TRAINING_SET_START_TS']
+        end_time = metadata['TRAINING_SET_END_TS']
+        if (tv_name):
+            training_set_df = self.get_training_set_from_view(training_view=tv_name, start_time=start_time,
+                                                              end_time=end_time, features=features)
+        else:
+            training_set_df = self.get_training_set(features=features, start_time=start_time, end_time=end_time)
+        return training_set_df
+
+    def _retrieve_model_data_sets(self, schema_name, table_name):
+        training_set_df = self._retrieve_training_set_from_deployment(schema_name, table_name)
+        model_table_df = self.splice_ctx.df(f'SELECT * FROM {schema_name}.{table_name}')
+        return training_set_df, model_table_df
+
+    def _retrieve_training_set_metadata_from_deployement(self, schema_name: str, table_name: str):
+        sql = SQL.get_deployment_metadata.format(schema_name=schema_name, table_name=table_name)
+        deploy_df = self.splice_ctx.df(sql).collect()
+        cnt = len(deploy_df)
+        if (cnt == 1):
+            return deploy_df[0]
+
+    def _calculate_bounds(self, df, column_name):
+        """
+        Calculates outlier bounds based on interquartile range of distribution of values in column 'column_name'
+        from data set in data frame 'df'.
+        :param df: data frame containing data to be analyzed
+        :param column_name: column name to analyze
+        :return: dictionary with keys min, max, q1 and q3 keys and corresponding values for outlier minimum, maximum
+        and 25th and 75th percentile values (q1,q3)
+        """
+        bounds = dict(zip(["q1", "q3"], df.approxQuantile(column_name, [0.25, 0.75], 0)))
+        iqr = bounds['q3'] - bounds['q1']
+        bounds['min'] = bounds['q1'] - (iqr * 1.5)
+        bounds['max'] = bounds['q3'] + (iqr * 1.5)
+        return bounds
+
+    def _remove_outliers(self, df, column_name):
+        '''
+        Calculates outlier bounds no distribution of 'column_name' values and returns a filtered data frame without
+        outliers in the specified column.
+        :param df: data frame with data to remove outliers from
+        :param column_name: name of column to remove outliers from
+        :return: input data frame filtered to remove outliers
+        '''
+        import pyspark.sql.functions as f
+        bounds = self._calculate_bounds(df, column_name)
+        return df.filter((f.col(column_name) >= bounds['min']) & (f.col(column_name) <= bounds['max']))
+
+    def _add_feature_plot(self, ax, train_df, model_df, feature, n_bins):
+        '''
+        Adds a distplot of the outlier free feature values from both train_df and model_df data frames which both
+        contain the feature.
+        :param ax: target subplot for chart
+        :param train_df: training data containing feature of interest
+        :param model_df: model input data also containing feature of interest
+        :param feature: name of feature to display in distribution histogram
+        :param n_bins: number of bins to use in histogram plot
+        :return: None
+        '''
+        from pyspark_dist_explore import distplot
+        import pyspark.sql.functions as f
+        distplot(ax, [self._remove_outliers(train_df.select(f.col(feature).alias('training')), 'training'),
+                      self._remove_outliers(model_df.select(f.col(feature).alias('model')), 'model')], bins=n_bins)
+        ax.set_title(feature)
+        ax.legend()
+
+    def display_model_feature_drift(self, schema_name, table_name):
+        """
+        Displays feature by feature comparison between the training set of the deployed model and the input feature
+        values used with the model since deployment.
+        :param schema_name: name of database schema where model table is deployed
+        :param table_name: name of the model table
+        :return: None
+        """
+        from matplotlib.pyplot import show, subplots
+        metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
+        if metadata:
+            features = metadata['FEATURES'].split(',')
+            training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
+            final_features = [f for f in features if f in model_table_df.columns]
+            # prep plot area
+            n_bins = 15
+            num_features = len(final_features)
+            n_rows = int(num_features / 5)
+            fig, axes = subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
+            axes = axes.flatten()
+            # calculate combined plots for each feature
+            for plot, f in enumerate(final_features):
+                self._add_feature_plot(axes[plot], training_set_df, model_table_df, f, n_bins)
+            show()
+        else:
+            print(f"Could not find deployment for model table {schema_name}.{table_name}")
+
+    def _datetime_range(self, start: datetime, end: datetime, number: int):
+        """
+        Subdivides the time frame defined by 'start' and 'end' parameters into 'number' equal time frames.
+        :param start: start date time
+        :param end: end date time
+        :param number: number of time frames to split into
+        :return: list of start/end date times
+        """
+        from datetime import datetime
+        from itertools import count, islice
+        start_secs = (start - datetime(1970, 1, 1)).total_seconds()
+        end_secs = (end - datetime(1970, 1, 1)).total_seconds()
+        dates = [datetime.fromtimestamp(el) for el in
+                 islice(count(start_secs, (end_secs - start_secs) / number), number + 1)]
+        return zip(dates, dates[1:])
+
+    def display_model_drift(self, schema_name: str, table_name: str, time_intervals: int,
+                            start_time: datetime = None, end_time: datetime = None):
+        """
+        Displays as many as 'time_intervals' plots showing the distribution of the model prediction within each time
+        period. Time periods are equal periods of time where predictions are present in the model table
+        'schema_name'.'table_name'. Model predictions are first filtered to only those occurring after 'start_time' if
+        specified and before 'end_time' if specified.
+        :param schema_name: schema where the model table resides
+        :param table_name: name of the model table
+        :param time_intervals: number of time intervals to plot
+        :param start_time: if specified, filters to only show predictions occurring after this date/time
+        :param end_time: if specified, filters to only show predictions occurring before this date/time
+        :return: None
+        """
+        from datetime import datetime
+        import matplotlib.pyplot as plt
+        from pyspark_dist_explore import distplot
+        import pyspark.sql.functions as f
+
+        # set default timeframe if not specified
+        if not start_time:
+            start_time = datetime(1900, 1, 1, 0, 0, 0)
+        if not end_time:
+            end_time = datetime.now()
+        # retrieve predictions the model has made over time
+        sql = SQL.get_model_predictions.format(schema_name=schema_name, table_name=table_name, start_time=start_time,
+                                               end_time=end_time)
+        model_table_df = self.splice_ctx.df(sql)
+        min_ts = model_table_df.first()['EVAL_TIME']
+        max_ts = model_table_df.orderBy(f.col("EVAL_TIME").desc()).first()['EVAL_TIME']
+
+        if max_ts > min_ts:
+            intervals = self._datetime_range(min_ts, max_ts, time_intervals)
+            n_rows = int(time_intervals / 5)
+            fig, axes = plt.subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
+            axes = axes.flatten()
+            for i, time_int in enumerate(intervals):
+                df = model_table_df.filter((f.col('EVAL_TIME') >= time_int[0]) & (f.col('EVAL_TIME') < time_int[1]))
+                distplot(axes[i], [self._remove_outliers(df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+                axes[i].set_title(f"{time_int[0]}")
+                axes[i].legend()
+        else:
+            fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+            distplot(axes, [self._remove_outliers(model_table_df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+            axes.set_title(f"Predictions at {min_ts}")
+            axes.legend()
+
     def __get_pipeline(self, df, features, label, model_type):
         """
         Creates a Pipeline with preprocessing steps (StringINdexer, VectorAssembler) for each feature depending
@@ -736,16 +894,12 @@ class FeatureStore:
         :param name: MLflow run name
         :param rounds: Number of rounds of feature elimination that were run
         :param mlflow_results: The params / metrics to log
+        :return:
         """
-        try:
-            if self.mlflow_ctx.active_run():
-                self.mlflow_ctx.start_run(run_name=name)
+        with self.mlflow_ctx.start_run(run_name=name):
             for r in range(rounds):
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
-        finally:
-            self.mlflow_ctx.end_run()
-
 
     def __prune_features_for_elimination(self, features) -> List[Feature]:
         """
