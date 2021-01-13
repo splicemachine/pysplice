@@ -775,6 +775,8 @@ class FeatureStore:
             n_bins = 15
             num_features = len(final_features)
             n_rows = int(num_features / 5)
+            if num_features % 5 > 0:
+                n_rows = n_rows + 1
             fig, axes = subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
             axes = axes.flatten()
             # calculate combined plots for each feature
@@ -834,6 +836,8 @@ class FeatureStore:
         if max_ts > min_ts:
             intervals = self._datetime_range(min_ts, max_ts, time_intervals)
             n_rows = int(time_intervals / 5)
+            if time_intervals % 5 > 0:
+                n_rows = n_rows + 1
             fig, axes = plt.subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
             axes = axes.flatten()
             for i, time_int in enumerate(intervals):
