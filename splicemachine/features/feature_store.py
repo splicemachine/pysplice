@@ -16,7 +16,7 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils.drift_utils import add_feature_plot, remove_outliers, datetime_range_split
+from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split)
 from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
                                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
