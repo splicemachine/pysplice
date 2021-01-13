@@ -334,7 +334,7 @@ class FeatureStore:
         if current_values_only:
             ts.start_time = ts.end_time
 
-        if hasattr(self, 'mlflow_ctx') and not return_sql:
+        if self.mlflow_ctx and not return_sql:
             self.mlflow_ctx._active_training_set: TrainingSet = ts
             ts._register_metadata(self.mlflow_ctx)
         return sql if return_sql else self.splice_ctx.df(sql)
@@ -395,7 +395,7 @@ class FeatureStore:
         sql = _generate_training_set_history_sql(tvw, features, feature_sets, start_time=start_time, end_time=end_time)
 
         # Link this to mlflow for model deployment
-        if hasattr(self, 'mlflow_ctx') and not return_sql:
+        if self.mlflow_ctx and not return_sql:
             ts = TrainingSet(training_view=tvw, features=features,
                              start_time=start_time, end_time=end_time)
             self.mlflow_ctx._active_training_set: TrainingSet = ts
@@ -819,7 +819,7 @@ class FeatureStore:
                 round_metrics[row['name']] = row['score']
             mlflow_results.append(round_metrics)
 
-        if log_mlflow and hasattr(self, 'mlflow_ctx'):
+        if log_mlflow and self.mlflow_ctx:
             run_name = mlflow_run_name or f'feature_elimination_{label}'
             self.__log_mlflow_results(run_name, rnd, mlflow_results)
 
