@@ -27,6 +27,7 @@ from .training_view import TrainingView
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
+        self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
@@ -168,7 +169,7 @@ class FeatureStore:
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
         :param features: List of str Feature names or Features
-        :param join_key_values: (dict) join key vals to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param join_key_values: (dict) join key values to get the proper Feature values formatted as {join_key_column_name: join_key_value}
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
@@ -823,10 +824,15 @@ class FeatureStore:
         :param mlflow_results: The params / metrics to log
         :return:
         """
-        with self.mlflow_ctx.start_run(run_name=name):
+        try:
+            if self.mlflow_ctx.active_run():
+                self.mlflow_ctx.start_run(run_name=name)
             for r in range(rounds):
                 with self.mlflow_ctx.start_run(run_name=f'Round {r}', nested=True):
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
+        finally:
+            self.mlflow_ctx.end_run()
+
 
     def __prune_features_for_elimination(self, features) -> List[Feature]:
         """
