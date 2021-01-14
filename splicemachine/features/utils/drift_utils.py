@@ -2,7 +2,9 @@
 A set of utility functions for calculating drift of deployed models
 """
 import datetime as datetime
-
+import matplotlib.pyplot as plt
+from datetime import datetime
+import pyspark.sql.functions as f
 
 def calculate_outlier_bounds(df, column_name):
     """
@@ -66,3 +68,52 @@ def datetime_range_split( start: datetime, end: datetime, number: int):
     dates = [datetime.fromtimestamp(el) for el in
              islice(count(start_secs, (end_secs - start_secs) / number), number + 1)]
     return zip(dates, dates[1:])
+
+def build_feature_drift_plot(features, training_set_df, model_table_df):
+    """
+    Displays feature by feature comparison of distributions between the training set and the model inputs.
+    :param features: list of features to analyze
+    :param training_set_df: the dataframe used for training the model that contains all the features to analyze
+    :param model_table_df: the dataframe with the content of the model table containing all input features
+    :return: None
+    """
+    final_features = [f for f in features if f in model_table_df.columns]
+    # prep plot area
+    n_bins = 15
+    num_features = len(final_features)
+    n_rows = int(num_features / 5)
+    if num_features % 5 > 0:
+        n_rows = n_rows + 1
+    fig, axes = plt.subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
+    axes = axes.flatten()
+    # calculate combined plots for each feature
+    for plot, f in enumerate(final_features):
+        add_feature_plot(axes[plot], training_set_df, model_table_df, f, n_bins)
+    plt.show()
+
+def build_model_drift_plot( model_table_df, time_intervals):
+    """
+    Displays model prediction distribution plots split into multiple time intervals.
+    :param model_table_df: dataframe containing columns EVAL_TIME and PREDICTION
+    :param time_intervals: number of time intervals to display
+    :return:
+    """
+    min_ts = model_table_df.first()['EVAL_TIME']
+    max_ts = model_table_df.orderBy(f.col("EVAL_TIME").desc()).first()['EVAL_TIME']
+    if max_ts > min_ts:
+        intervals = datetime_range_split(min_ts, max_ts, time_intervals)
+        n_rows = int(time_intervals / 5)
+        if time_intervals % 5 > 0:
+            n_rows = n_rows + 1
+        fig, axes = plt.subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
+        axes = axes.flatten()
+        for i, time_int in enumerate(intervals):
+            df = model_table_df.filter((f.col('EVAL_TIME') >= time_int[0]) & (f.col('EVAL_TIME') < time_int[1]))
+            plt.distplot(axes[i], [remove_outliers(df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+            axes[i].set_title(f"{time_int[0]}")
+            axes[i].legend()
+    else:
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        plt.distplot(axes, [remove_outliers(model_table_df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+        axes.set_title(f"Predictions at {min_ts}")
+        axes.legend()

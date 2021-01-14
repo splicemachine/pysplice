@@ -7,6 +7,7 @@ import pandas as pd
 from pandas import DataFrame as PandasDF
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
+import pyspark.sql.functions as psf
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
@@ -16,7 +17,7 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split)
+from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split, build_feature_drift_plot, build_model_drift_plot)
 from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
                                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
@@ -688,7 +689,13 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
-    def _retrieve_training_set_from_deployment( self, schema_name, table_name):
+    def get_training_set_from_deployment(self, schema_name, table_name):
+        """
+        Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
+        :param schema_name: model schema name
+        :param table_name: model table name
+        :return:
+        """
         metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
         features = metadata['FEATURES'].split(',')
         tv_name = metadata['NAME']
@@ -701,19 +708,31 @@ class FeatureStore:
             training_set_df = self.get_training_set(features=features, start_time=start_time, end_time=end_time)
         return training_set_df
 
-    def _retrieve_model_data_sets( self, schema_name, table_name):
-        training_set_df = self._retrieve_training_set_from_deployment(schema_name, table_name)
+    def _retrieve_model_data_sets(self, schema_name, table_name):
+        """
+        Returns the training set dataframe and model table dataframe for a given deployed model.
+        :param schema_name: model schema name
+        :param table_name: model table name
+        :return:
+        """
+        training_set_df = self.get_training_set_from_deployment(schema_name, table_name)
         model_table_df = self.splice_ctx.df(f'SELECT * FROM {schema_name}.{table_name}')
         return training_set_df, model_table_df
 
     def _retrieve_training_set_metadata_from_deployement(self, schema_name: str, table_name: str):
+        """
+        Reads Feature Store metadata to retrieve definition of training set used to train the specified model.
+        :param schema_name: model schema name
+        :param table_name: model table name
+        :return:
+        """
         sql = SQL.get_deployment_metadata.format(schema_name=schema_name, table_name=table_name)
         deploy_df = self.splice_ctx.df(sql).collect()
         cnt = len(deploy_df)
         if cnt == 1:
             return deploy_df[0]
 
-    def display_model_feature_drift(self, schema_name, table_name):
+    def display_model_feature_drift(self, schema_name: str, table_name: str):
         """
         Displays feature by feature comparison between the training set of the deployed model and the input feature
         values used with the model since deployment.
@@ -721,26 +740,12 @@ class FeatureStore:
         :param table_name: name of the model table
         :return: None
         """
-        from matplotlib.pyplot import show, subplots
         metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
-        if metadata:
-            features = metadata['FEATURES'].split(',')
-            training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
-            final_features = [f for f in features if f in model_table_df.columns]
-            # prep plot area
-            n_bins = 15
-            num_features = len(final_features)
-            n_rows = int(num_features / 5)
-            if num_features % 5 > 0:
-                n_rows = n_rows + 1
-            fig, axes = subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
-            axes = axes.flatten()
-            # calculate combined plots for each feature
-            for plot, f in enumerate(final_features):
-                add_feature_plot(axes[plot], training_set_df, model_table_df, f, n_bins)
-            show()
-        else:
-            print(f"Could not find deployment for model table {schema_name}.{table_name}")
+        if not metadata:
+            raise SpliceMachineException(f"Could not find deployment for model table {schema_name}.{table_name}") from None
+        training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
+        features = metadata['FEATURES'].split(',')
+        build_feature_drift_plot(features, training_set_df, model_table_df)
 
 
     def display_model_drift(self, schema_name: str, table_name: str, time_intervals: int,
@@ -757,40 +762,17 @@ class FeatureStore:
         :param end_time: if specified, filters to only show predictions occurring before this date/time
         :return: None
         """
-        from datetime import datetime
-        import matplotlib.pyplot as plt
-        from pyspark_dist_explore import distplot
-        import pyspark.sql.functions as f
-
         # set default timeframe if not specified
         if not start_time:
             start_time = datetime(1900, 1, 1, 0, 0, 0)
         if not end_time:
             end_time = datetime.now()
         # retrieve predictions the model has made over time
-        sql = SQL.get_model_predictions.format(schema_name=schema_name, table_name=table_name, start_time=start_time,
-                                               end_time=end_time)
+        sql = SQL.get_model_predictions.format(schema_name=schema_name, table_name=table_name,
+                                               start_time=start_time, end_time=end_time)
         model_table_df = self.splice_ctx.df(sql)
-        min_ts = model_table_df.first()['EVAL_TIME']
-        max_ts = model_table_df.orderBy(f.col("EVAL_TIME").desc()).first()['EVAL_TIME']
+        build_model_drift_plot(model_table_df, time_intervals)
 
-        if max_ts > min_ts:
-            intervals = datetime_range_split(min_ts, max_ts, time_intervals)
-            n_rows = int(time_intervals / 5)
-            if time_intervals % 5 > 0:
-                n_rows = n_rows + 1
-            fig, axes = plt.subplots(nrows=n_rows, ncols=5, figsize=(30, 10 * n_rows))
-            axes = axes.flatten()
-            for i, time_int in enumerate(intervals):
-                df = model_table_df.filter((f.col('EVAL_TIME') >= time_int[0]) & (f.col('EVAL_TIME') < time_int[1]))
-                distplot(axes[i], [remove_outliers(df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
-                axes[i].set_title(f"{time_int[0]}")
-                axes[i].legend()
-        else:
-            fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
-            distplot(axes, [remove_outliers(model_table_df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
-            axes.set_title(f"Predictions at {min_ts}")
-            axes.legend()
 
     def __get_pipeline(self, df, features, label, model_type):
         """
