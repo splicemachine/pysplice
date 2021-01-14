@@ -336,7 +336,7 @@ class FeatureStore:
             ts.start_time = ts.end_time
 
         if self.mlflow_ctx and not return_sql:
-            self.mlflow_ctx._active_training_set: TrainingSet = ts
+            self.mlflow_ctx._active_training_set = ts
             ts._register_metadata(self.mlflow_ctx)
         return sql if return_sql else self.splice_ctx.df(sql)
 
