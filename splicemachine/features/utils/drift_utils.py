@@ -5,6 +5,9 @@ import datetime as datetime
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pyspark.sql.functions as f
+from pyspark_dist_explore import distplot
+from itertools import count, islice
+
 
 def calculate_outlier_bounds(df, column_name):
     """
@@ -46,8 +49,6 @@ def add_feature_plot(ax, train_df, model_df, feature, n_bins):
     :param n_bins: number of bins to use in histogram plot
     :return: None
     """
-    from pyspark_dist_explore import distplot
-    import pyspark.sql.functions as f
     distplot(ax, [remove_outliers(train_df.select(f.col(feature).alias('training')), 'training'),
                   remove_outliers(model_df.select(f.col(feature).alias('model')), 'model')], bins=n_bins)
     ax.set_title(feature)
@@ -62,7 +63,6 @@ def datetime_range_split( start: datetime, end: datetime, number: int):
     :param number: number of time frames to split into
     :return: list of start/end date times
     """
-    from itertools import count, islice
     start_secs = (start - datetime(1970, 1, 1)).total_seconds()
     end_secs = (end - datetime(1970, 1, 1)).total_seconds()
     dates = [datetime.fromtimestamp(el) for el in
@@ -109,11 +109,11 @@ def build_model_drift_plot( model_table_df, time_intervals):
         axes = axes.flatten()
         for i, time_int in enumerate(intervals):
             df = model_table_df.filter((f.col('EVAL_TIME') >= time_int[0]) & (f.col('EVAL_TIME') < time_int[1]))
-            plt.distplot(axes[i], [remove_outliers(df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+            distplot(axes[i], [remove_outliers(df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
             axes[i].set_title(f"{time_int[0]}")
             axes[i].legend()
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
-        plt.distplot(axes, [remove_outliers(model_table_df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
+        distplot(axes, [remove_outliers(model_table_df.select(f.col('PREDICTION')), 'PREDICTION')], bins=15)
         axes.set_title(f"Predictions at {min_ts}")
         axes.legend()
