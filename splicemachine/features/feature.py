@@ -2,7 +2,7 @@ from splicemachine.features.constants import FeatureType, SQL
 
 class Feature:
     def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
-        self.name = name
+        self.name = name.upper()
         self.description = description
         self.feature_data_type = feature_data_type
         self.feature_type = feature_type
