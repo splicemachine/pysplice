@@ -12,8 +12,8 @@ class FeatureSet:
                  primary_keys: Dict[str, str], feature_set_id=None, deployed: bool = False, **kwargs):
         self.splice_ctx = splice_ctx
 
-        self.table_name = table_name
-        self.schema_name = schema_name
+        self.table_name = table_name.upper()
+        self.schema_name = schema_name.upper()
         self.description = description
         self.primary_keys = primary_keys
         self.feature_set_id = feature_set_id
@@ -91,6 +91,7 @@ class FeatureSet:
         """
         self.splice_ctx.execute(SQL.update_fset_deployment_status.format(status=int(status),
                                                                          feature_set_id=self.feature_set_id))
+        self.deployed = True
 
 
     def deploy(self, verbose=False):

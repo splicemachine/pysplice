@@ -883,6 +883,11 @@ def _deploy_db(db_schema_name: str,
     _check_for_splice_ctx()
     print("Deploying model to database...")
 
+    # database converts all object names to upper case, so we need to as well in our metadata
+    db_schema_name=db_schema_name.upper()
+    db_table_name=db_table_name.upper()
+
+
     # ~ Backwards Compatability ~
     if verbose:
         print("Deprecated Parameter 'verbose'. Use mlflow.watch_job(<job id>) or mlflow.fetch_logs(<job id>) to get"

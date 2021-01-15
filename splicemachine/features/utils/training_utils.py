@@ -1,9 +1,11 @@
 from splicemachine import SpliceMachineException
 from typing import List
-from .feature import Feature
-from .feature_set import FeatureSet
+from splicemachine.features import Feature, FeatureSet
 from splicemachine.features.training_view import TrainingView
 
+"""
+A set of utility functions for creating Training Set SQL 
+"""
 
 def clean_df(df, cols):
     for old, new in zip(df.columns, cols):
