@@ -413,13 +413,17 @@ class FeatureStore:
         """
         raise NotImplementedError("To see available training views, run fs.describe_training_views()")
 
-    def _validate_feature_set(self, schema_name, table_name):
+    def _validate_feature_set(self, schema_name: str, table_name: str):
         """
         Asserts a feature set doesn't already exist in the database
         :param schema_name: schema name of the feature set
         :param table_name: table name of the feature set
         :return: None
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         str = f'Feature Set {schema_name}.{table_name} already exists. Use a different schema and/or table name.'
         # Validate Table
         assert not self.splice_ctx.tableExists(schema_name, table_name=table_name), str
@@ -502,6 +506,7 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
+
         if self.splice_ctx.tableExists(schema_name, table_name):
             raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
                                          f"add features to a deployed feature set.")
@@ -612,7 +617,7 @@ class FeatureStore:
                                                              " a feature name (string) or a Feature object"
         return all_features
 
-    def deploy_feature_set(self, schema_name, table_name):
+    def deploy_feature_set(self, schema_name: str, table_name: str):
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
@@ -622,6 +627,9 @@ class FeatureStore:
         :param table_name: The table of the created feature set
         """
         try:
+            # database stores object names in upper case
+            schema_name = schema_name.upper()
+            table_name = table_name.upper()
             fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
         except:
             raise SpliceMachineException(
@@ -701,13 +709,17 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
-    def get_training_set_from_deployment(self, schema_name, table_name):
+    def get_training_set_from_deployment(self, schema_name: str, table_name: str):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
         :param schema_name: model schema name
         :param table_name: model table name
         :return:
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
         features = metadata['FEATURES'].split(',')
         tv_name = metadata['NAME']
@@ -720,13 +732,17 @@ class FeatureStore:
             training_set_df = self.get_training_set(features=features, start_time=start_time, end_time=end_time)
         return training_set_df
 
-    def _retrieve_model_data_sets(self, schema_name, table_name):
+    def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
         :param schema_name: model schema name
         :param table_name: model table name
         :return:
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         training_set_df = self.get_training_set_from_deployment(schema_name, table_name)
         model_table_df = self.splice_ctx.df(f'SELECT * FROM {schema_name}.{table_name}')
         return training_set_df, model_table_df
@@ -785,6 +801,7 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
+
         # set default timeframe if not specified
         if not start_time:
             start_time = datetime(1900, 1, 1, 0, 0, 0)
