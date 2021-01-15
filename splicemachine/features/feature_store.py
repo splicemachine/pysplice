@@ -437,6 +437,10 @@ class FeatureStore:
         :param desc: The (optional) description
         :return: FeatureSet
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         self._validate_feature_set(schema_name, table_name)
         fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name,
                           primary_keys=primary_keys,
@@ -495,6 +499,9 @@ class FeatureStore:
         :return: Feature created
         """
         self.__validate_feature_data_type(feature_data_type)
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
         if self.splice_ctx.tableExists(schema_name, table_name):
             raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
                                          f"add features to a deployed feature set.")
@@ -643,6 +650,10 @@ class FeatureStore:
         :param table_name: feature set table name
         :return: None
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})
         if not fset: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
@@ -727,6 +738,10 @@ class FeatureStore:
         :param table_name: model table name
         :return:
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         sql = SQL.get_deployment_metadata.format(schema_name=schema_name, table_name=table_name)
         deploy_df = self.splice_ctx.df(sql).collect()
         cnt = len(deploy_df)
@@ -741,6 +756,10 @@ class FeatureStore:
         :param table_name: name of the model table
         :return: None
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
         metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
         if not metadata:
             raise SpliceMachineException(f"Could not find deployment for model table {schema_name}.{table_name}") from None
@@ -763,6 +782,9 @@ class FeatureStore:
         :param end_time: if specified, filters to only show predictions occurring before this date/time
         :return: None
         """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
         # set default timeframe if not specified
         if not start_time:
             start_time = datetime(1900, 1, 1, 0, 0, 0)
