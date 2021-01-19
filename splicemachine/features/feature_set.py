@@ -8,7 +8,7 @@ HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
 
 
 class FeatureSet:
-    def __init__(self, *, splice_ctx: PySpliceContext, table_name, schema_name, description,
+    def __init__(self, *, splice_ctx: PySpliceContext = None, table_name, schema_name, description,
                  primary_keys: Dict[str, str], feature_set_id=None, deployed: bool = False, **kwargs):
         self.splice_ctx = splice_ctx
 

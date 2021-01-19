@@ -218,3 +218,8 @@ class Columns:
     feature_set = ['feature_set_id', 'table_name', 'schema_name', 'description', 'pk_columns', 'pk_types', 'deployed']
     history_table_pk = ['ASOF_TS','UNTIL_TS']
 
+class RequestType:
+    GET: str = "GET"
+    POST: str = "POST"
+    PUT: str = "PUT"
+    DELETE: str = "DELETE"

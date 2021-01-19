@@ -23,9 +23,10 @@ from .utils.training_utils import (dict_to_lower, _generate_training_set_history
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
 
+import requests
 
 class FeatureStore:
-    def __init__(self, splice_ctx: PySpliceContext) -> None:
+    def __init__(self, splice_ctx: PySpliceContext = None) -> None:
         self.splice_ctx = splice_ctx
         self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
@@ -445,13 +446,27 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        self._validate_feature_set(schema_name, table_name)
-        fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name,
-                          primary_keys=primary_keys,
-                          description=desc)
-        self.feature_sets.append(fset)
+        # self._validate_feature_set(schema_name, table_name)
+        # fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name,
+        #         primary_keys=primary_keys,
+        #         description=desc)
+        fset_dict = { "schema_name": schema_name, "table_name": table_name,
+                          "primary_keys": primary_keys,
+                          "description": desc }
+        # self.feature_sets.append(fset)
+        # print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
+        # fset._register_metadata()
+        # r = None
+        # try:
+        #     r = requests.post("http://localhost:8000/feature-sets", json=fset)
+        #     r.raise_for_status()
+        # except requests.exceptions.HTTPError as e:
+        #     print(f'Error encountered: {e.response.text}')
+        #     return
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        fset._register_metadata()
+        r = self.make_request("feature-sets", RequestType.POST, body=fset_dict)
+        fset = FeatureSet(**r.json())
+        self.feature_sets.append(fset)
         return fset
 
     def _validate_feature(self, name):
@@ -502,20 +517,24 @@ class FeatureStore:
         :param tags: (optional) List of (str) tag words (default None)
         :return: Feature created
         """
-        self.__validate_feature_data_type(feature_data_type)
+        # self.__validate_feature_data_type(feature_data_type)
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        if self.splice_ctx.tableExists(schema_name, table_name):
-            raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
-                                         f"add features to a deployed feature set.")
-        fset: FeatureSet = self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})[0]
-        self._validate_feature(name)
-        f = Feature(name=name, description=desc or '', feature_data_type=feature_data_type,
-                    feature_type=feature_type, tags=tags or [], feature_set_id=fset.feature_set_id)
-        print(f'Registering feature {f.name} in Feature Store')
-        f._register_metadata(self.splice_ctx)
+        # if self.splice_ctx.tableExists(schema_name, table_name):
+        #     raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
+        #                                  f"add features to a deployed feature set.")
+        # fset: FeatureSet = self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})[0]
+        # self._validate_feature(name)
+        # f = Feature(name=name, description=desc or '', feature_data_type=feature_data_type,
+        #             feature_type=feature_type, tags=tags or [], feature_set_id=fset.feature_set_id)
+        f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
+                    "feature_type": feature_type, "tags": tags or []}
+        print(f'Registering feature {name} in Feature Store')
+        # f._register_metadata(self.splice_ctx)
+        r = self.make_request("features", RequestType.POST, { "schema_name": schema_name, "table_name": table_name }, f_dict)
+        f = Feature(**r.json())
         return f
         # TODO: Backfill the feature
 
@@ -951,3 +970,26 @@ class FeatureStore:
 
         return remaining_features, feature_importances.reset_index(
             drop=True) if return_importances else remaining_features
+
+    def make_request(self, endpoint: str, method: RequestType, query: Dict[str, str] = None, body: Dict[str, str] = None) -> requests.Response:
+        url = f'http://localhost:8000/{endpoint}'
+        if query:
+            queries = [f'{key}={value}' for key, value in query.items()]
+            url += '?' + '&'.join(queries)
+        r = None
+        if method == RequestType.GET:
+            r = requests.get(url)
+        elif method == RequestType.POST:
+            r = requests.post(url, json=body)
+        elif method == RequestType.PUT:
+            r = requests.put(url, json=body)
+        elif method == RequestType.DELETE:
+            r = requests.delete(url, json=body)
+        else:
+            raise SpliceMachineException(f'Not a recognized HTTP method: {method}.'
+                                         f'Please use one of the following: GET, POST, PUT, DELETE')
+        r.raise_for_status()
+        return r
+        # except requests.exceptions.HTTPError as e:
+        #     print(f'Error encountered: {e.response.text}')
+        #     return
