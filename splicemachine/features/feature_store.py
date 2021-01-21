@@ -195,7 +195,7 @@ class FeatureStore:
 
         return sql if return_sql else self.splice_ctx.df(sql).toPandas()
 
-    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature]) -> str:
+    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Union[str,Feature]]) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
@@ -210,6 +210,7 @@ class FeatureStore:
 
         :return: (str) the parameterized feature vector SQL
         """
+        feats: List[Feature] = self._process_features(features)
 
         # Get training view information (ctx primary key column(s), ctx primary key inference ts column, )
         vid = self.get_training_view_id(training_view)
@@ -221,7 +222,7 @@ class FeatureStore:
         for pkcol in tctx.pk_columns:  # Select primary key column(s)
             sql += f'\n\t{{p_{pkcol}}} {pkcol},'
 
-        for feature in features:
+        for feature in feats:
             sql += f'\n\tfset{feature.feature_set_id}.{feature.name}, '  # Collect all features over time
         sql = sql.rstrip(', ')
 
@@ -229,7 +230,7 @@ class FeatureStore:
         sql += f'\nFROM '
 
         # JOIN clause
-        feature_set_ids = list({f.feature_set_id for f in features})  # Distinct set of IDs
+        feature_set_ids = list({f.feature_set_id for f in feats})  # Distinct set of IDs
         feature_sets = self.get_feature_sets(feature_set_ids)
         where = '\nWHERE '
         for fset in feature_sets:
