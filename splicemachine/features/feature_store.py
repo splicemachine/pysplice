@@ -22,14 +22,18 @@ from .utils.training_utils import (dict_to_lower, _generate_training_set_history
                                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
-from .utils.http_utils import RequestType, make_request
+from .utils.http_utils import RequestType, make_request, get_feature_store_url, Endpoints
 import requests
+import warnings
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext = None) -> None:
         self.splice_ctx = splice_ctx
         self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
+        self._FS_URL = get_feature_store_url()
+        if not self._FS_URL: warnings.warn(
+            "Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing anything.")
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
@@ -43,32 +47,8 @@ class FeatureStore:
             If None, will return all FeatureSets
         :return: List[FeatureSet] the list of Feature Sets
         """
-        # feature_sets = []
-        # feature_set_ids = feature_set_ids or []
-        # _filter = _filter or {}
 
-        # sql = SQL.get_feature_sets
-
-        # # Filter by feature_set_id and filter
-        # if feature_set_ids or _filter:
-        #     sql += ' WHERE '
-        # if feature_set_ids:
-        #     fsd = tuple(feature_set_ids) if len(feature_set_ids) > 1 else f'({feature_set_ids[0]})'
-        #     sql += f' fset.feature_set_id in {fsd} AND'
-        # for fl in _filter:
-        #     sql += f" fset.{fl}='{_filter[fl]}' AND"
-        # sql = sql.rstrip('AND')
-
-        # feature_set_rows = self.splice_ctx.df(sql, to_lower=True)
-
-        # for fs in feature_set_rows.collect():
-        #     d = fs.asDict()
-        #     pkcols = d.pop('pk_columns').split('|')
-        #     pktypes = d.pop('pk_types').split('|')
-        #     d['primary_keys'] = {c: k for c, k in zip(pkcols, pktypes)}
-        #     feature_sets.append(FeatureSet(splice_ctx=self.splice_ctx, **d))
-        # return feature_sets
-        r = make_request("feature-sets", RequestType.GET, { "fsid": feature_set_ids } if feature_set_ids else None)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, { "fsid": feature_set_ids } if feature_set_ids else None)
         return [FeatureSet(**fs) for fs in r.json()]
 
     def remove_training_view(self, override=False):
@@ -89,8 +69,8 @@ class FeatureStore:
         :param training_view: Training view name
         :return: TrainingView
         """
-        # return self.get_training_views(_filter={'name': training_view})[0]
-        r = make_request("training-views", RequestType.GET, { "name": training_view })
+
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, { "name": training_view })
         return TrainingView(**r.json()[0])
 
     def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
@@ -101,25 +81,8 @@ class FeatureStore:
             If None, will return all TrainingViews
         :return: List[TrainingView]
         """
-        # training_views = []
 
-        # sql = SQL.get_training_views
-
-        # if _filter:
-        #     sql += ' WHERE '
-        #     for k in _filter:
-        #         sql += f"tc.{k}='{_filter[k]}' and"
-        #     sql = sql.rstrip('and')
-
-        # training_view_rows = self.splice_ctx.df(sql, to_lower=True)
-
-        # for tc in training_view_rows.collect():
-        #     t = tc.asDict()
-        #     # DB doesn't support lists so it stores , separated vals in a string
-        #     t['pk_columns'] = t.pop('pk_columns').split(',')
-        #     training_views.append(TrainingView(**t))
-        # return training_views
-        r = make_request("training-views", RequestType.GET)
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET)
         return [TrainingView(**tv) for tv in r.json()]
 
     def get_training_view_id(self, name: str) -> int:
@@ -130,7 +93,7 @@ class FeatureStore:
         :return: The training view id
         """
         # return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
-        r = make_request("training-view-id", RequestType.GET, { "name": name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, { "name": name })
         return int(r.json())
 
     def get_features_by_name(self, names: Optional[List[str]], as_list=False) -> Union[List[Feature], SparkDF]:
@@ -143,18 +106,8 @@ class FeatureStore:
         values, simply the describing metadata about the features. To create a training dataset with Feature values, see
         :py:meth:`features.FeatureStore.get_training_set` or :py:meth:`features.FeatureStore.get_feature_dataset`
         """
-        # If they don't pass in feature names, get all features
-        # where_clause = "name in (" + ",".join([f"'{i.upper()}'" for i in names]) + ")"
-        # df = self.splice_ctx.df(SQL.get_features_by_name.format(where=where_clause), to_lower=True)
-        # if not as_list: return df
 
-        # features = []
-        # for feat in df.collect():
-        #     f = feat.asDict()
-        #     f = dict((k.lower(), v) for k, v in f.items())  # DB returns uppercase column names
-        #     features.append(Feature(**f))
-        # return features
-        r = make_request("features", RequestType.GET, { "name": names })
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, { "name": names })
         return [Feature(**f) for f in r.json()] if as_list else pd.DataFrame(r.json(), index=[0])
 
     def remove_feature_set(self):
@@ -184,28 +137,8 @@ class FeatureStore:
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
-        # feats: List[Feature] = self._process_features(features)
-        # # Match the case of the keys
-        # join_keys = dict_to_lower(join_key_values)
 
-        # # Get the feature sets and their primary key column names
-        # feature_sets = self.get_feature_sets([f.feature_set_id for f in feats])
-        # self._validate_feature_vector_keys(join_keys, feature_sets)
-
-        # feature_names = ','.join([f.name for f in feats])
-        # fset_tables = ','.join(
-        #     [f'{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}' for fset in feature_sets])
-        # sql = "SELECT {feature_names} FROM {fset_tables} ".format(feature_names=feature_names, fset_tables=fset_tables)
-
-        # # For each Feature Set, for each primary key in the given feature set, get primary key value from the user provided dictionary
-        # pk_conditions = [f"fset{fset.feature_set_id}.{pk_col} = {join_keys[pk_col.lower()]}"
-        #                  for fset in feature_sets for pk_col in fset.primary_keys]
-        # pk_conditions = ' AND '.join(pk_conditions)
-
-        # sql += f"WHERE {pk_conditions}"
-
-        # return sql if return_sql else self.splice_ctx.df(sql).toPandas()
-        r = make_request("feature-vector", RequestType.POST, 
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, 
             { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
         return r.json() if return_sql else pd.DataFrame(r.json(), index=[0])
 
@@ -226,39 +159,7 @@ class FeatureStore:
         :return: (str) the parameterized feature vector SQL
         """
 
-        # Get training view information (ctx primary key column(s), ctx primary key inference ts column, )
-        # vid = self.get_training_view_id(training_view)
-        # tctx = self.get_training_views(_filter={'view_id': vid})[0]
-
-        # sql = 'SELECT '
-
-        # # SELECT expressions
-        # for pkcol in tctx.pk_columns:  # Select primary key column(s)
-        #     sql += f'\n\t{{p_{pkcol}}} {pkcol},'
-
-        # for feature in features:
-        #     sql += f'\n\tfset{feature.feature_set_id}.{feature.name}, '  # Collect all features over time
-        # sql = sql.rstrip(', ')
-
-        # # FROM clause
-        # sql += f'\nFROM '
-
-        # # JOIN clause
-        # feature_set_ids = list({f.feature_set_id for f in features})  # Distinct set of IDs
-        # feature_sets = self.get_feature_sets(feature_set_ids)
-        # where = '\nWHERE '
-        # for fset in feature_sets:
-        #     # Join Feature Set
-        #     sql += f'\n\t{fset.schema_name}.{fset.table_name} fset{fset.feature_set_id}, '
-        #     for pkcol in fset.pk_columns:
-        #         where += f'\n\tfset{fset.feature_set_id}.{pkcol}={{p_{pkcol}}} AND '
-
-        # sql = sql.rstrip(', ')
-        # where = where.rstrip('AND ')
-        # sql += where
-
-        # return sql
-        r = make_request("feature-vector-sql", RequestType.POST, { "view": training_view }, [f.__dict__ for f in features])
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, { "view": training_view }, [f.__dict__ for f in features])
         return r.json()
 
 
@@ -278,17 +179,9 @@ class FeatureStore:
         :param training_view: The name of the training view
         :return: A list of available Feature objects
         """
-        # where = f"tc.Name='{training_view}'"
 
-        # df = self.splice_ctx.df(SQL.get_training_view_features.format(where=where), to_lower=True)
-
-        # features = []
-        # for feat in df.collect():
-        #     f = feat.asDict()
-        #     features.append(Feature(**f))
-        # return features
-        r = make_request("training-view-features", RequestType.GET, { "view": training_view })
-        return r.json()
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET, { "view": training_view })
+        return [Feature(**f) for f in r.json()]
 
     def get_feature_description(self):
         # TODO
@@ -327,20 +220,10 @@ class FeatureStore:
             only takes effect if current_values_only is False.
         :return: Spark DF
         """
-        # Get List[Feature]
-        # features = self._process_features(features)
 
-        # # Get the Feature Sets
-        # fsets = self.get_feature_sets(list({f.feature_set_id for f in features}))
-
-        # if current_values_only:
-        #     sql = _generate_training_set_sql(features, fsets)
-        # else:
-        #     temp_vw = _create_temp_training_view(features, fsets)
-        #     sql = _generate_training_set_history_sql(temp_vw, features, fsets, start_time=start_time, end_time=end_time)
-        r = make_request("training-view-features", RequestType.POST, { "current": current_values_only }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
-        sql = r.json()
+        sql = r.json()['sql']
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -354,14 +237,9 @@ class FeatureStore:
 
         # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
-        # For metadata purposes
-        # if current_values_only:
-        #     ts.start_time = ts.end_time
 
         if self.mlflow_ctx and not return_sql:
-            # self.mlflow_ctx._active_training_set = ts
-            # ts._register_metadata(self.mlflow_ctx)
-            self.link_training_set_to_mlflow(features, start_time, end_time, tvw)
+            self.link_training_set_to_mlflow(features, start_time, end_time)
         return sql if return_sql else self.splice_ctx.df(sql)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
@@ -407,28 +285,14 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
-        # Get features as list of Features
-        # features = self._process_features(features) if features else self.get_training_view_features(training_view)
-
-        # # Get List of necessary Feature Sets
-        # feature_set_ids = list({f.feature_set_id for f in features})  # Distinct set of IDs
-        # feature_sets = self.get_feature_sets(feature_set_ids)
-
-        # # Get training view information (view primary key column(s), inference ts column, )
-        # tvw = self.get_training_view(training_view)
         # # Generate the SQL needed to create the dataset
-        # sql = _generate_training_set_history_sql(tvw, features, feature_sets, start_time=start_time, end_time=end_time)
-        r = make_request("training-set-from-view", RequestType.POST, { "view": training_view }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r.json()["sql"]
         tvw = r.json()["training_view"]
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
-            # ts = TrainingSet(training_view=tvw, features=features,
-            #                  start_time=start_time, end_time=end_time)
-            # self.mlflow_ctx._active_training_set: TrainingSet = ts
-            # ts._register_metadata(self.mlflow_ctx)
             self.link_training_set_to_mlflow(features, start_time, end_time, tvw)
 
         return sql if return_sql else self.splice_ctx.df(sql)
@@ -474,25 +338,12 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        # self._validate_feature_set(schema_name, table_name)
-        # fset = FeatureSet(splice_ctx=self.splice_ctx, schema_name=schema_name, table_name=table_name,
-        #         primary_keys=primary_keys,
-        #         description=desc)
         fset_dict = { "schema_name": schema_name, "table_name": table_name,
                           "primary_keys": primary_keys,
                           "description": desc }
-        # self.feature_sets.append(fset)
-        # print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        # fset._register_metadata()
-        # r = None
-        # try:
-        #     r = requests.post("http://localhost:8000/feature-sets", json=fset)
-        #     r.raise_for_status()
-        # except requests.exceptions.HTTPError as e:
-        #     print(f'Error encountered: {e.response.text}')
-        #     return
+
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        r = make_request("feature-sets", RequestType.POST, body=fset_dict)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, body=fset_dict)
         return FeatureSet(**r.json())
 
     def _validate_feature(self, name):
@@ -543,23 +394,14 @@ class FeatureStore:
         :param tags: (optional) List of (str) tag words (default None)
         :return: Feature created
         """
-        # self.__validate_feature_data_type(feature_data_type)
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        # if self.splice_ctx.tableExists(schema_name, table_name):
-        #     raise SpliceMachineException(f"Feature Set {schema_name}.{table_name} is already deployed. You cannot "
-        #                                  f"add features to a deployed feature set.")
-        # fset: FeatureSet = self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})[0]
-        # self._validate_feature(name)
-        # f = Feature(name=name, description=desc or '', feature_data_type=feature_data_type,
-        #             feature_type=feature_type, tags=tags or [], feature_set_id=fset.feature_set_id)
         f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
                     "feature_type": feature_type, "tags": {}}
         print(f'Registering feature {name} in Feature Store')
-        # f._register_metadata(self.splice_ctx)
-        r = make_request("features", RequestType.POST, { "schema": schema_name, "table": table_name }, f_dict)
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, { "schema": schema_name, "table": table_name }, f_dict)
         f = Feature(**r.json())
         return f
         # TODO: Backfill the feature
@@ -618,37 +460,11 @@ class FeatureStore:
         :param verbose: Whether or not to print the SQL before execution (default False)
         :return:
         """
-        # assert name != "None", "Name of training view cannot be None!"
-        # self._validate_training_view(name, sql, join_keys, label_col)
-        # # register_training_view()
-        # label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
-        # train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
-        #                                      label_col=label_col)
-        # print('Building training sql...')
-        # if verbose: print('\t', train_sql)
-        # self.splice_ctx.execute(train_sql)
-        # print('Done.')
+        assert name != "None", "Name of training view cannot be None!"
 
-        # # Get generated view ID
-        # vid = self.get_training_view_id(name)
-
-        # print('Creating Join Keys')
-        # for i in join_keys:
-        #     key_sql = SQL.training_view_keys.format(view_id=vid, key_column=i.upper(), key_type='J')
-        #     print(f'\tCreating Join Key {i}...')
-        #     if verbose: print('\t', key_sql)
-        #     self.splice_ctx.execute(key_sql)
-        # print('Done.')
-        # print('Creating Training View Primary Keys')
-        # for i in primary_keys:
-        #     key_sql = SQL.training_view_keys.format(view_id=vid, key_column=i.upper(), key_type='P')
-        #     print(f'\tCreating Primary Key {i}...')
-        #     if verbose: print('\t', key_sql)
-        #     self.splice_ctx.execute(key_sql)
-        # print('Done.')
         tv_dict = { "name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
-                    "join_keys": join_keys, "sql_text": sql}
-        make_request("training-views", RequestType.POST, body=tv_dict)
+                    "join_columns": join_keys, "sql_text": sql}
+        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, body=tv_dict)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
@@ -674,18 +490,12 @@ class FeatureStore:
         :param schema_name: The schema of the created feature set
         :param table_name: The table of the created feature set
         """
-        # try:
-            # database stores object names in upper case
+
+        # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-            # fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})[0]
-        # except:
-            # raise SpliceMachineException(
-                # f"Cannot find feature set {schema_name}.{table_name}. Ensure you've created this"
-                # f"feature set using fs.create_feature_set before deploying.")
-        # fset.deploy()
-        make_request("features", RequestType.POST, { "schema": schema_name, "table": table_name })
-        # f = FeatureSet(**r.json())
+
+        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, { "schema": schema_name, "table": table_name })
 
     def describe_feature_sets(self) -> None:
         """
@@ -694,11 +504,14 @@ class FeatureStore:
 
         :return: None
         """
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
+        
         print('Available feature sets')
-        for fset in self.get_feature_sets():
+        for desc in r.json():
+            fset = FeatureSet(**desc["feature_set"])
+            features = [Feature(**feature) for feature in desc["features"]]
             print('-' * 23)
-            # self.describe_feature_set(fset.schema_name, fset.table_name)
-            self._feature_set_describe(fset)
+            self._feature_set_describe(fset, features)
 
     def describe_feature_set(self, schema_name: str, table_name: str) -> None:
         """
@@ -713,21 +526,20 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        fset = self.get_feature_sets(_filter={'schema_name': schema_name, 'table_name': table_name})
-        if not fset: raise SpliceMachineException(
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
+        descs = r.json()
+        if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
-        fset = fset[0]
-        self._feature_set_describe(fset)
-        # print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
-        # print('Primary keys:', fset.primary_keys)
-        # print('\nAvailable features:')
-        # display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
+        desc = descs[0]
+        fset = FeatureSet(**desc["feature_set"])
+        features = [Feature(**feature) for feature in desc["features"]]
+        self._feature_set_describe(fset, features)
 
-    def _feature_set_describe(self, fset: FeatureSet):
+    def _feature_set_describe(self, fset: FeatureSet, features: List[Feature]):
         print(f'{fset.schema_name}.{fset.table_name} - {fset.description}')
         print('Primary keys:', fset.primary_keys)
         print('\nAvailable features:')
-        display(pd.DataFrame(f.__dict__ for f in fset.get_features()))
+        display(pd.DataFrame(f.__dict__ for f in features))
 
     def describe_training_views(self) -> None:
         """
@@ -736,10 +548,14 @@ class FeatureStore:
         :param training_view: The training view name
         :return: None
         """
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET)
+
         print('Available training views')
-        for tcx in self.get_training_views():
+        for desc in r.json():
+            tcx = TrainingView(**desc["training_view"])
+            features = [Feature(**f) for f in desc["features"]]
             print('-' * 23)
-            self.describe_training_view(tcx.name)
+            self._training_view_describe(tcx, features)
 
     def describe_training_view(self, training_view: str) -> None:
         """
@@ -748,21 +564,19 @@ class FeatureStore:
         :param training_view: The training view name
         :return: None
         """
-        # tcx = self.get_training_views(_filter={'name': training_view})
-        # if not tcx: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
-        # tcx = tcx[0]
-        r = make_request("training-view-description", RequestType.GET, {'name': training_view})
-        tcx = TrainingView(**r.json()['training_view'])
-        feats = [Feature(**f) for f in r.json()['features']]
 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, {'name': training_view})
+        descs = r.json()
+        if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
+        desc = descs[0]
+        tcx = TrainingView(**desc['training_view'])
+        feats = [Feature(**f) for f in desc['features']]
+        self._training_view_describe(tcx, feats)
+
+    def _training_view_describe(self, tcx: TrainingView, feats: List[Feature]):
         print(f'ID({tcx.view_id}) {tcx.name} - {tcx.description} - LABEL: {tcx.label_column}')
         print(f'Available features in {tcx.name}:')
-        # feats: List[Feature] = self.get_training_view_features(tcx.name)
-        # Grab the feature set info and their corresponding names (schema.table) for the display table
-        # feat_sets: List[FeatureSet] = self.get_feature_sets(feature_set_ids=[f.feature_set_id for f in feats])
-        # feat_sets: Dict[int, str] = {fset.feature_set_id: f'{fset.schema_name}.{fset.table_name}' for fset in feat_sets}
-        # for f in feats:
-        #     f.feature_set_name = feat_sets[f.feature_set_id]
+
         col_order = ['name', 'description', 'feature_data_type', 'feature_set_name', 'feature_type', 'tags',
                      'last_update_ts',
                      'last_update_username', 'compliance_level', 'feature_set_id', 'feature_id']
@@ -782,8 +596,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        # metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
-        r = make_request("training-set-from-deployment", RequestType.POST, { "schema": schema_name, "table": table_name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.POST, { "schema": schema_name, "table": table_name })
         metadata = r.json()["metadata"]
         
         sql = r.json()["sql"]
@@ -791,12 +604,6 @@ class FeatureStore:
         tv_name = metadata['NAME']
         start_time = metadata['TRAINING_SET_START_TS']
         end_time = metadata['TRAINING_SET_END_TS']
-        # if tv_name:
-        #     training_set_df = self.get_training_set_from_view(training_view=tv_name, start_time=start_time,
-        #                                                       end_time=end_time, features=features)
-        # else:
-        #     training_set_df = self.get_training_set(features=features, start_time=start_time, end_time=end_time)
-        # return training_set_df
 
         if self.mlflow_ctx:
             self.link_training_set_to_mlflow(features, start_time, end_time, tv_name)
@@ -1027,12 +834,17 @@ class FeatureStore:
     def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], start_time: datetime = None, 
                                     end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False):
         if not tvw:
-            null_tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
+            tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
                                 description=None)
         ts = TrainingSet(training_view=tvw, features=features,
                         start_time=start_time, end_time=end_time)
+
+        # For metadata purposes
         if current_values_only:
             ts.start_time = ts.end_time
 
         self.mlflow_ctx._active_training_set: TrainingSet = ts
         ts._register_metadata(self.mlflow_ctx)
+    
+    def set_feature_store_url(self, url: str):
+        self._FS_URL = url
