@@ -277,7 +277,8 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
                 file_ext = FileExtensions.map_from_mlflow_flavor(model_lib) if \
                     model_lib in DatabaseSupportedLibs.get_valid() else model_lib
 
-            except:
+            except Exception as e:
+                print(str(e))
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
                                              f'Or you can build a pyfunc model\n'
