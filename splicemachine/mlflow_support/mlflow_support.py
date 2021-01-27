@@ -340,7 +340,7 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     model_class = str(model.__class__)
 
     run_id = mlflow.active_run().info.run_uuid
-    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib, **flavor_options)
+    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
