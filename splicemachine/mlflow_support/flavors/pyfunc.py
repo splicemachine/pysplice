@@ -3,7 +3,8 @@ from splicemachine.mlflow_support.mlflow_support import _GORILLA_SETTINGS
 import gorilla
 import mlflow.pyfunc
 
-def _log_model(name=None, **flavor_options):
+def _log_model(name='pyfunc_model', **flavor_options):
+    model = None
     if 'python_model' in flavor_options:
         model = flavor_options.pop('python_model')
     mlflow.log_model(model, name=name, model_lib='pyfunc', **flavor_options)
