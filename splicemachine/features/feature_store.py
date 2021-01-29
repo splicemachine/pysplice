@@ -49,7 +49,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, { "fsid": feature_set_ids } if feature_set_ids else None)
-        return [FeatureSet(**fs) for fs in r.json()]
+        return [FeatureSet(**fs) for fs in r]
 
     def remove_training_view(self, override=False):
         """
@@ -71,7 +71,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, { "name": training_view })
-        return TrainingView(**r.json()[0])
+        return TrainingView(**r[0])
 
     def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
         """
@@ -83,7 +83,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET)
-        return [TrainingView(**tv) for tv in r.json()]
+        return [TrainingView(**tv) for tv in r]
 
     def get_training_view_id(self, name: str) -> int:
         """
@@ -94,9 +94,9 @@ class FeatureStore:
         """
         # return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, { "name": name })
-        return int(r.json())
+        return int(r)
 
-    def get_features_by_name(self, names: Optional[List[str]], as_list=False) -> Union[List[Feature], SparkDF]:
+    def get_features_by_name(self, names: List[str], as_list=False) -> Union[List[Feature], SparkDF]:
         """
         Returns a dataframe or list of features whose names are provided
 
@@ -108,24 +108,11 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, { "name": names })
-        return [Feature(**f) for f in r.json()] if as_list else pd.DataFrame(r.json(), index=[0])
+        return [Feature(**f) for f in r] if as_list else pd.DataFrame(r, index=[0])
 
     def remove_feature_set(self):
         # TODO
         raise NotImplementedError
-
-    def _validate_feature_vector_keys(self, join_key_values, feature_sets) -> None:
-        """
-        Validates that all necessary primary keys are provided when requesting a feature vector
-
-        :param join_key_values: dict The primary (join) key columns and values provided by the user
-        :param feature_sets: List[FeatureSet] the list of Feature Sets derived from the requested Features
-        :return: None. Raise Exception on bad validation
-        """
-
-        feature_set_key_columns = {fkey.lower() for fset in feature_sets for fkey in fset.primary_keys.keys()}
-        missing_keys = feature_set_key_columns - join_key_values.keys()
-        assert not missing_keys, f"The following keys were not provided and must be: {missing_keys}"
 
     def get_feature_vector(self, features: List[Union[str, Feature]],
                            join_key_values: Dict[str, str], return_sql=False) -> Union[str, PandasDF]:
@@ -140,7 +127,7 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, 
             { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
-        return r.json() if return_sql else pd.DataFrame(r.json(), index=[0])
+        return r if return_sql else pd.DataFrame(r, index=[0])
 
 
     def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature]) -> str:
@@ -160,7 +147,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, { "view": training_view }, [f.__dict__ for f in features])
-        return r.json()
+        return r
 
 
     def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
@@ -181,7 +168,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET, { "view": training_view })
-        return [Feature(**f) for f in r.json()]
+        return [Feature(**f) for f in r]
 
     def get_feature_description(self):
         # TODO
@@ -223,7 +210,7 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
-        sql = r.json()['sql']
+        sql = r['sql']
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -288,8 +275,8 @@ class FeatureStore:
         # # Generate the SQL needed to create the dataset
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
-        sql = r.json()["sql"]
-        tvw = r.json()["training_view"]
+        sql = r["sql"]
+        tvw = r["training_view"]
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
@@ -306,22 +293,6 @@ class FeatureStore:
         """
         raise NotImplementedError("To see available training views, run fs.describe_training_views()")
 
-    def _validate_feature_set(self, schema_name: str, table_name: str):
-        """
-        Asserts a feature set doesn't already exist in the database
-        :param schema_name: schema name of the feature set
-        :param table_name: table name of the feature set
-        :return: None
-        """
-        # database stores object names in upper case
-        schema_name = schema_name.upper()
-        table_name = table_name.upper()
-
-        str = f'Feature Set {schema_name}.{table_name} already exists. Use a different schema and/or table name.'
-        # Validate Table
-        assert not self.splice_ctx.tableExists(schema_name, table_name=table_name), str
-        # Validate metadata
-        assert len(self.get_feature_sets(_filter={'table_name': table_name, 'schema_name': schema_name})) == 0, str
 
     def create_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
                            desc: Optional[str] = None) -> FeatureSet:
@@ -344,34 +315,7 @@ class FeatureStore:
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, body=fset_dict)
-        return FeatureSet(**r.json())
-
-    def _validate_feature(self, name):
-        """
-        Ensures that the feature doesn't exist as all features have unique names
-        :param name: the Feature name
-        :return:
-        """
-        # TODO: Capitalization of feature name column
-        # TODO: Make more informative, add which feature set contains existing feature
-        str = f"Cannot add feature {name}, feature already exists in Feature Store. Try a new feature name."
-        l = self.splice_ctx.df(SQL.get_all_features.format(name=name.upper())).count()
-        assert l == 0, str
-
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', name, re.IGNORECASE):
-            raise SpliceMachineException('Feature name does not conform. Must start with an alphabetic character, '
-                                         'and can only contains letters, numbers and underscores')
-
-    def __validate_feature_data_type(self, feature_data_type: str):
-        """
-        Validated that the provided feature data type is a valid SQL data type
-        :param feature_data_type: the feature data type
-        :return: None
-        """
-        from splicemachine.spark.constants import SQL_TYPES
-        if not feature_data_type.split('(')[0] in SQL_TYPES:
-            raise SpliceMachineException(f"The datatype you've passed in, {feature_data_type} is not a valid SQL type. "
-                                         f"Valid types are {SQL_TYPES}")
+        return FeatureSet(**r)
 
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
                        feature_type: FeatureType, desc: str = None, tags: Dict[str, str] = None):
@@ -402,41 +346,9 @@ class FeatureStore:
                     "feature_type": feature_type, "tags": {}}
         print(f'Registering feature {name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, { "schema": schema_name, "table": table_name }, f_dict)
-        f = Feature(**r.json())
+        f = Feature(**r)
         return f
         # TODO: Backfill the feature
-
-    def _validate_training_view(self, name, sql, join_keys, label_col=None):
-        """
-        Validates that the training view doesn't already exist.
-
-        :param name: The training view name
-        :param sql: The training view provided SQL
-        :param join_keys: The provided join keys when creating the training view
-        :param label_col: The label column
-        :return:
-        """
-        # Validate name doesn't exist
-        assert len(self.get_training_views(_filter={'name': name})) == 0, f"Training View {name} already exists!"
-
-        # Column comparison
-        # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, join_keys, tscol and label_col
-        from py4j.protocol import Py4JJavaError
-        try:
-            valid_df = self.splice_ctx.df(sql)
-        except Py4JJavaError as e:
-            if 'SQLSyntaxErrorException' in str(e.java_exception):
-                raise SpliceMachineException(f'The provided SQL is incorrect. The following error was raised during '
-                                             f'validation:\n\n{str(e.java_exception)}') from None
-            raise e
-
-        # Ensure the label column specified is in the output of the SQL
-        if label_col: assert label_col in valid_df.columns, f"Provided label column {label_col} is not available in the provided SQL"
-        # Confirm that all join_keys provided correspond to primary keys of created feature sets
-        pks = set(i[0].upper() for i in self.splice_ctx.df(SQL.get_fset_primary_keys).collect())
-        missing_keys = set(i.upper() for i in join_keys) - pks
-        assert not missing_keys, f"Not all provided join keys exist. Remove {missing_keys} or " \
-                                 f"create a feature set that uses the missing keys"
 
     def create_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
                              ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
@@ -507,7 +419,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
         
         print('Available feature sets')
-        for desc in r.json():
+        for desc in r:
             fset = FeatureSet(**desc["feature_set"])
             features = [Feature(**feature) for feature in desc["features"]]
             print('-' * 23)
@@ -527,7 +439,7 @@ class FeatureStore:
         table_name = table_name.upper()
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
-        descs = r.json()
+        descs = r
         if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         desc = descs[0]
@@ -551,7 +463,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET)
 
         print('Available training views')
-        for desc in r.json():
+        for desc in r:
             tcx = TrainingView(**desc["training_view"])
             features = [Feature(**f) for f in desc["features"]]
             print('-' * 23)
@@ -566,7 +478,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, {'name': training_view})
-        descs = r.json()
+        descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
         tcx = TrainingView(**desc['training_view'])
@@ -597,9 +509,9 @@ class FeatureStore:
         table_name = table_name.upper()
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.POST, { "schema": schema_name, "table": table_name })
-        metadata = r.json()["metadata"]
+        metadata = r["metadata"]
         
-        sql = r.json()["sql"]
+        sql = r["sql"]
         features = metadata['FEATURES'].split(',')
         tv_name = metadata['NAME']
         start_time = metadata['TRAINING_SET_START_TS']
@@ -689,7 +601,7 @@ class FeatureStore:
                                                start_time=start_time, end_time=end_time)
         model_table_df = self.splice_ctx.df(sql)
         # r = make_request("models", RequestType.GET, {"schema": schema_name, "table": table_name, "start": start_time, "end": end_time})
-        # model_table_df = r.json()
+        # model_table_df = r
         build_model_drift_plot(model_table_df, time_intervals)
 
 

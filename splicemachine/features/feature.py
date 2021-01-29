@@ -1,4 +1,4 @@
-from splicemachine.features.constants import FeatureType, SQL
+from splicemachine.features.constants import FeatureType
 
 class Feature:
     def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
@@ -29,17 +29,6 @@ class Feature:
         Returns if the type of this feature is ordinal
         """
         return self.feature_type == FeatureType.ordinal
-
-    def _register_metadata(self, splice):
-        """
-        Registers the feature's existence in the feature store
-        """
-        feature_sql = SQL.feature_metadata.format(
-            feature_set_id=self.feature_set_id, name=self.name, desc=self.description,
-            feature_data_type=self.feature_data_type,
-            feature_type=self.feature_type, tags=','.join(self.tags) if isinstance(self.tags, list) else self.tags
-        )
-        splice.execute(feature_sql)
 
 
     def __eq__(self, other):

@@ -41,20 +41,12 @@ class Endpoints:
     TRAINING_VIEW_FEATURES: str = "training-view-features"
     TRAINING_VIEW_ID: str = "training-view-id"
 
-def make_request(url: str, endpoint: str, method: RequestType, query: Dict[str, Union[str, List[str]]] = None, body: Dict[str, str] = None) -> requests.Response:
+def make_request(url: str, endpoint: str, method: RequestType, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> requests.Response:
     if not url:
         raise KeyError("Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing trying again.")
     url = f'{url}/{endpoint}'
-    if query:
-        queries = []
-        for key, value in query.items():
-            if isinstance(value, list):
-                queries.extend([f'{key}={v}' for v in value])
-            else:
-                queries.append(f'{key}={value}')
-        url += '?' + '&'.join(queries)
     try:
-        r = RequestType.method_map[method](url, json=body)
+        r = RequestType.method_map[method](url, params=params, json=body)
     except KeyError:
         raise SpliceMachineException(f'Not a recognized HTTP method: {method}.'
                                      f'Please use one of the following: {RequestType.get_valid()}')
@@ -63,7 +55,7 @@ def make_request(url: str, endpoint: str, method: RequestType, query: Dict[str, 
     except requests.exceptions.HTTPError as error:
         to_print = str(error) if error.response.status_code == 500 else error.response.json()["detail"]
         raise SpliceMachineException(f'{to_print}') from None
-    return r
+    return r.json()
     # except requests.exceptions.HTTPError as e:
     #     print(f'Error encountered: {e.response.text}')
     #     return
