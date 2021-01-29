@@ -130,7 +130,7 @@ class FeatureStore:
         return r if return_sql else pd.DataFrame(r, index=[0])
 
 
-    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Feature]) -> str:
+    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Union[str,Feature]]) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
@@ -145,10 +145,9 @@ class FeatureStore:
 
         :return: (str) the parameterized feature vector SQL
         """
-
+        feats: List[Feature] = self._process_features(features)
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, { "view": training_view }, [f.__dict__ for f in features])
         return r
-
 
     def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
         """
