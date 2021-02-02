@@ -535,7 +535,6 @@ class FeatureStore:
 
         # Column comparison
         # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, join_keys, tscol and label_col
-        print(sql)
         from py4j.protocol import Py4JJavaError
         try:
             valid_df = self.splice_ctx.df(sql)
@@ -579,7 +578,8 @@ class FeatureStore:
         self._validate_training_view(name, sql, join_keys, label_col)
         # register_training_view()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
-        train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
+        sql_text = sql.replace("'","''") # Escape any single quotes
+        train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql_text, ts_col=ts_col,
                                              label_col=label_col)
         print('Building training sql...')
         if verbose: print('\t', train_sql)
