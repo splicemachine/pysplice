@@ -535,6 +535,7 @@ class FeatureStore:
 
         # Column comparison
         # Lazily evaluate sql resultset, ensure that the result contains all columns matching pks, join_keys, tscol and label_col
+        print(sql)
         from py4j.protocol import Py4JJavaError
         try:
             valid_df = self.splice_ctx.df(sql)
