@@ -22,18 +22,21 @@ from .utils.training_utils import (dict_to_lower, _generate_training_set_history
                                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
-from .utils.http_utils import RequestType, make_request, get_feature_store_url, Endpoints
+from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials
 import requests
 import warnings
+from requests.auth import HTTPBasicAuth
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext = None) -> None:
         self.splice_ctx = splice_ctx
         self.mlflow_ctx = None
         self.feature_sets = []  # Cache of newly created feature sets
-        self._FS_URL = get_feature_store_url()
+        self._FS_URL = _get_feature_store_url()
         if not self._FS_URL: warnings.warn(
             "Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing anything.")
+        self._basic_auth = None
+        self.__try_auto_login()
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
@@ -48,7 +51,7 @@ class FeatureStore:
         :return: List[FeatureSet] the list of Feature Sets
         """
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, { "fsid": feature_set_ids } if feature_set_ids else None)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._basic_auth, { "fsid": feature_set_ids } if feature_set_ids else None)
         return [FeatureSet(**fs) for fs in r]
 
     def remove_training_view(self, override=False):
@@ -70,7 +73,7 @@ class FeatureStore:
         :return: TrainingView
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, { "name": training_view })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, self._basic_auth, { "name": training_view })
         return TrainingView(**r[0])
 
     def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
@@ -82,7 +85,7 @@ class FeatureStore:
         :return: List[TrainingView]
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET)
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, self._basic_auth)
         return [TrainingView(**tv) for tv in r]
 
     def get_training_view_id(self, name: str) -> int:
@@ -93,7 +96,7 @@ class FeatureStore:
         :return: The training view id
         """
         # return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, { "name": name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._basic_auth, { "name": name })
         return int(r)
 
     def get_features_by_name(self, names: List[str], as_list=False) -> Union[List[Feature], SparkDF]:
@@ -107,7 +110,7 @@ class FeatureStore:
         :py:meth:`features.FeatureStore.get_training_set` or :py:meth:`features.FeatureStore.get_feature_dataset`
         """
 
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, { "name": names })
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._basic_auth, { "name": names })
         return [Feature(**f) for f in r] if as_list else pd.DataFrame(r, index=[0])
 
     def remove_feature_set(self):
@@ -125,7 +128,7 @@ class FeatureStore:
         :return: Pandas Dataframe or str (SQL statement)
         """
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, 
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._basic_auth, 
             { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
         return r if return_sql else pd.DataFrame(r, index=[0])
 
@@ -146,7 +149,8 @@ class FeatureStore:
         :return: (str) the parameterized feature vector SQL
         """
         feats: List[Feature] = self._process_features(features)
-        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, { "view": training_view }, [f.__dict__ for f in features])
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, self._basic_auth, 
+            { "view": training_view }, [f.__dict__ for f in features])
         return r
 
     def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
@@ -166,7 +170,7 @@ class FeatureStore:
         :return: A list of available Feature objects
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET, { "view": training_view })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET, self._basic_auth, { "view": training_view })
         return [Feature(**f) for f in r]
 
     def get_feature_description(self):
@@ -207,7 +211,7 @@ class FeatureStore:
         :return: Spark DF
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, { "current": current_values_only }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r['sql']
 
@@ -272,7 +276,7 @@ class FeatureStore:
         """
 
         # # Generate the SQL needed to create the dataset
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, { "view": training_view }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
         tvw = r["training_view"]
@@ -375,7 +379,7 @@ class FeatureStore:
 
         tv_dict = { "name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
-        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, body=tv_dict)
+        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._basic_auth, body=tv_dict)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
@@ -406,7 +410,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, { "schema": schema_name, "table": table_name })
+        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._basic_auth, { "schema": schema_name, "table": table_name })
 
     def describe_feature_sets(self) -> None:
         """
@@ -415,7 +419,7 @@ class FeatureStore:
 
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth)
         
         print('Available feature sets')
         for desc in r:
@@ -437,7 +441,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth)
         descs = r
         if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
@@ -459,7 +463,7 @@ class FeatureStore:
         :param training_view: The training view name
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET)
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._basic_auth)
 
         print('Available training views')
         for desc in r:
@@ -476,7 +480,7 @@ class FeatureStore:
         :return: None
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, {'name': training_view})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._basic_auth, {'name': training_view})
         descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
@@ -507,7 +511,8 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.POST, { "schema": schema_name, "table": table_name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.POST, self._basic_auth, 
+            { "schema": schema_name, "table": table_name })
         metadata = r["metadata"]
         
         sql = r["sql"]
@@ -759,3 +764,17 @@ class FeatureStore:
     
     def set_feature_store_url(self, url: str):
         self._FS_URL = url
+
+    def login_director(self, username, password):
+        self._basic_auth = HTTPBasicAuth(username, password)
+
+    def __try_auto_login(self):
+        """
+        Tries to login the user  automatically. This will only work if the user is not
+        using the cloud service.
+
+        :return: None
+        """
+        user, password = _get_credentials()
+        if user and password:
+            self.login_director(user, password)

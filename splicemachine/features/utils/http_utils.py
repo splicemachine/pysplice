@@ -2,6 +2,7 @@ from typing import List, Dict, Union, Tuple
 import requests
 from splicemachine import SpliceMachineException
 from os import environ as env_vars
+from requests.auth import HTTPBasicAuth
 
 class RequestType:
     """
@@ -41,12 +42,17 @@ class Endpoints:
     TRAINING_VIEW_FEATURES: str = "training-view-features"
     TRAINING_VIEW_ID: str = "training-view-id"
 
-def make_request(url: str, endpoint: str, method: RequestType, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> requests.Response:
+def make_request(url: str, endpoint: str, method: RequestType, auth: HTTPBasicAuth, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> requests.Response:
+    if not auth:
+        raise Exception(
+            "You have not logged into Feature Store director."
+            " Please run fs.login_director(username, password)"
+        )
     if not url:
         raise KeyError("Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing trying again.")
     url = f'{url}/{endpoint}'
     try:
-        r = RequestType.method_map[method](url, params=params, json=body)
+        r = RequestType.method_map[method](url, params=params, json=body, auth=auth)
     except KeyError:
         raise SpliceMachineException(f'Not a recognized HTTP method: {method}.'
                                      f'Please use one of the following: {RequestType.get_valid()}')
@@ -60,7 +66,7 @@ def make_request(url: str, endpoint: str, method: RequestType, params: Dict[str,
     #     print(f'Error encountered: {e.response.text}')
     #     return
 
-def get_feature_store_url():
+def _get_feature_store_url():
     """
     Get address of Feature Store Container for Kubernetes
 
@@ -68,3 +74,11 @@ def get_feature_store_url():
     """
     url = env_vars.get('FS_URL')
     return url
+
+def _get_credentials():
+    """
+    Returns the username and password of the user if stored in env variables
+
+    :return: str, str
+    """
+    return env_vars.get('SPLICE_JUPYTER_USER'), env_vars.get('SPLICE_JUPYTER_PASSWORD')
