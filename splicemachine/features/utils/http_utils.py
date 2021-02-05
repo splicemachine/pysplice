@@ -53,7 +53,7 @@ def make_request(url: str, endpoint: str, method: RequestType, params: Dict[str,
     try:
         r.raise_for_status()
     except requests.exceptions.HTTPError as error:
-        to_print = str(error) if error.response.status_code == 500 else error.response.json()["detail"]
+        to_print = str(error) if error.response.status_code == 500 else error.response.json()["message"]
         raise SpliceMachineException(f'{to_print}') from None
     return r.json()
     # except requests.exceptions.HTTPError as e:

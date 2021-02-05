@@ -108,7 +108,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, { "name": names })
-        return [Feature(**f) for f in r] if as_list else pd.DataFrame(r, index=[0])
+        return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
     def remove_feature_set(self):
         # TODO
@@ -209,7 +209,6 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
-        sql = r['sql']
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -226,7 +225,7 @@ class FeatureStore:
 
         if self.mlflow_ctx and not return_sql:
             self.link_training_set_to_mlflow(features, start_time, end_time)
-        return sql if return_sql else self.splice_ctx.df(sql)
+        return r if return_sql else self.splice_ctx.df(r)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
