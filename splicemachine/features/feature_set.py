@@ -3,10 +3,6 @@ from .constants import Columns
 from splicemachine.spark import PySpliceContext
 from typing import List, Dict
 
-FEATURE_SET_TS_COL = '\n\tLAST_UPDATE_TS TIMESTAMP'
-HISTORY_SET_TS_COL = '\n\tASOF_TS TIMESTAMP,\n\tUNTIL_TS TIMESTAMP'
-
-
 class FeatureSet:
     def __init__(self, *, splice_ctx: PySpliceContext = None, table_name, schema_name, description,
                  primary_keys: Dict[str, str], feature_set_id=None, deployed: bool = False, **kwargs):
