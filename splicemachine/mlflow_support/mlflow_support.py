@@ -421,8 +421,6 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param nested: (bool) Controls whether run is nested in parent run. True creates a nest run [Default False]
     :return: (ActiveRun) the mlflow active run object
     """
-    # Get the current running transaction ID for time travel/data governance
-    _check_for_splice_ctx()
     tags = tags or {}
     tags['mlflow.user'] = __get_active_user()
 
