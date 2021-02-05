@@ -421,8 +421,6 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param nested: (bool) Controls whether run is nested in parent run. True creates a nest run [Default False]
     :return: (ActiveRun) the mlflow active run object
     """
-    # Get the current running transaction ID for time travel/data governance
-    _check_for_splice_ctx()
     tags = tags or {}
     tags['mlflow.user'] = __get_active_user()
 
@@ -995,13 +993,13 @@ def apply_patches():
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run, _set_mlflow_uri]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
 
 
-def set_mlflow_uri(uri):
+def _set_mlflow_uri(uri):
     """
     Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
 
