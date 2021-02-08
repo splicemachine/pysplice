@@ -46,7 +46,7 @@ def make_request(url: str, endpoint: str, method: RequestType, auth: HTTPBasicAu
     if not auth:
         raise Exception(
             "You have not logged into Feature Store director."
-            " Please run fs.login_director(username, password)"
+            " Please run fs.login_fs(username, password)"
         )
     if not url:
         raise KeyError("Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing trying again.")

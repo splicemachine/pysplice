@@ -765,7 +765,7 @@ class FeatureStore:
     def set_feature_store_url(self, url: str):
         self._FS_URL = url
 
-    def login_director(self, username, password):
+    def login_fs(self, username, password):
         self._basic_auth = HTTPBasicAuth(username, password)
 
     def __try_auto_login(self):
@@ -777,4 +777,4 @@ class FeatureStore:
         """
         user, password = _get_credentials()
         if user and password:
-            self.login_director(user, password)
+            self.login_fs(user, password)
