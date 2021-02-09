@@ -315,7 +315,7 @@ class FeatureStore:
                           "description": desc }
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, body=fset_dict)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._basic_auth, body=fset_dict)
         return FeatureSet(**r)
 
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
@@ -346,7 +346,8 @@ class FeatureStore:
         f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
                     "feature_type": feature_type, "tags": {}}
         print(f'Registering feature {name} in Feature Store')
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, { "schema": schema_name, "table": table_name }, f_dict)
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._basic_auth, 
+            { "schema": schema_name, "table": table_name }, f_dict)
         f = Feature(**r)
         return f
         # TODO: Backfill the feature
@@ -602,8 +603,6 @@ class FeatureStore:
         sql = SQL.get_model_predictions.format(schema_name=schema_name, table_name=table_name,
                                                start_time=start_time, end_time=end_time)
         model_table_df = self.splice_ctx.df(sql)
-        # r = make_request("models", RequestType.GET, {"schema": schema_name, "table": table_name, "start": start_time, "end": end_time})
-        # model_table_df = r
         build_model_drift_plot(model_table_df, time_intervals)
 
 
