@@ -2,7 +2,7 @@ from splicemachine.features.constants import FeatureType, SQL
 
 class Feature:
     def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
-        self.name = name
+        self.name = name.upper()
         self.description = description
         self.feature_data_type = feature_data_type
         self.feature_type = feature_type
@@ -13,23 +13,31 @@ class Feature:
         self.__dict__.update(args)
 
     def is_categorical(self):
+        """
+        Returns if the type of this feature is categorical
+        """
         return self.feature_type == FeatureType.categorical
 
     def is_continuous(self):
+        """
+        Returns if the type of this feature is continuous
+        """
         return self.feature_type == FeatureType.continuous
 
     def is_ordinal(self):
+        """
+        Returns if the type of this feature is ordinal
+        """
         return self.feature_type == FeatureType.ordinal
 
     def _register_metadata(self, splice):
         """
         Registers the feature's existence in the feature store
-        :return: None
         """
         feature_sql = SQL.feature_metadata.format(
             feature_set_id=self.feature_set_id, name=self.name, desc=self.description,
             feature_data_type=self.feature_data_type,
-            feature_type=self.feature_type, tags=','.join(self.tags)
+            feature_type=self.feature_type, tags=','.join(self.tags) if isinstance(self.tags, list) else self.tags
         )
         splice.execute(feature_sql)
 
@@ -43,8 +51,19 @@ class Feature:
 
     def __repr__(self):
         return self.__str__()
+
     def __str__(self):
         return f'Feature(FeatureID={self.__dict__.get("feature_id","None")}, ' \
                f'FeatureSetID={self.__dict__.get("feature_set_id","None")}, Name={self.name}, \n' \
                f'Description={self.description}, FeatureDataType={self.feature_data_type}, ' \
                f'FeatureType={self.feature_type}, Tags={self.tags})\n'
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __lt__(self, other):
+        if isinstance(other, str):
+            return self.name < other
+        elif isinstance(other, Feature):
+            return self.name < other.name
+        raise TypeError(f"< not supported between instances of Feature and {type(other)}")

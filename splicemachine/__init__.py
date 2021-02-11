@@ -1,0 +1,2 @@
+class SpliceMachineException(Exception):
+    pass

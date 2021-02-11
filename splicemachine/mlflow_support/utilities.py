@@ -179,14 +179,8 @@ def get_user():
 
     :return: (str) name of the logged in user
     """
-    try:
-        uname = env_vars.get('JUPYTERHUB_USER') or env_vars['USER']
-        return uname
-    except KeyError:
-        raise Exception(
-            "Could not determine current running user. Running MLManager outside of Splice Machine"
-            " Cloud Jupyter is currently unsupported")
-
+    uname = env_vars.get('JUPYTERHUB_USER') or env_vars.get('USER')
+    return uname
 
 def insert_artifact(splice_context: PySpliceContext,
                     name: str,
