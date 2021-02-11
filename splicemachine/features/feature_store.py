@@ -578,7 +578,8 @@ class FeatureStore:
         self._validate_training_view(name, sql, join_keys, label_col)
         # register_training_view()
         label_col = f"'{label_col}'" if label_col else "NULL"  # Formatting incase NULL
-        train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql, ts_col=ts_col,
+        sql_text = sql.replace("'","''") # Escape any single quotes
+        train_sql = SQL.training_view.format(name=name, desc=desc or 'None Provided', sql_text=sql_text, ts_col=ts_col,
                                              label_col=label_col)
         print('Building training sql...')
         if verbose: print('\t', train_sql)
