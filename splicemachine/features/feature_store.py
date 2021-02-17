@@ -99,7 +99,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._basic_auth, { "name": name })
         return int(r)
 
-    def get_features_by_name(self, names: List[str], as_list=False) -> Union[List[Feature], SparkDF]:
+    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
         """
         Returns a dataframe or list of features whose names are provided
 
