@@ -1,7 +1,7 @@
 py4j
 mlflow==1.8.0
 pyyaml
-mleap==0.15.0
+mleap==0.16.0
 graphviz
 requests
 gorilla==0.3.0
