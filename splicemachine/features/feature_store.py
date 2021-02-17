@@ -274,7 +274,7 @@ class FeatureStore:
         """
 
         # # Generate the SQL needed to create the dataset
-        features = [f if isinstance(f, str) else f.__dict__ for f in features]
+        features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
