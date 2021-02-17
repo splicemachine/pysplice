@@ -63,7 +63,7 @@ import pyspark
 import requests
 import sklearn
 import yaml
-from h2o.estimators.estimator_base import ModelBase as H2OModel
+from h2o.model.model_base import ModelBase as H2OModel
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
 from pyspark.sql import DataFrame as SparkDF
@@ -501,11 +501,13 @@ def _log_model_params(pipeline_or_model):
     else:
         raise Exception("Could not parse model type: " + str(model))
     for param in verbose_parameters:
-        try:
-            value = float(verbose_parameters[param])
-            mlflow.log_param(param.split('-')[0], value)
-        except:
-            mlflow.log_param(param.split('-')[0], verbose_parameters[param])
+        value = verbose_parameters[param]
+        if value: # Spark 3.0 leafCol returns an empty parameter, mlflow fails if you try to log an empty string
+            try:
+                value = float(value)
+                mlflow.log_param(param.split('-')[0], value)
+            except:
+                mlflow.log_param(param.split('-')[0], value)
 
 
 @_mlflow_patch('timer')
