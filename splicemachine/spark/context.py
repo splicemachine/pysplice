@@ -754,9 +754,9 @@ class PySpliceContext:
         if self.tableExists(schema_table_name):
             raise SpliceMachineException(f'Table {schema_table_name} already exists. Drop the table first or call '
                                          f'splice.insert with the provided dataframe')
-        self.context.createTable(dataframe, schema_table_name, primary_keys=primary_keys,
+        self.createTable(dataframe, schema_table_name, primary_keys=primary_keys,
                                  create_table_options=create_table_options, to_upper=to_upper)
-        self.context.insert(dataframe, schema_table_name, to_upper=to_upper)
+        self.insert(dataframe, schema_table_name, to_upper=to_upper)
 
 class ExtPySpliceContext(PySpliceContext):
     """

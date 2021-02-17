@@ -69,12 +69,8 @@ from pyspark.ml.base import Model as SparkModel
 from pyspark.sql import DataFrame as SparkDF
 from requests.auth import HTTPBasicAuth
 from sklearn.base import BaseEstimator as ScikitModel
-from tensorflow import __version__ as tf_version
-from tensorflow.keras import Model as KerasModel
-from tensorflow.keras import __version__ as keras_version
 
 from splicemachine.features import FeatureStore
-from splicemachine.features.training_set import TrainingSet
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
                                                     insert_artifact)
@@ -257,12 +253,12 @@ def _lm(key, value, step=None):
     mlflow.log_metric(key, value, step=step)
 
 
-def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
+def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
     """
     Populate the Zip buffer with the serialized MLModel
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
           with the current run
-    :param conda_env: [optional] specified conda environment
+    :param flavor_options: The extra kw arguments to any particular model library. If this is set, model_lib must be set
     """
     buffer = BytesIO()
     zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
@@ -272,41 +268,41 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
             try:
                 import mlflow
                 import_module(f'mlflow.{model_lib}')
-                getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, conda_env=conda_env)
+                if model_lib == 'pyfunc':
+                    getattr(mlflow, model_lib).save_model(python_model=model, path=mlmodel_dir, **flavor_options)
+                else:
+                    getattr(mlflow, model_lib).save_model(model, path=mlmodel_dir, **flavor_options)
 
                 file_ext = FileExtensions.map_from_mlflow_flavor(model_lib) if \
                     model_lib in DatabaseSupportedLibs.get_valid() else model_lib
 
-            except:
+            except Exception as e:
+                print(str(e))
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
                                              f'Or you can build a pyfunc model\n'
                                              'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
+        # deprecated behavior
         elif isinstance(model, H2OModel):
             import mlflow.h2o
             mlflow.set_tag('splice.h2o_version', h2o.__version__)
-            mlflow.h2o.save_model(model, mlmodel_dir, conda_env=conda_env)
+            mlflow.h2o.save_model(model, mlmodel_dir, **flavor_options)
             file_ext = FileExtensions.h2o
         elif isinstance(model, SparkModel):
             import mlflow.spark
             mlflow.set_tag('splice.spark_version', pyspark.__version__)
-            mlflow.spark.save_model(model, mlmodel_dir, conda_env=conda_env)
+            mlflow.spark.save_model(model, mlmodel_dir, **flavor_options)
             file_ext = FileExtensions.spark
         elif isinstance(model, ScikitModel):
             import mlflow.sklearn
             mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
-            mlflow.sklearn.save_model(model, mlmodel_dir, conda_env=conda_env)
+            mlflow.sklearn.save_model(model, mlmodel_dir, **flavor_options)
             file_ext = FileExtensions.sklearn
-        elif isinstance(model, KerasModel):  # We can't handle keras models with a different backend
-            import mlflow.keras
-            mlflow.set_tag('splice.keras_version', keras_version)
-            mlflow.set_tag('splice.tf_version', tf_version)
-            mlflow.keras.save_model(model, mlmodel_dir, conda_env=conda_env)
-            file_ext = FileExtensions.keras
         else:
             raise SpliceMachineException('Model type not supported for logging. If you received this error,'
                                          'you should pass a value to the model_lib parameter of the model type you '
-                                         'want to save. Supported values are available here: '
+                                         'want to save, or call the original mlflow.<flavor>.log_model(). '
+                                         'Supported values are available here: '
                                          'https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
                                          'as well as \'pyfunc\' '
                                          'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
@@ -318,27 +314,33 @@ def __get_serialized_mlmodel(model, conda_env=None, model_lib=None):
 
 
 @_mlflow_patch('log_model')
-def _log_model(model, name='model', conda_env=None, model_lib=None):
+def _log_model(model, name='model', model_lib=None, **flavor_options):
     """
     Log a trained machine learning model
 
     :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
         with the current run
     :param name: (str) the run relative name to store the model under. [Deault 'model']
-    :param conda_env: An optional conda environment for specifying custom configurations
-    :param model_class: An optional param specifying the model type of the model to log
+    :param model_lib: An optional param specifying the model type of the model to log
         Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
+    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,
+        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
+        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
+        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
     """
     _check_for_splice_ctx()
 
     # Make sure no models have been logged to this run
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise SpliceMachineException("Only one model is permitted per run.")
+    if flavor_options and not model_lib:
+        raise SpliceMachineException("You cannot set mlflow-flavor specific options without setting the model library. "
+                                     "Either set model_lib, or use the native mlflow.<flavor>.log_model function")
 
     model_class = str(model.__class__)
 
     run_id = mlflow.active_run().info.run_uuid
-    buffer, file_ext = __get_serialized_mlmodel(model, conda_env=conda_env, model_lib=model_lib)
+    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
     insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
                     run_uuid=run_id, file_ext=file_ext)
@@ -419,8 +421,6 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
     :param nested: (bool) Controls whether run is nested in parent run. True creates a nest run [Default False]
     :return: (ActiveRun) the mlflow active run object
     """
-    # Get the current running transaction ID for time travel/data governance
-    _check_for_splice_ctx()
     tags = tags or {}
     tags['mlflow.user'] = __get_active_user()
 
@@ -993,13 +993,13 @@ def apply_patches():
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run, _set_mlflow_uri]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
 
 
-def set_mlflow_uri(uri):
+def _set_mlflow_uri(uri):
     """
     Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
 
