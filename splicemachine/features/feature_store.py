@@ -126,7 +126,7 @@ class FeatureStore:
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
-
+        features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._basic_auth, 
             { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
         return r if return_sql else pd.DataFrame(r, index=[0])
@@ -147,9 +147,9 @@ class FeatureStore:
 
         :return: (str) the parameterized feature vector SQL
         """
-        feats: List[Feature] = self._process_features(features)
+        features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, self._basic_auth, 
-            { "view": training_view }, [f.__dict__ for f in features])
+            { "view": training_view }, features)
         return r
 
     def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
@@ -209,7 +209,7 @@ class FeatureStore:
             only takes effect if current_values_only is False.
         :return: Spark DF
         """
-
+        features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
 
@@ -274,6 +274,7 @@ class FeatureStore:
         """
 
         # # Generate the SQL needed to create the dataset
+        features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
@@ -510,7 +511,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.POST, self._basic_auth, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._basic_auth, 
             { "schema": schema_name, "table": table_name })
         metadata = r["metadata"]
         
