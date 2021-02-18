@@ -82,7 +82,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._basic_auth)
         return r
 
-    def get_fs_summary(self, training_view: str) -> TrainingView:
+    def get_training_view(self, training_view: str) -> TrainingView:
         """
         Gets a training view by name
 
