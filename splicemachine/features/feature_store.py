@@ -525,6 +525,17 @@ class FeatureStore:
             self.link_training_set_to_mlflow(features, start_time, end_time, tv_name)
         return self.splice_ctx.df(sql)
 
+    def remove_feature(self, name: str):
+        """
+        Removes a feature. This will run 2 checks.
+            1. See if the feature exists.
+            2. See if the feature belongs to a feature set that has already been deployed.
+            If either of these are true, this function will throw an error explaining which check has failed
+            :param name: feature name
+            :return:
+        """
+        make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
+
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
