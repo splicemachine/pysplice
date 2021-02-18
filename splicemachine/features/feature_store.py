@@ -65,6 +65,23 @@ class FeatureStore:
         """
         raise NotImplementedError
 
+    def get_summary(self) -> TrainingView:
+        """
+        This function returns a summary of the feature store including:
+            * Number of feature sets
+            * Number of deployed feature sets
+            * Number of features
+            * Number of deployed features
+            * Number of training sets
+            * Number of training views
+            * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
+            * Number of active (deployed) models (that have used the feature store for training)
+            * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
+        """
+
+        r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._basic_auth)
+        return r
+
     def get_training_view(self, training_view: str) -> TrainingView:
         """
         Gets a training view by name

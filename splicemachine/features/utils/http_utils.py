@@ -41,8 +41,9 @@ class Endpoints:
     TRAINING_VIEW_DESCRIPTIONS: str = "training-view-descriptions"
     TRAINING_VIEW_FEATURES: str = "training-view-features"
     TRAINING_VIEW_ID: str = "training-view-id"
+    SUMMARY: str = "summary"
 
-def make_request(url: str, endpoint: str, method: RequestType, auth: HTTPBasicAuth, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> requests.Response:
+def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> Union[dict,List[dict]]:
     if not auth:
         raise Exception(
             "You have not logged into Feature Store director."
