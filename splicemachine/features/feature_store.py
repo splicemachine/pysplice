@@ -44,7 +44,7 @@ class FeatureStore:
     def get_feature_sets(self, feature_set_names: List[str] = None) -> List[FeatureSet]:
         """
         Returns a list of available feature sets
-        :param feature_set_names: A list of feature set names. If none will return all FeatureSets
+        :param feature_set_names: A list of feature set names in the format '{schema_name}.{table_name}'. If none will return all FeatureSets
         :return: List[FeatureSet] the list of Feature Sets
         """
 
