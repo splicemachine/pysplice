@@ -41,17 +41,14 @@ class FeatureStore:
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
         self.splice_ctx = splice_ctx
 
-    def get_feature_sets(self, feature_set_ids: List[int] = None, _filter: Dict[str, str] = None) -> List[FeatureSet]:
+    def get_feature_sets(self, feature_set_names: List[str] = None) -> List[FeatureSet]:
         """
         Returns a list of available feature sets
-
-        :param feature_set_ids: A list of feature set IDs. If none will return all FeatureSets
-        :param _filter: Dictionary of filters to apply to the query. This filter can be on any attribute of FeatureSets.
-            If None, will return all FeatureSets
+        :param feature_set_names: A list of feature set names. If none will return all FeatureSets
         :return: List[FeatureSet] the list of Feature Sets
         """
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._basic_auth, { "fsid": feature_set_ids } if feature_set_ids else None)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._basic_auth, { "name": feature_set_names } if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
     def remove_training_view(self, override=False):
