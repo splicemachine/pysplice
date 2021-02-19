@@ -28,6 +28,7 @@ class Endpoints:
     """
     Enum for Feature Store Endpoints
     """
+    DEPLOYMENTS: str = "deployments"
     FEATURES: str = "features"
     FEATURE_SETS: str = "feature-sets"
     FEATURE_SET_DESCRIPTIONS: str = "feature-set-descriptions"
