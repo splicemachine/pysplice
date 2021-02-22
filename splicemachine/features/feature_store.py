@@ -438,8 +438,8 @@ class FeatureStore:
         
         print('Available feature sets')
         for desc in r:
-            fset = FeatureSet(**desc["feature_set"])
-            features = [Feature(**feature) for feature in desc["features"]]
+            features = [Feature(**feature) for feature in desc.pop('features')]
+            fset = FeatureSet(**desc)
             print('-' * 23)
             self._feature_set_describe(fset, features)
 
@@ -461,8 +461,8 @@ class FeatureStore:
         if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         desc = descs[0]
-        fset = FeatureSet(**desc["feature_set"])
-        features = [Feature(**feature) for feature in desc["features"]]
+        features = [Feature(**feature) for feature in desc.pop("features")]
+        fset = FeatureSet(**desc)
         self._feature_set_describe(fset, features)
 
     def _feature_set_describe(self, fset: FeatureSet, features: List[Feature]):
@@ -482,8 +482,8 @@ class FeatureStore:
 
         print('Available training views')
         for desc in r:
-            tcx = TrainingView(**desc["training_view"])
-            features = [Feature(**f) for f in desc["features"]]
+            features = [Feature(**f) for f in desc.pop('features')]
+            tcx = TrainingView(**desc)
             print('-' * 23)
             self._training_view_describe(tcx, features)
 
@@ -499,8 +499,8 @@ class FeatureStore:
         descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
-        tcx = TrainingView(**desc['training_view'])
-        feats = [Feature(**f) for f in desc['features']]
+        feats = [Feature(**f) for f in desc.pop('features')]
+        tcx = TrainingView(**desc)
         self._training_view_describe(tcx, feats)
 
     def _training_view_describe(self, tcx: TrainingView, feats: List[Feature]):
@@ -561,9 +561,8 @@ class FeatureStore:
         """
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._basic_auth, 
             { 'name': training_set })
-        training_set = r['training_set']
-        training_set['features'] = [Feature(**f) for f in r['features']]
-        return training_set
+        r['features'] = [Feature(**f) for f in r['features']]
+        return r
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
