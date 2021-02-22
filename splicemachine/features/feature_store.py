@@ -295,7 +295,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
-        tvw = r["training_view"]
+        tvw = TrainingView(**r["training_view"])
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
@@ -532,14 +532,15 @@ class FeatureStore:
             { "schema": schema_name, "table": table_name })
         metadata = r["metadata"]
         
-        sql = r["sql"]
+        sql = r['sql']
         features = metadata['FEATURES'].split(',')
         tv_name = metadata['NAME']
         start_time = metadata['TRAINING_SET_START_TS']
         end_time = metadata['TRAINING_SET_END_TS']
+        tv = TrainingView(**r['training_view']) if 'training_view' in r else None
 
         if self.mlflow_ctx:
-            self.link_training_set_to_mlflow(features, start_time, end_time, tv_name)
+            self.link_training_set_to_mlflow(features, start_time, end_time, tv)
         return self.splice_ctx.df(sql)
 
     def remove_feature(self, name: str):
