@@ -940,6 +940,7 @@ def _watch_job(job_id: int):
     Stream the logs in real time to standard out
     of a Job
     :param job_id: the job id to watch (returned after executing an operation)
+    NOTE: If the job being watched fails, this function will throw a SpliceMachineException
     """
     previous_lines = []
 
@@ -959,6 +960,12 @@ def _watch_job(job_id: int):
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
         previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
         if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+            # Check for a failure first, and raise an error if so
+            for log in reversed(previous_lines):
+                if 'ERROR' in log and 'Task Failed' in log:
+                    raise SpliceMachineException(
+                        'An error occured in your Job. See the log above for more information'
+                    ) from None
             return
 
         time.sleep(1)
