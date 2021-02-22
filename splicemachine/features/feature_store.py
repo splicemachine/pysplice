@@ -296,6 +296,7 @@ class FeatureStore:
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
+        features = [Feature(**f) for f in r["features"]]
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
@@ -538,6 +539,7 @@ class FeatureStore:
         start_time = metadata['TRAINING_SET_START_TS']
         end_time = metadata['TRAINING_SET_END_TS']
         tv = TrainingView(**r['training_view']) if 'training_view' in r else None
+        features = [Feature(**f) for f in r["features"]]
 
         if self.mlflow_ctx:
             self.link_training_set_to_mlflow(features, start_time, end_time, tv)
