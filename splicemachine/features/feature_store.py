@@ -528,13 +528,13 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._basic_auth, 
             { "schema": schema_name, "table": table_name })
-        metadata = r["metadata"]
+        metadata = r['metadata']
         
-        sql = r["sql"]
-        features = metadata['FEATURES'].split(',')
-        tv_name = metadata['NAME']
-        start_time = metadata['TRAINING_SET_START_TS']
-        end_time = metadata['TRAINING_SET_END_TS']
+        sql = r['sql']
+        features = r['features']
+        tv_name = metadata['name']
+        start_time = metadata['training_set_start_ts']
+        end_time = metadata['training_set_end_ts']
 
         if self.mlflow_ctx:
             self.link_training_set_to_mlflow(features, start_time, end_time, tv_name)
