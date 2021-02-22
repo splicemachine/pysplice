@@ -785,6 +785,7 @@ class FeatureStore:
 
         self.mlflow_ctx._active_training_set: TrainingSet = ts
         ts._register_metadata(self.mlflow_ctx)
+
     
     def set_feature_store_url(self, url: str):
         self._FS_URL = url
