@@ -562,8 +562,8 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._basic_auth, 
             { 'name': training_set })
         training_set = r['training_set']
-        r['features'] = [Feature(**f) for f in r['features']]
-        return r
+        training_set['features'] = [Feature(**f) for f in r['features']]
+        return training_set
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
