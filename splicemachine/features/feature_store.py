@@ -551,6 +551,20 @@ class FeatureStore:
         """
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
 
+    def get_training_set_features(self, training_set: str = None):
+        """
+        Returns a list of all features from an available Training Set, as well as details about that Training Set
+        :param schema_name: model schema name
+        :param table_name: model table name
+        :param training_set: training set name
+        :return: List[Deployment] the list of Deployments as dicts
+        """
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._basic_auth, 
+            { 'name': training_set })
+        training_set = r['training_set']
+        r['features'] = [Feature(**f) for f in r['features']]
+        return r
+
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
