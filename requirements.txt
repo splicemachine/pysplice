@@ -10,7 +10,7 @@ pyspark-dist-explore==0.1.8
 numpy
 pandas
 scipy
-pyspark>=2.4.5,<=3.0.0
+pyspark>=2.4.5,<3.0.0
 h2o-pysparkling-2.4==3.28.1.2-1
 IPython
 cloudpickle==1.6.0
