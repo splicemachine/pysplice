@@ -48,7 +48,8 @@ class TrainingSet:
                                              "Training Set was logged to the current active run. If you call "
                                              "fs.get_training_set or fs.get_training_set_from_view before starting an "
                                              "mlflow run, all following runs will assume that Training Set to be the "
-                                             "active Training Set, and will log the Training Set as metadata. For more "
-                                             "information, refer to the documentation. If you'd like to use a new "
-                                             "Training Set, end the current run, call one of the mentioned functions, "
-                                             "and start your new run.") from None
+                                             "active Training Set (until the next call to either of those functions), "
+                                             "and will log the Training Set as metadata. For more information, "
+                                             "refer to the documentation. If you'd like to use a new Training Set, "
+                                             "end the current run, call one of the mentioned functions, and start "
+                                             "your new run. Or, call mlflow.remove_active_training_set()") from None
