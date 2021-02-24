@@ -11,6 +11,6 @@ numpy
 pandas
 scipy
 pyspark>=3.0.1
-h2o-pysparkling-3.0
+h2o-pysparkling-3.0==3.32.0.4-1
 IPython
 cloudpickle==1.6.0
