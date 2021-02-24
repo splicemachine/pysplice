@@ -192,8 +192,7 @@ class FeatureStore:
         raise NotImplementedError
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
-                         label: str = None, start_time: datetime = None, end_time: datetime = None,
-                         return_sql: bool = False) -> SparkDF:
+                         start_time: datetime = None, end_time: datetime = None, return_sql: bool = False) -> SparkDF:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -217,10 +216,6 @@ class FeatureStore:
                     create a Training View to specify the join conditions.
 
         :param current_values_only: If you only want the most recent values of the features, set this to true. Otherwise, all history will be returned. Default False
-        :param label: An optional label to specify for the training set. If specified, the feature set of that feature
-            will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
-            that feature set. This feature will also be recorded as a "label" feature for this particular training set
-            (but not others in the future, unless this label is again specified).
         :param start_time: How far back in history you want Feature values. If not specified (and current_values_only is False), all history will be returned.
             This parameter only takes effect if current_values_only is False.
         :param end_time: The most recent values for each selected Feature. This will be the cutoff time, such that any Feature values that
