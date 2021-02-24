@@ -23,7 +23,7 @@ with open(REQUIREMENTS_FILE, "r") as dependencies_file:
 
 setup(
     name="splicemachine",
-    version="2.2.0",
+    version="2.5.0",
     install_requires=DEPENDENCIES,
     packages=find_packages(),
     license='Apache License, Version 2.0',
