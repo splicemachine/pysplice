@@ -28,6 +28,7 @@ class Endpoints:
     """
     Enum for Feature Store Endpoints
     """
+    DEPLOYMENTS: str = "deployments"
     FEATURES: str = "features"
     FEATURE_SETS: str = "feature-sets"
     FEATURE_SET_DESCRIPTIONS: str = "feature-set-descriptions"
@@ -35,6 +36,7 @@ class Endpoints:
     FEATURE_VECTOR: str = "feature-vector"
     FEATURE_VECTOR_SQL: str = "feature-vector-sql"
     TRAINING_SETS: str = "training-sets"
+    TRAINING_SET_FEATURES: str = "training-set-features"
     TRAINING_SET_FROM_DEPLOYMENT: str = "training-set-from-deployment"
     TRAINING_SET_FROM_VIEW: str = "training-set-from-view"
     TRAINING_VIEWS: str = "training-views"

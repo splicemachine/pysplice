@@ -439,6 +439,16 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
 
     return SpliceActiveRun(active_run)
 
+@_mlflow_patch('remove_active_training_set')
+def _remove_active_training_set():
+    """
+    Removes the active training set from mlflow. This function deletes mlflows active training set (retrieved from
+    the feature store), which will in turn stop the automated logging of features to the active mlflow run. To recreate
+    an active training set, call fs.get_training_set or fs.get_training_set_from_view in the Feature Store.
+    """
+    if hasattr(mlflow,'_active_training_set'):
+        del mlflow._active_training_set
+
 
 @_mlflow_patch('log_pipeline_stages')
 def _log_pipeline_stages(pipeline):
@@ -1003,7 +1013,8 @@ def apply_patches():
     targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run, _set_mlflow_uri]
+               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _fetch_logs, _watch_job, _end_run,
+               _set_mlflow_uri, _remove_active_training_set]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))

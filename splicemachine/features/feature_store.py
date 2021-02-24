@@ -298,7 +298,8 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
-        tvw = r["training_view"]
+        tvw = TrainingView(**r["training_view"])
+        features = [Feature(**f) for f in r["features"]]
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
@@ -443,8 +444,8 @@ class FeatureStore:
         
         print('Available feature sets')
         for desc in r:
-            fset = FeatureSet(**desc["feature_set"])
-            features = [Feature(**feature) for feature in desc["features"]]
+            features = [Feature(**feature) for feature in desc.pop('features')]
+            fset = FeatureSet(**desc)
             print('-' * 23)
             self._feature_set_describe(fset, features)
 
@@ -466,8 +467,8 @@ class FeatureStore:
         if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
         desc = descs[0]
-        fset = FeatureSet(**desc["feature_set"])
-        features = [Feature(**feature) for feature in desc["features"]]
+        features = [Feature(**feature) for feature in desc.pop("features")]
+        fset = FeatureSet(**desc)
         self._feature_set_describe(fset, features)
 
     def _feature_set_describe(self, fset: FeatureSet, features: List[Feature]):
@@ -487,8 +488,8 @@ class FeatureStore:
 
         print('Available training views')
         for desc in r:
-            tcx = TrainingView(**desc["training_view"])
-            features = [Feature(**f) for f in desc["features"]]
+            features = [Feature(**f) for f in desc.pop('features')]
+            tcx = TrainingView(**desc)
             print('-' * 23)
             self._training_view_describe(tcx, features)
 
@@ -504,8 +505,8 @@ class FeatureStore:
         descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
-        tcx = TrainingView(**desc['training_view'])
-        feats = [Feature(**f) for f in desc['features']]
+        feats = [Feature(**f) for f in desc.pop('features')]
+        tcx = TrainingView(**desc)
         self._training_view_describe(tcx, feats)
 
     def _training_view_describe(self, tcx: TrainingView, feats: List[Feature]):
@@ -533,16 +534,19 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._basic_auth, 
             { "schema": schema_name, "table": table_name })
-        metadata = r["metadata"]
         
-        sql = r["sql"]
-        features = metadata['FEATURES'].split(',')
-        tv_name = metadata['NAME']
-        start_time = metadata['TRAINING_SET_START_TS']
-        end_time = metadata['TRAINING_SET_END_TS']
+        metadata = r['metadata']
+        sql = r['sql']
+
+        tv_name = metadata['name']
+        start_time = metadata['training_set_start_ts']
+        end_time = metadata['training_set_end_ts']
+
+        tv = TrainingView(**r['training_view']) if 'training_view' in r else None
+        features = [Feature(**f) for f in r['features']]
 
         if self.mlflow_ctx:
-            self.link_training_set_to_mlflow(features, start_time, end_time, tv_name)
+            self.link_training_set_to_mlflow(features, start_time, end_time, tv)
         return self.splice_ctx.df(sql)
 
     def remove_feature(self, name: str):
@@ -555,6 +559,28 @@ class FeatureStore:
             :return:
         """
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
+
+    def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
+        """
+        Returns a list of all (or specified) available deployments
+        :param schema_name: model schema name
+        :param table_name: model table name
+        :param training_set: training set name
+        :return: List[Deployment] the list of Deployments as dicts
+        """
+        return make_request(self._FS_URL, Endpoints.DEPLOYMENTS, RequestType.GET, self._basic_auth, 
+            { 'schema': schema_name, 'table': table_name, 'name': training_set })
+      
+    def get_training_set_features(self, training_set: str = None):
+        """
+        Returns a list of all features from an available Training Set, as well as details about that Training Set
+        :param training_set: training set name
+        :return: TrainingSet as dict
+        """
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._basic_auth, 
+            { 'name': training_set })
+        r['features'] = [Feature(**f) for f in r['features']]
+        return r
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
@@ -790,6 +816,7 @@ class FeatureStore:
 
         self.mlflow_ctx._active_training_set: TrainingSet = ts
         ts._register_metadata(self.mlflow_ctx)
+
     
     def set_feature_store_url(self, url: str):
         self._FS_URL = url
