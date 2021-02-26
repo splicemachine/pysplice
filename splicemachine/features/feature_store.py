@@ -227,6 +227,7 @@ class FeatureStore:
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
+        create_time = r['metadata']['training_set_create_ts']
 
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
@@ -242,7 +243,7 @@ class FeatureStore:
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, start_time, end_time)
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time)
         return r if return_sql else self.splice_ctx.df(r)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
@@ -295,10 +296,11 @@ class FeatureStore:
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
         features = [Feature(**f) for f in r["features"]]
+        create_time = r['metadata']['training_set_create_ts']
 
         # Link this to mlflow for model deployment
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, start_time, end_time, tvw)
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw)
 
         return sql if return_sql else self.splice_ctx.df(sql)
 
@@ -536,12 +538,13 @@ class FeatureStore:
         tv_name = metadata['name']
         start_time = metadata['training_set_start_ts']
         end_time = metadata['training_set_end_ts']
+        create_time = metadata['training_set_create_ts']
 
         tv = TrainingView(**r['training_view']) if 'training_view' in r else None
         features = [Feature(**f) for f in r['features']]
 
         if self.mlflow_ctx:
-            self.link_training_set_to_mlflow(features, start_time, end_time, tv)
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tv)
         return self.splice_ctx.df(sql)
 
     def remove_feature(self, name: str):
@@ -797,12 +800,12 @@ class FeatureStore:
         return remaining_features, feature_importances.reset_index(
             drop=True) if return_importances else remaining_features
 
-    def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], start_time: datetime = None, 
+    def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], create_time: datetime, start_time: datetime = None, 
                                     end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False):
         if not tvw:
             tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
                                 description=None)
-        ts = TrainingSet(training_view=tvw, features=features,
+        ts = TrainingSet(training_view=tvw, features=features, create_time=create_time,
                         start_time=start_time, end_time=end_time)
 
         # For metadata purposes
