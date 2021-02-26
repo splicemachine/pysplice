@@ -15,11 +15,13 @@ class TrainingSet:
                  *,
                  training_view: TrainingView,
                  features: List[Feature],
+                 create_time: datetime,
                  start_time: Optional[datetime] = None,
                  end_time: Optional[datetime] = None
                  ):
         self.training_view = training_view
         self.features = features
+        self.create_time = create_time
         self.start_time = start_time or datetime(year=1900,month=1,day=1) # Saw problems with spark handling datetime.min
         self.end_time = end_time or datetime.today()
 
@@ -37,6 +39,7 @@ class TrainingSet:
                 mlflow_ctx.lp("splice.feature_store.training_set",self.training_view.name)
                 mlflow_ctx.lp("splice.feature_store.training_set_start_time",str(self.start_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_end_time",str(self.end_time))
+                mlflow_ctx.lp("splice.feature_store.training_set_create_time",str(self.create_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_num_features", len(self.features))
                 for i,f in enumerate(self.features):
                     mlflow_ctx.lp(f'splice.feature_store.training_set_feature_{i}',f.name)
