@@ -338,7 +338,7 @@ class FeatureStore:
         return FeatureSet(**r)
 
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
-                       feature_type: FeatureType, desc: str = None, tags: Dict[str, str] = None):
+                       feature_type: FeatureType, desc: str = None, tags: List[str] = None, attributes: Dict[str, str] = None):
         """
         Add a feature to a feature set
 
@@ -356,6 +356,7 @@ class FeatureStore:
 
         :param desc: The (optional) feature description (default None)
         :param tags: (optional) List of (str) tag words (default None)
+        :param attributes: (optional) Dict of (str) attribute key/value pairs (default None)
         :return: Feature created
         """
         # database stores object names in upper case
@@ -363,7 +364,7 @@ class FeatureStore:
         table_name = table_name.upper()
 
         f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
-                    "feature_type": feature_type, "tags": {}}
+                    "feature_type": feature_type, "tags": tags, "attributes": attributes }
         print(f'Registering feature {name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._basic_auth, 
             { "schema": schema_name, "table": table_name }, f_dict)
