@@ -822,13 +822,7 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     return __initiate_job(payload, '/api/rest/initiate')
 
 @_mlflow_patch('undeploy_kubernetes')
-def _undeploy_kubernetes(run_id: str, service_port: int = 80,
-                       base_replicas: int = 1, autoscaling_enabled: bool = False,
-                       max_replicas: int = 2, target_cpu_utilization: int = 50,
-                       disable_nginx: bool = False, gunicorn_workers: int = 1,
-                       resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
-                       cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
-                       memory_limit: str = "2048Mi", expose_external: bool = False):
+def _undeploy_kubernetes(run_id: str):
     """
     Removes a model deployment from Kubernetes. This will delete the Kubernetes deployment and record the event
 
