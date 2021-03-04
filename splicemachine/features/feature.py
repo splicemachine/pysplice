@@ -1,7 +1,7 @@
 from splicemachine.features.constants import FeatureType
 
 class Feature:
-    def __init__(self, *, name, description, feature_data_type, feature_type, tags, feature_set_id=None, feature_id=None, **kwargs):
+    def __init__(self, *, name, description, feature_data_type, feature_type, tags, attributes, feature_set_id=None, feature_id=None, **kwargs):
         self.name = name.upper()
         self.description = description
         self.feature_data_type = feature_data_type
@@ -9,6 +9,7 @@ class Feature:
         self.feature_set_id = feature_set_id
         self.feature_id = feature_id
         self.tags = tags
+        self.attributes = attributes
         args = {k.lower(): kwargs[k] for k in kwargs}
         self.__dict__.update(args)
 
