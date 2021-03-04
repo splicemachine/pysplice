@@ -41,6 +41,7 @@ class TrainingSet:
                 mlflow_ctx.lp("splice.feature_store.training_set_end_time",str(self.end_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_create_time",str(self.create_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_num_features", len(self.features))
+                mlflow_ctx.lp("splice.feature_store.training_set_label", self.training_view.label_column)
                 for i,f in enumerate(self.features):
                     mlflow_ctx.lp(f'splice.feature_store.training_set_feature_{i}',f.name)
             except:

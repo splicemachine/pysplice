@@ -192,7 +192,7 @@ class FeatureStore:
         raise NotImplementedError
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
-                         start_time: datetime = None, end_time: datetime = None, return_sql: bool = False) -> SparkDF:
+                         start_time: datetime = None, end_time: datetime = None, label: str = None, return_sql: bool = False) -> SparkDF:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -222,13 +222,18 @@ class FeatureStore:
             were updated after this point in time won't be selected. If not specified (and current_values_only is False),
             Feature values up to the moment in time you call the function (now) will be retrieved. This parameter
             only takes effect if current_values_only is False.
+        :param label: An optional label to specify for the training set. If specified, the feature set of that feature
+            will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
+            that feature set. This feature will also be recorded as a "label" feature for this particular training set
+            (but not others in the future, unless this label is again specified).
         :return: Spark DF
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only, "label": label }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         create_time = r['metadata']['training_set_create_ts']
-
+        sql = r['sql']
+        tvw = TrainingView(**r['training_view'])
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
         # or a timestamp column . This is simply a joined set of features from different feature sets.
@@ -243,8 +248,8 @@ class FeatureStore:
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, create_time, start_time, end_time)
-        return r if return_sql else self.splice_ctx.df(r)
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw)
+        return sql if return_sql else self.splice_ctx.df(sql)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
