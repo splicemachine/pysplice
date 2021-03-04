@@ -807,7 +807,6 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
                 as an internal service, and deploy an authentication proxy (such as https://github.com/oauth2-proxy/oauth2-proxy)
                 to proxy traffic to your internal service after authenticating.
     """
-    _check_for_splice_ctx()
     print("Processing...")
 
     payload = {
@@ -818,6 +817,27 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
         'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
         'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request, 'cpu_limit': cpu_limit,
         'memory_request': memory_request, 'expose_external': expose_external
+    }
+
+    return __initiate_job(payload, '/api/rest/initiate')
+
+@_mlflow_patch('deploy_kubernetes')
+def _deploy_kubernetes(run_id: str, service_port: int = 80,
+                       base_replicas: int = 1, autoscaling_enabled: bool = False,
+                       max_replicas: int = 2, target_cpu_utilization: int = 50,
+                       disable_nginx: bool = False, gunicorn_workers: int = 1,
+                       resource_requests_enabled: bool = False, resource_limits_enabled: bool = False,
+                       cpu_request: int = 0.5, cpu_limit: int = 1, memory_request: str = "512Mi",
+                       memory_limit: str = "2048Mi", expose_external: bool = False):
+    """
+    Removes a model deployment from Kubernetes. This will delete the Kubernetes deployment and record the event
+
+    :param run_id: specified if overriding the active run
+    """
+    print("Processing...")
+
+    payload = {
+        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'UNDEPLOY_KUBERNETES'
     }
 
     return __initiate_job(payload, '/api/rest/initiate')
@@ -893,7 +913,6 @@ def _deploy_db(db_schema_name: str,
         * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \
             parsing the prediction probabilities and filling in proper column values
     """
-    _check_for_splice_ctx()
     print("Deploying model to database...")
 
     # database converts all object names to upper case, so we need to as well in our metadata
@@ -914,7 +933,8 @@ def _deploy_db(db_schema_name: str,
 
     if df is not None:
         if isinstance(df, PandasDF):
-            df_schema = mlflow._splice_context.spark_session.createDataFrame(df).schema.json()
+            _check_for_splice_ctx() # We will need a splice context to convert to sparkDF
+            df_schema = mlflow._splice_context.pandasToSpark(df).schema.json()
         elif isinstance(df, SparkDF):
             df_schema = df.schema.json()
         else:
@@ -936,7 +956,6 @@ def __get_logs(job_id: int):
     """
     Retrieve the logs associated with the specified job id
     """
-    _check_for_splice_ctx()
     request = requests.post(
         get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
         json={"task_id": job_id}, auth=mlflow._basic_auth
