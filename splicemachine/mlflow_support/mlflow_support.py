@@ -83,7 +83,7 @@ try:
     from IPython import get_ipython
     import nbformat as nbf
     ipython = get_ipython()
-    mlflow._notebook_history = True
+    mlflow._notebook_history = bool(ipython) # If running outside a notebook/ipython, this will be False
 except:
     mlflow._notebook_history = False
 
@@ -1027,7 +1027,7 @@ def _set_mlflow_uri(uri):
     :param uri: (str) the URL of your mlflow UI.
     :return: None
     """
-    _CLIENT = uri
+    _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=uri)
     mlflow.client = _CLIENT
     mlflow.set_tracking_uri(uri)
 
