@@ -63,8 +63,6 @@ import pyspark
 import requests
 import sklearn
 import yaml
-# from h2o.model.model_base import ModelBase as H2OModel TODO: For Spark3
-from h2o.estimators.estimator_base import ModelBase as H2OModel
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
 from pyspark.sql import DataFrame as SparkDF
@@ -77,6 +75,11 @@ from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get
                                                     insert_artifact)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
+
+try: # PySpark/H2O 3.X
+    from h2o.model.model_base import ModelBase as H2OModel
+except: # PySpark/H2O 2.X
+    from h2o.estimators.estimator_base import ModelBase as H2OModel
 
 # For recording notebook history
 try:
