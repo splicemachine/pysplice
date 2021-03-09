@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Optional, Any
 import requests
 from splicemachine import SpliceMachineException
 from os import environ as env_vars
@@ -45,7 +45,9 @@ class Endpoints:
     TRAINING_VIEW_ID: str = "training-view-id"
     SUMMARY: str = "summary"
 
-def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth, params: Dict[str, Union[str, List[Union[str, int]]]] = None, body: Dict[str, str] = None) -> Union[dict,List[dict]]:
+def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth,
+                 params: Optional[Dict[str, Any]] = None,
+                 body: Union[Dict[str,Any], List[Any]] = None) -> Union[dict,List[dict]]:
     if not auth:
         raise Exception(
             "You have not logged into Feature Store director."
