@@ -234,6 +234,7 @@ class FeatureStore:
         create_time = r['metadata']['training_set_create_ts']
         sql = r['sql']
         tvw = TrainingView(**r['training_view'])
+        features = [Feature(**f) for f in r['features']]
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
         # or a timestamp column . This is simply a joined set of features from different feature sets.
