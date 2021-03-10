@@ -227,6 +227,8 @@ class FeatureStore:
             will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
             that feature set. This feature will also be recorded as a "label" feature for this particular training set
             (but not others in the future, unless this label is again specified).
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :return: Spark DF
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
@@ -293,6 +295,8 @@ class FeatureStore:
 
                     If end_time is None, query will get most recently available data
 
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
@@ -534,6 +538,12 @@ class FeatureStore:
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
         :param schema_name: model schema name
         :param table_name: model table name
+        :param label: An optional label to specify for the training set. If specified, the feature set of that feature
+            will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
+            that feature set. This feature will also be recorded as a "label" feature for this particular training set
+            (but not others in the future, unless this label is again specified).
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :return:
         """
         # database stores object names in upper case
