@@ -192,7 +192,8 @@ class FeatureStore:
         raise NotImplementedError
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
-                         start_time: datetime = None, end_time: datetime = None, label: str = None, return_sql: bool = False) -> SparkDF:
+                         start_time: datetime = None, end_time: datetime = None, label: str = None, return_pk_cols: bool = False, 
+                         return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -229,7 +230,8 @@ class FeatureStore:
         :return: Spark DF
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, { "current": current_values_only, "label": label }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, 
+                        { "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         create_time = r['metadata']['training_set_create_ts']
         sql = r['sql']
@@ -254,7 +256,7 @@ class FeatureStore:
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
-                                   return_sql: bool = False) -> SparkDF or str:
+                                   return_pk_cols: bool = False, return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
@@ -297,7 +299,8 @@ class FeatureStore:
 
         # # Generate the SQL needed to create the dataset
         features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, 
+                        { "view": training_view, "pks": return_pk_cols, "ts": return_ts_col }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
@@ -525,7 +528,8 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
-    def get_training_set_from_deployment(self, schema_name: str, table_name: str):
+    def get_training_set_from_deployment(self, schema_name: str, table_name: str, label: str = None, 
+                                        return_pk_cols: bool = False, return_ts_col: bool = False):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
         :param schema_name: model schema name
@@ -537,7 +541,7 @@ class FeatureStore:
         table_name = table_name.upper()
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._basic_auth, 
-            { "schema": schema_name, "table": table_name })
+            { "schema": schema_name, "table": table_name, "label": label, "pks": return_pk_cols, "ts": return_ts_col})
         
         metadata = r['metadata']
         sql = r['sql']
