@@ -49,7 +49,8 @@ class FeatureStore:
         :return: List[FeatureSet] the list of Feature Sets
         """
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._basic_auth, { "name": feature_set_names } if feature_set_names else None)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._basic_auth,
+                         { "name": feature_set_names } if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
     def remove_training_view(self, override=False):
@@ -127,10 +128,6 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._basic_auth, { "name": names })
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
-    def remove_feature_set(self):
-        # TODO
-        raise NotImplementedError
-
     def get_feature_vector(self, features: List[Union[str, Feature]],
                            join_key_values: Dict[str, str], return_sql=False) -> Union[str, PandasDF]:
         """
@@ -184,7 +181,8 @@ class FeatureStore:
         :return: A list of available Feature objects
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET, self._basic_auth, { "view": training_view })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET,
+                         self._basic_auth, { "view": training_view })
         return [Feature(**f) for f in r]
 
     def get_feature_description(self):
@@ -600,6 +598,28 @@ class FeatureStore:
             { 'name': training_set })
         r['features'] = [Feature(**f) for f in r['features']]
         return r
+
+    def remove_feature_set(self, schema: str, table: str, purge: bool = False) -> None:
+        """
+        Deletes a feature set if appropriate. You can currently delete a feature set in two scenarios:
+        1. The feature set has not been deployed
+        2. The feature set has been deployed, but not linked to any training sets
+
+        If both of these conditions are false, this will fail.
+
+        Optionally set purge=True to force delete the feature set and all of the associated Training Sets using the
+        Feature Set. ONLY USE IF YOU KNOW WHAT YOU ARE DOING. This will delete Training Sets, but will still fail if
+        there is an active deployment with this feature set. That cannot be overwritten
+
+        :param schema: The Feature Set Schema
+        :param table: The Feature Set Table
+        :param purge: Whether to force delete training sets that use the feature set (that are not used in deployments)
+        """
+        if purge:
+            warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
+                          " Training Sets (except ones used in an active model deployment)")
+        make_request(self._FS_URL, Endpoints.FEATURE_SETS,
+                     RequestType.DELETE, self._basic_auth, { "schema": schema, "table":table, "purge": purge })
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
