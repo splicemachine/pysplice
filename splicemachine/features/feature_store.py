@@ -190,7 +190,8 @@ class FeatureStore:
         raise NotImplementedError
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
-                         start_time: datetime = None, end_time: datetime = None, return_sql: bool = False) -> SparkDF:
+                         start_time: datetime = None, end_time: datetime = None, label: str = None, return_pk_cols: bool = False, 
+                         return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -220,14 +221,22 @@ class FeatureStore:
             were updated after this point in time won't be selected. If not specified (and current_values_only is False),
             Feature values up to the moment in time you call the function (now) will be retrieved. This parameter
             only takes effect if current_values_only is False.
+        :param label: An optional label to specify for the training set. If specified, the feature set of that feature
+            will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
+            that feature set. This feature will also be recorded as a "label" feature for this particular training set
+            (but not others in the future, unless this label is again specified).
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :return: Spark DF
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth,
-                         { "current": current_values_only },
-                         { "features": features, "start_time": start_time, "end_time": end_time })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._basic_auth, 
+                        { "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col }, 
+                        { "features": features, "start_time": start_time, "end_time": end_time })
         create_time = r['metadata']['training_set_create_ts']
-
+        sql = r['sql']
+        tvw = TrainingView(**r['training_view'])
+        features = [Feature(**f) for f in r['features']]
         # Here we create a null training view and pass it into the training set. We do this because this special kind
         # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
         # or a timestamp column . This is simply a joined set of features from different feature sets.
@@ -242,12 +251,12 @@ class FeatureStore:
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, create_time, start_time, end_time)
-        return r if return_sql else self.splice_ctx.df(r)
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw)
+        return sql if return_sql else self.splice_ctx.df(sql)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
-                                   return_sql: bool = False) -> SparkDF or str:
+                                   return_pk_cols: bool = False, return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
@@ -284,13 +293,16 @@ class FeatureStore:
 
                     If end_time is None, query will get most recently available data
 
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
         # # Generate the SQL needed to create the dataset
         features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, { "view": training_view }, 
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._basic_auth, 
+                        { "view": training_view, "pks": return_pk_cols, "ts": return_ts_col }, 
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
@@ -518,11 +530,18 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
-    def get_training_set_from_deployment(self, schema_name: str, table_name: str):
+    def get_training_set_from_deployment(self, schema_name: str, table_name: str, label: str = None, 
+                                        return_pk_cols: bool = False, return_ts_col: bool = False):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
         :param schema_name: model schema name
         :param table_name: model table name
+        :param label: An optional label to specify for the training set. If specified, the feature set of that feature
+            will be used as the "anchor" feature set, meaning all point in time joins will be made to the timestamps of
+            that feature set. This feature will also be recorded as a "label" feature for this particular training set
+            (but not others in the future, unless this label is again specified).
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :return:
         """
         # database stores object names in upper case
@@ -530,7 +549,7 @@ class FeatureStore:
         table_name = table_name.upper()
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._basic_auth, 
-            { "schema": schema_name, "table": table_name })
+            { "schema": schema_name, "table": table_name, "label": label, "pks": return_pk_cols, "ts": return_ts_col})
         
         metadata = r['metadata']
         sql = r['sql']
