@@ -37,6 +37,7 @@ class TrainingSet:
             print("There is an active mlflow run, your training set will be logged to that run.")
             try:
                 mlflow_ctx.lp("splice.feature_store.training_set",self.training_view.name)
+                mlflow_ctx.lp("splice.feature_store.training_view_id",self.training_view.view_id)
                 mlflow_ctx.lp("splice.feature_store.training_set_start_time",str(self.start_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_end_time",str(self.end_time))
                 mlflow_ctx.lp("splice.feature_store.training_set_create_time",str(self.create_time))

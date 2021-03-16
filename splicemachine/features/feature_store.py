@@ -53,16 +53,15 @@ class FeatureStore:
                          { "name": feature_set_names } if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
-    def remove_training_view(self, override=False):
+    def remove_training_view(self, name: str):
         """
-        Note: This function is not yet implemented.
-        Removes a training view. This will run 2 checks.
-            1. See if the training view is being used by a model in a deployment. If this is the case, the function will fail, always.
-            2. See if the training view is being used in any mlflow runs (non-deployed models). This will fail and return
-            a warning Telling the user that this training view is being used in mlflow runs (and the run_ids) and that
-            they will need to "override" this function to forcefully remove the training view.
+        This removes a training view if it is not being used by any currently deployed models.
+        NOTE: Once this training view is removed, you will not be able to deploy any models that were trained using this
+        view
+
+        :param name: The view name
         """
-        raise NotImplementedError
+        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
 
     def get_summary(self) -> TrainingView:
         """
