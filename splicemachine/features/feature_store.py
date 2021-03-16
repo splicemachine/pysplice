@@ -61,7 +61,9 @@ class FeatureStore:
 
         :param name: The view name
         """
+        print(f"Removing Training View {name}")
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
+        print('Done')
 
     def get_summary(self) -> TrainingView:
         """
@@ -438,8 +440,9 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-
+        print(f'Deploying Feature Set {schema_name}.{table_name}')
         make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._basic_auth, { "schema": schema_name, "table": table_name })
+        print('Done')
 
     def describe_feature_sets(self) -> None:
         """
@@ -574,7 +577,9 @@ class FeatureStore:
             :param name: feature name
             :return:
         """
+        print(f"Removing feature {name}")
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
+        print('Done')
 
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
         """
@@ -617,8 +622,10 @@ class FeatureStore:
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
+        print(f'Removing Feature Set {schema}.{table}')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
                      RequestType.DELETE, self._basic_auth, { "schema": schema, "table":table, "purge": purge })
+        print('Done')
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
