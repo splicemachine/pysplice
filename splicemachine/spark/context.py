@@ -1,5 +1,5 @@
 """
-Copyright 2020 Splice Machine, Inc.
+Copyright 2021 Splice Machine, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -779,3 +779,86 @@ class ExtPySpliceContext(PySpliceContext):
         self.kafkaServers = kafkaServers
         self.kafkaPollTimeout = kafkaPollTimeout
         super().__init__(sparkSession, JDBC_URL, _unit_testing)
+
+    def setAutoCommitOn(self):
+        """
+        Turn auto-commit on.  Auto-commit is on by default when the class is instantiated.
+
+        :return: None
+        """
+        self.context.setAutoCommitOn()
+
+    def setAutoCommitOff(self):
+        """
+        Turn auto-commit off.
+
+        :return: None
+        """
+        self.context.setAutoCommitOff()
+
+    def autoCommitting(self):
+        """
+        Check whether auto-commit is on.
+
+        :return: (Boolean) True if auto-commit is on.
+        """
+        return self.context.autoCommitting()
+
+    def transactional(self):
+        """
+        Check whether auto-commit is off.
+
+        :return: (Boolean) True if auto-commit is off.
+        """
+        return self.context.transactional()
+
+    def commit(self):
+        """
+        Commit the transaction.  Throws exception if auto-commit is on.
+
+        :return: None
+        """
+        self.context.commit()
+
+    def rollback(self):
+        """
+        Rollback the transaction.  Throws exception if auto-commit is on.
+
+        :return: None
+        """
+        self.context.rollback()
+
+    def rollbackToSavepoint(self, savepoint):
+        """
+        Rollback to the savepoint.  Throws exception if auto-commit is on.
+        :param savepoint: (java.sql.Savepoint) A Savepoint.
+
+        :return: None
+        """
+        self.context.rollback(savepoint)
+
+    def setSavepoint(self):
+        """
+        Create and set a unnamed savepoint at the current point in the transaction.  Throws exception if auto-commit is on.
+
+        :return: (java.sql.Savepoint) The unnamed Savepoint
+        """
+        return self.context.setSavepoint()
+
+    def setSavepointWithName(self, name):
+        """
+        Create and set a named savepoint at the current point in the transaction.  Throws exception if auto-commit is on.
+        :param name: (String) The name of the Savepoint.
+
+        :return: (java.sql.Savepoint) The named Savepoint
+        """
+        return self.context.setSavepoint(name)
+
+    def releaseSavepoint(self, savepoint):
+        """
+        Release the savepoint.  Throws exception if auto-commit is on.
+        :param savepoint: (java.sql.Savepoint) A Savepoint.
+
+        :return: None
+        """
+        self.context.releaseSavepoint(savepoint)
