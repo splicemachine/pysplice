@@ -337,6 +337,7 @@ class FeatureStore:
         :param features: An optional list of features. If provided, the Features will be created with the Feature Set
         :Example:
             .. code-block:: python
+
                 from splicemachine.features import FeatureType, Feature
                 f1 = Feature(
                     name='my_first_feature',
@@ -362,6 +363,7 @@ class FeatureStore:
                     desc='test fset',
                     features=feats
                 )
+
         :return: FeatureSet
         """
         # database stores object names in upper case
@@ -376,6 +378,8 @@ class FeatureStore:
                       "features": features}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
+        if features:
+            print(f'Registering {len(features)} features for {schema_name}.{table_name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._basic_auth, body=fset_dict)
         return FeatureSet(**r)
 
@@ -506,7 +510,8 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth,
+                         params={'schema':schema_name, 'table':table_name})
         descs = r
         if not descs: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
