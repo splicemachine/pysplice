@@ -326,7 +326,7 @@ class FeatureStore:
 
 
     def create_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
-                           desc: Optional[str] = None, features: List[Feature] = None) -> FeatureSet:
+                           desc: Optional[str] = None, features: Optional[List[Feature]] = None) -> FeatureSet:
         """
         Creates and returns a new feature set
 
@@ -335,41 +335,45 @@ class FeatureStore:
         :param primary_keys: The primary key column(s) of this feature set
         :param desc: The (optional) description
         :param features: An optional list of features. If provided, the Features will be created with the Feature Set
-            :Example:
-                .. code-block:: python
-                    f1 = Feature(
-                        name='my_first_feature',
-                        description='the first feature',
-                        feature_data_type='INT',
-                        feature_type=FeatureType.ordinal,
-                        tags=['good_feature','a new tag', 'ordinal'],
-                        attributes={'quality':'awesome'}
-                    )
-                    f2 = Feature(
-                        name='my_second_feature',
-                        description='the second feature',
-                        feature_data_type='FLOAT',
-                        feature_type=FeatureType.continuous,
-                        tags=['not_as_good_feature','a new tag'],
-                        attributes={'quality':'not as awesome'}
-                    )
-                    feats = [f1, f2]
-                    feature_set = fs.create_feature_set(
-                        schema_name='splice',
-                        table_name='foo',
-                        primary_keys={'MOMENT_KEY':"INT"},
-                        desc='test fset',
-                        features=feats
-                    )
+        :Example:
+            .. code-block:: python
+                from splicemachine.features import FeatureType, Feature
+                f1 = Feature(
+                    name='my_first_feature',
+                    description='the first feature',
+                    feature_data_type='INT',
+                    feature_type=FeatureType.ordinal,
+                    tags=['good_feature','a new tag', 'ordinal'],
+                    attributes={'quality':'awesome'}
+                )
+                f2 = Feature(
+                    name='my_second_feature',
+                    description='the second feature',
+                    feature_data_type='FLOAT',
+                    feature_type=FeatureType.continuous,
+                    tags=['not_as_good_feature','a new tag'],
+                    attributes={'quality':'not as awesome'}
+                )
+                feats = [f1, f2]
+                feature_set = fs.create_feature_set(
+                    schema_name='splice',
+                    table_name='foo',
+                    primary_keys={'MOMENT_KEY':"INT"},
+                    desc='test fset',
+                    features=feats
+                )
         :return: FeatureSet
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        fset_dict = { "schema_name": schema_name, "table_name": table_name,
-                          "primary_keys": primary_keys,
-                          "description": desc }
+        features = [f.__dict__ for f in features] if features else None
+        fset_dict = { "schema_name": schema_name,
+                      "table_name": table_name,
+                      "primary_keys": primary_keys,
+                      "description": desc,
+                      "features": features}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._basic_auth, body=fset_dict)
