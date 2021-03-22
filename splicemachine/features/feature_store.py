@@ -335,30 +335,32 @@ class FeatureStore:
         :param primary_keys: The primary key column(s) of this feature set
         :param desc: The (optional) description
         :param features: An optional list of features. If provided, the Features will be created with the Feature Set
-            ex: f1 = Feature(
-                    name='my_first_feature',
-                    description='the first feature',
-                    feature_data_type='INT',
-                    feature_type=FeatureType.ordinal,
-                    tags=['good_feature','a new tag', 'ordinal'],
-                    attributes={'quality':'awesome'}
-                )
-                f2 = Feature(
-                    name='my_second_feature',
-                    description='the second feature',
-                    feature_data_type='FLOAT',
-                    feature_type=FeatureType.continuous,
-                    tags=['not_as_good_feature','a new tag'],
-                    attributes={'quality':'not as awesome'}
-                )
-                feats = [f1, f2]
-                fs.create_feature_set(
-                    schema_name='splice',
-                    table_name='foo',
-                    primary_keys={'MOMENT_KEY':"INT"},
-                    desc='test fset',
-                    features=feats
-                )
+            :Example:
+                .. code-block:: python
+                    f1 = Feature(
+                        name='my_first_feature',
+                        description='the first feature',
+                        feature_data_type='INT',
+                        feature_type=FeatureType.ordinal,
+                        tags=['good_feature','a new tag', 'ordinal'],
+                        attributes={'quality':'awesome'}
+                    )
+                    f2 = Feature(
+                        name='my_second_feature',
+                        description='the second feature',
+                        feature_data_type='FLOAT',
+                        feature_type=FeatureType.continuous,
+                        tags=['not_as_good_feature','a new tag'],
+                        attributes={'quality':'not as awesome'}
+                    )
+                    feats = [f1, f2]
+                    feature_set = fs.create_feature_set(
+                        schema_name='splice',
+                        table_name='foo',
+                        primary_keys={'MOMENT_KEY':"INT"},
+                        desc='test fset',
+                        features=feats
+                    )
         :return: FeatureSet
         """
         # database stores object names in upper case
