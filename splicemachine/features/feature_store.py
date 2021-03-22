@@ -53,16 +53,17 @@ class FeatureStore:
                          { "name": feature_set_names } if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
-    def remove_training_view(self, override=False):
+    def remove_training_view(self, name: str):
         """
-        Note: This function is not yet implemented.
-        Removes a training view. This will run 2 checks.
-            1. See if the training view is being used by a model in a deployment. If this is the case, the function will fail, always.
-            2. See if the training view is being used in any mlflow runs (non-deployed models). This will fail and return
-            a warning Telling the user that this training view is being used in mlflow runs (and the run_ids) and that
-            they will need to "override" this function to forcefully remove the training view.
+        This removes a training view if it is not being used by any currently deployed models.
+        NOTE: Once this training view is removed, you will not be able to deploy any models that were trained using this
+        view
+
+        :param name: The view name
         """
-        raise NotImplementedError
+        print(f"Removing Training View {name}")
+        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
+        print('Done')
 
     def get_summary(self) -> TrainingView:
         """
@@ -439,8 +440,9 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-
+        print(f'Deploying Feature Set {schema_name}.{table_name}')
         make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._basic_auth, { "schema": schema_name, "table": table_name })
+        print('Done')
 
     def describe_feature_sets(self) -> None:
         """
@@ -575,7 +577,9 @@ class FeatureStore:
             :param name: feature name
             :return:
         """
+        print(f"Removing feature {name}")
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
+        print('Done')
 
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
         """
@@ -618,8 +622,10 @@ class FeatureStore:
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
+        print(f'Removing Feature Set {schema}.{table}')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
                      RequestType.DELETE, self._basic_auth, { "schema": schema, "table":table, "purge": purge })
+        print('Done')
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
