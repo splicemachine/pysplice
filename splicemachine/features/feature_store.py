@@ -326,7 +326,7 @@ class FeatureStore:
 
 
     def create_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
-                           desc: Optional[str] = None) -> FeatureSet:
+                           desc: Optional[str] = None, features: List[Feature] = None) -> FeatureSet:
         """
         Creates and returns a new feature set
 
@@ -334,6 +334,31 @@ class FeatureStore:
         :param table_name: The table name for this feature set
         :param primary_keys: The primary key column(s) of this feature set
         :param desc: The (optional) description
+        :param features: An optional list of features. If provided, the Features will be created with the Feature Set
+            ex: f1 = Feature(
+                    name='my_first_feature',
+                    description='the first feature',
+                    feature_data_type='INT',
+                    feature_type=FeatureType.ordinal,
+                    tags=['good_feature','a new tag', 'ordinal'],
+                    attributes={'quality':'awesome'}
+                )
+                f2 = Feature(
+                    name='my_second_feature',
+                    description='the second feature',
+                    feature_data_type='FLOAT',
+                    feature_type=FeatureType.continuous,
+                    tags=['not_as_good_feature','a new tag'],
+                    attributes={'quality':'not as awesome'}
+                )
+                feats = [f1, f2]
+                fs.create_feature_set(
+                    schema_name='splice',
+                    table_name='foo',
+                    primary_keys={'MOMENT_KEY':"INT"},
+                    desc='test fset',
+                    features=feats
+                )
         :return: FeatureSet
         """
         # database stores object names in upper case
@@ -349,7 +374,7 @@ class FeatureStore:
         return FeatureSet(**r)
 
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
-                       feature_type: FeatureType, desc: str = None, tags: List[str] = None, attributes: Dict[str, str] = None):
+                       feature_type: str, desc: str = None, tags: List[str] = None, attributes: Dict[str, str] = None):
         """
         Add a feature to a feature set
 
@@ -373,6 +398,10 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
+
+        assert feature_type in FeatureType.get_valid(), f"The feature_type {feature_type} in not valid. Valid feature " \
+                                                        f"types include {FeatureType.get_valid()}. Use the FeatureType" \
+                                                        f" class provided by splicemachine.features"
 
         f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
                     "feature_type": feature_type, "tags": tags, "attributes": attributes }
