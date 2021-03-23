@@ -854,6 +854,7 @@ def _deploy_db(db_schema_name: str,
                classes: Optional[List[str]] = None,
                library_specific: Optional[Dict[str, str]] = None,
                replace: Optional[bool] = False,
+               max_batch_size: Optional[int] = 10000,
                verbose: bool = False) -> None:
     """
     Deploy a trained (currently Spark, Sklearn, Keras or H2O) model to the Database.
@@ -885,7 +886,8 @@ def _deploy_db(db_schema_name: str,
             * Keras
                 * pred_threshold: prediction threshold for Keras binary classification models. Note: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, you will NOT receive a class prediction, only the output of the final layer (like model.predict()). If you want a class prediction for your binary classification problem, you MUST pass in a threshold.
     If the model does not support these parameters, they will be ignored.
-    :param replace: (bool) whether or not to replace a currently existing model. This param does not yet work
+    :param max_batch_size: (int) the max size for the database to batch groups of rows for prediction. Default 10,000.
+    :param replace: (bool) whether or not to replace a currently existing model. This param is not yet implemented
     :return: None\n
 
     This function creates the following IF you are creating a table from the dataframe \n
@@ -944,7 +946,8 @@ def _deploy_db(db_schema_name: str,
         'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
         'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
         'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema
+        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema, 
+        'max_batch_size': max_batch_size
     }
 
     return __initiate_job(payload, '/api/rest/initiate')
