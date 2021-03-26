@@ -681,8 +681,11 @@ def __initiate_job(payload, endpoint):
             "You have not logged into MLManager director."
             " Please run mlflow.login_director(username, password)"
         )
+    route, csp, env, suffix = mlflow.client._registry_uri.split('.') # FIXME: jobtracker to path based route
+    url = '.'.join([route+'-jobtracker', csp, env, suffix.replace('/mlflow','')])
     request = requests.post(
-        get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
+        #get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
+        url + endpoint,
         auth=mlflow._basic_auth,
         json=payload
     )
@@ -957,8 +960,11 @@ def __get_logs(job_id: int):
     """
     Retrieve the logs associated with the specified job id
     """
+    route, csp, env, suffix = mlflow.client._registry_uri.split('.') # FIXME: jobtracker to path based route
+    url = '.'.join([route+'-jobtracker', csp, env, suffix.replace('/mlflow','')])
     request = requests.post(
-        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
+        #get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
+        url + "/api/rest/logs",
         json={"task_id": job_id}, auth=mlflow._basic_auth
     )
     if not request.ok:
