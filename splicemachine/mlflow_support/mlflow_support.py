@@ -145,7 +145,7 @@ def _get_current_run_data():
 
     :return: active run data object
     """
-    return _CLIENT.get_run(mlflow.active_run().info.run_id).data
+    return mlflow.client.get_run(mlflow.active_run().info.run_id).data
 
 def __get_active_user():
     if hasattr(mlflow, '_username'):
@@ -164,10 +164,10 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
     :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]
     :return: (List[str]) List of run ids
     """
-    exps = [_CLIENT.get_experiment(experiment_id)] if experiment_id else _CLIENT.list_experiments()
+    exps = [mlflow.client.get_experiment(experiment_id)] if experiment_id else mlflow.client.list_experiments()
     run_ids = []
     for exp in exps:
-        for run in _CLIENT.search_runs(exp.experiment_id):
+        for run in mlflow.client.search_runs(exp.experiment_id):
             if run_name == run.data.tags.get('mlflow.runName'):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
@@ -587,7 +587,7 @@ def _get_model_name(run_id):
     :param run_id: (str) the run_id that the model is stored under
     :return: (str or None) The model name if it exists
     """
-    return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
+    return mlflow.client.get_run(run_id).data.tags.get('splice.model_name')
 
 
 def _load_model(run_id=None, name=None, as_pyfunc=False):
