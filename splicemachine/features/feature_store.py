@@ -155,8 +155,8 @@ class FeatureStore:
             :NOTE:
                 .. code-block:: text
 
-                    This function will error if the view SQL is missing a view key required to retrieve the\
-                    desired features
+                    This function will error if the view SQL is missing a view key required \n
+                    to retrieve the desired features
 
         :return: (str) the parameterized feature vector SQL
         """
@@ -199,12 +199,15 @@ class FeatureStore:
         :py:meth:`features.FeatureStore.get_training_set` . The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
 
-        The way point-in-time correctness is guaranteed here is by choosing one of the Feature Sets as the "anchor" dataset.
-        This means that the points in time that the query is based off of will be the points in time in which the anchor
-        Feature Set recorded changes. The anchor Feature Set is the Feature Set that contains the superset of all primary key
-        columns across all Feature Sets from all Features provided. If more than 1 Feature Set has the superset of
-        all Feature Sets, the Feature Set with the most primary keys is selected. If more than 1 Feature Set has the same
-        maximum number of primary keys, the Feature Set is chosen by alphabetical order (schema_name, table_name).
+        :NOTE:
+            .. code-block:: text
+
+                The way point-in-time correctness is guaranteed here is by choosing one of the Feature Sets as the "anchor" dataset.
+                This means that the points in time that the query is based off of will be the points in time in which the anchor
+                Feature Set recorded changes. The anchor Feature Set is the Feature Set that contains the superset of all primary key
+                columns across all Feature Sets from all Features provided. If more than 1 Feature Set has the superset of
+                all Feature Sets, the Feature Set with the most primary keys is selected. If more than 1 Feature Set has the same
+                maximum number of primary keys, the Feature Set is chosen by alphabetical order (schema_name, table_name).
 
         :param features: List of Features or strings of feature names
 
@@ -624,6 +627,7 @@ class FeatureStore:
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
         """
         Returns a list of all (or specified) available deployments
+
         :param schema_name: model schema name
         :param table_name: model table name
         :param training_set: training set name
@@ -744,6 +748,7 @@ class FeatureStore:
         """
         Displays feature by feature comparison between the training set of the deployed model and the input feature
         values used with the model since deployment.
+
         :param schema_name: name of database schema where model table is deployed
         :param table_name: name of the model table
         :return: None
@@ -767,6 +772,7 @@ class FeatureStore:
         period. Time periods are equal periods of time where predictions are present in the model table
         'schema_name'.'table_name'. Model predictions are first filtered to only those occurring after 'start_time' if
         specified and before 'end_time' if specified.
+
         :param schema_name: schema where the model table resides
         :param table_name: name of the model table
         :param time_intervals: number of time intervals to plot
@@ -834,6 +840,7 @@ class FeatureStore:
     def __log_mlflow_results(self, name, rounds, mlflow_results):
         """
         Logs the results of feature elimination to mlflow
+
         :param name: MLflow run name
         :param rounds: Number of rounds of feature elimination that were run
         :param mlflow_results: The params / metrics to log
