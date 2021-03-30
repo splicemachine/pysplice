@@ -44,6 +44,7 @@ class Endpoints:
     TRAINING_VIEW_FEATURES: str = "training-view-features"
     TRAINING_VIEW_ID: str = "training-view-id"
     SUMMARY: str = "summary"
+    SOURCE: str = "source"
 
 def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth,
                  params: Optional[Dict[str, Any]] = None,

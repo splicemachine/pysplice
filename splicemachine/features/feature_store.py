@@ -667,6 +667,47 @@ class FeatureStore:
                      RequestType.DELETE, self._basic_auth, { "schema": schema, "table":table, "purge": purge })
         print('Done')
 
+    def create_source(self, name: str, sql: str, event_ts_column: datetime,
+                      update_ts_column: datetime, primary_keys: List[str]):
+        """
+        Creates, validates, and stores a source in the Feature Store that can be used to create a Pipeline that
+        feeds a feature set
+
+        :Example:
+            .. code-block:: python
+
+                fs.create_source(
+                    name='CUSTOMER_RFM',
+                    sql='''\
+                    SELECT * FROM
+                    RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY
+                    ''',
+                    event_ts_column='INVOICEDATE',
+                    update_ts_column='LAST_UPDATE_TS',
+                    primary_keys=['CUSTOMERID']
+                )
+
+        :param name: The name of the source. This must be unique across the feature store
+        :param sql: the SQL statement that returns the base result set to be used in future aggregation pipelines
+        :param event_ts_column: The column of the source query that determines the time of the event (row) being
+        described. This is not necessarily the time the record was recorded, but the time the event itself occured.
+        :param update_ts_column: The column that indicates the time when the record was last updated. When scheduled
+        pipelines run, they will filter on this column to get only the records that have not been queried before.
+        :param primary_keys: The list of columns in the source SQL that uniquely identifies each row. These become
+        the primary keys of the feature set(s) that is/are eventually created from this source.
+        """
+        source = {
+            'name': name,
+            'sql_text': sql,
+            'event_ts_column': event_ts_column,
+            'update_ts_column': update_ts_column,
+            'pk_columns': primary_keys
+
+        }
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.GET, auth=self._basic_auth, body=source)
+
+
+
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
