@@ -5,6 +5,7 @@ class FeatureAgg:
     SUM = 'sum'
     COUNT = 'count'
     AVG = 'avg'
+    MEAN = 'avg'
     MIN = 'min'
     MAX = 'max'
 
@@ -12,7 +13,7 @@ class FeatureAgg:
     def get_valid():
         return (FeatureAgg.SUM, FeatureAgg.COUNT, FeatureAgg.AVG, FeatureAgg.MIN, FeatureAgg.MAX)
 
-class WindowAgg:
+class AggWindow:
     """
     A class defining the valid window types available to aggregation functions for use in FeatureAggregations
     """
@@ -27,8 +28,8 @@ class WindowAgg:
 
     @staticmethod
     def get_valid():
-        return (WindowAgg.SECOND, WindowAgg.MINUTE, WindowAgg.HOUR, WindowAgg.DAY,
-                WindowAgg.WEEK, WindowAgg.MONTH, WindowAgg.QUARTER, WindowAgg.YEAR)
+        return (AggWindow.SECOND, AggWindow.MINUTE, AggWindow.HOUR, AggWindow.DAY,
+                AggWindow.WEEK, AggWindow.MONTH, AggWindow.QUARTER, AggWindow.YEAR)
 
     @staticmethod
     def get_window(length: int, window: str):
@@ -47,7 +48,7 @@ class WindowAgg:
                 WindowAgg.get_window(5, WindowAgg.SECOND) -> '5s'
                 WindowAgg.get_window(10, WindowAgg.MONTH) -> '10mn'
         """
-        assert window in WindowAgg.get_valid(), f'The provided window {window} is not valid. ' \
-                                                f'Use one of {WindowAgg.get_valid()}'
+        assert window in AggWindow.get_valid(), f'The provided window {window} is not valid. ' \
+                                                f'Use one of {AggWindow.get_valid()}'
         assert length > 0 and type(length) == int, f'Length must be a positive, nonzero integer, but got {length}'
         return f'{length}{window}'

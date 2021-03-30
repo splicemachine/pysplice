@@ -17,7 +17,9 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split, build_feature_drift_plot, build_model_drift_plot)
+from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split,
+                                build_feature_drift_plot, build_model_drift_plot)
+from .pipelines import FeatureAggregation
 from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
                                    _generate_training_set_sql, _create_temp_training_view)
 from .constants import SQL, FeatureType
@@ -616,7 +618,9 @@ class FeatureStore:
         Removes a feature. This will run 2 checks.
             1. See if the feature exists.
             2. See if the feature belongs to a feature set that has already been deployed.
+
             If either of these are true, this function will throw an error explaining which check has failed
+
             :param name: feature name
             :return:
         """
@@ -639,6 +643,7 @@ class FeatureStore:
     def get_training_set_features(self, training_set: str = None):
         """
         Returns a list of all features from an available Training Set, as well as details about that Training Set
+
         :param training_set: training set name
         :return: TrainingSet as dict
         """
@@ -647,7 +652,7 @@ class FeatureStore:
         r['features'] = [Feature(**f) for f in r['features']]
         return r
 
-    def remove_feature_set(self, schema: str, table: str, purge: bool = False) -> None:
+    def remove_feature_set(self, schema_name: str, table_name: str, purge: bool = False) -> None:
         """
         Deletes a feature set if appropriate. You can currently delete a feature set in two scenarios:
         1. The feature set has not been deployed
@@ -659,16 +664,16 @@ class FeatureStore:
         Feature Set. ONLY USE IF YOU KNOW WHAT YOU ARE DOING. This will delete Training Sets, but will still fail if
         there is an active deployment with this feature set. That cannot be overwritten
 
-        :param schema: The Feature Set Schema
-        :param table: The Feature Set Table
+        :param schema_name: The Feature Set Schema
+        :param table_name: The Feature Set Table
         :param purge: Whether to force delete training sets that use the feature set (that are not used in deployments)
         """
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
-        print(f'Removing Feature Set {schema}.{table}')
+        print(f'Removing Feature Set {schema_name}.{table_name}')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
-                     RequestType.DELETE, self._basic_auth, { "schema": schema, "table":table, "purge": purge })
+                     RequestType.DELETE, self._basic_auth, { "schema": schema_name, "table":table_name, "purge": purge })
         print('Done')
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
@@ -682,10 +687,7 @@ class FeatureStore:
 
                 fs.create_source(
                     name='CUSTOMER_RFM',
-                    sql='''\
-                    SELECT * FROM
-                    RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY
-                    ''',
+                    sql='SELECT * FROM RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY',
                     event_ts_column='INVOICEDATE',
                     update_ts_column='LAST_UPDATE_TS',
                     primary_keys=['CUSTOMERID']
@@ -695,26 +697,169 @@ class FeatureStore:
         :param sql: the SQL statement that returns the base result set to be used in future aggregation pipelines
         :param event_ts_column: The column of the source query that determines the time of the event (row) being
         described. This is not necessarily the time the record was recorded, but the time the event itself occured.
+
         :param update_ts_column: The column that indicates the time when the record was last updated. When scheduled
         pipelines run, they will filter on this column to get only the records that have not been queried before.
+
         :param primary_keys: The list of columns in the source SQL that uniquely identifies each row. These become
         the primary keys of the feature set(s) that is/are eventually created from this source.
         """
         source = {
-            'name': name,
+            'name': name.upper(),
             'sql_text': sql,
             'event_ts_column': event_ts_column,
             'update_ts_column': update_ts_column,
             'pk_columns': primary_keys
 
         }
-        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.GET, auth=self._basic_auth, body=source)
+        print(f'Registering Source {name.upper()} in the Feature Store')
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.POST, auth=self._basic_auth, body=source)
 
+    def create_aggregation_feature_set_from_source(self, source_name: str, schema_name: str, table_name: str,
+                                                   start_time: datetime, schedule_interval: str,
+                                                   aggregations: List[FeatureAggregation],
+                                                   backfill_start_time: datetime = None, backfill_interval: str = None,
+                                                   description: Optional[str] = None, run_backfill: Optional[bool] = True
+                                                   ):
+        """
+        Creates a temporal aggregation feature set by creating a pipeline linking a source to a feature set.
+        Provided aggregations will generate the features for the feature set. This will create the feature set
+        along with aggregation calculations to create features
+
+        :param source_name: The name of the of the source created via create_source
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :param start_time: The start time for the pipeline to run
+        :param schedule_interval: The frequency with which to run the pipeline.
+        :param aggregations: The list of FeatureAggregations to apply to the column names of the source SQL statement
+        :param backfill_start_time: The datetime representing the earliest point in time to get data from when running
+        backfill
+        :param backfill_interval: The "sliding window" interval to increase each timepoint by when performing backfill
+        :param run_backfill: Whether or not to run backfill when calling this function. Default False. If this is True
+        backfill_start_time and backfill_interval MUST BE SET
+        :return: (FeatureSet) the created Feature Set
+
+        :Example:
+            .. code-block:: python
+
+                from splicemachine.features.pipelines import AggWindow, FeatureAgg, FeatureAggregation
+                from datetime import datetime
+                source_name = 'CUSTOMER_RFM'
+                fs.create_source(
+                    name=source_name,
+                    sql='SELECT * FROM RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY',
+                    event_ts_column='INVOICEDATE',
+                    update_ts_column='LAST_UPDATE_TS',
+                    primary_keys=['CUSTOMERID']
+                )
+                fs.create_aggregation_feature_set_from_source(
+
+                )
+                start_time = datetime.today()
+                schedule_interval = AggWindow.get_window(5,AggWindow.DAY)
+                backfill_start = datetime.strptime('2002-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+                backfill_interval = schedule_interval
+                fs.create_aggregation_feature_set_from_source
+                (
+                    source_name, 'RETAIL_FS', 'AUTO_RFM', start_time=start_time,
+                    schedule_interval=schedule_interval, backfill_start_time=backfill_start,
+                    backfill_interval=backfill_interval,
+                    aggregations = [
+                        FeatureAggregation(feature_name_prefix = 'AR_CLOTHING_QTY',     column_name = 'CLOTHING_QTY',     agg_functions=['sum','max'],   agg_windows=['1d','2d','90d'], agg_default_value = 0.0 ),
+                        FeatureAggregation(feature_name_prefix = 'AR_DELICATESSEN_QTY', column_name = 'DELICATESSEN_QTY', agg_functions=['avg'],         agg_windows=['1d','2d', '2w'], agg_default_value = 11.5 ),
+                        FeatureAggregation(feature_name_prefix = 'AR_GARDEN_QTY' ,      column_name = 'GARDEN_QTY',       agg_functions=['count','avg'], agg_windows=['30d','90d', '1q'], agg_default_value = 8 )
+                    ]
+                )
+
+            This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
+            The Feature Set will have 15 features:
+            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
+            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
+            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
+            Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
+        """
+        schema_name, table_name, source_name = schema_name.upper(), table_name.upper(), source_name.upper()
+        agg_feature_set = {
+            'source_name': source_name,
+            'schema_name': schema_name,
+            'table_name': table_name,
+            'start_time': str(start_time),
+            'schedule_interval': schedule_interval,
+            'aggregations': [f.__dict__ for f in aggregations],
+            'backfill_start_time': str(backfill_start_time),
+            'backfill_interval': backfill_interval,
+            'description': description
+        }
+        num_features = sum([len(f.agg_functions)*len(f.agg_windows) for f in aggregations])
+        print(f'Registering aggregation feature set {schema_name}.{table_name} and {num_features} features'
+              f' in the Feature Store')
+        r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._basic_auth,
+                     params={'run_backfill': run_backfill}, body=agg_feature_set)
+        return FeatureSet(**r)
+
+    def get_backfill_sql(self, schema_name: str, table_name: str):
+        """
+        Returns the necessary parameterized SQL statement to perform backfill on an Aggregate Feature Set. The Feature
+        Set must have been deployed using the :py:meth:`features.FeatureStore.create_aggregation_feature_set_from_source`
+        function. Meaning there must be a Source and a Pipeline associated to it. This function will likely not be
+        necessary as you can perform backfill at the time of feature set creation automatically.
+
+        This SQL will be parameterized and need a timestamp to execute. You can get those timestamps with the
+        :py:meth:`features.FeatureStore.get_backfill_interval` with the same parameters
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The parameterized Backfill SQL
+        """
+
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.BACKFILL_SQL, RequestType.GET, self._basic_auth, params=p)
+
+    def get_pipeline_sql(self, schema_name: str, table_name: str):
+        """
+        Returns the incremental pipeline SQL that feeds a feature set from a source (thus creating a pipeline).
+        Pipelines are managed for you by default by Splice Machine via Airflow, but if you opt out of using the
+        managed pipelines you can use this function to get the incremental SQL.
+
+        This SQL will be parameterized and need a timestamp to execute. You can get those timestamps with the
+        :py:meth:`features.FeatureStore.get_backfill_interval` with the same parameters
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The incremental Pipeline SQL
+        """
+
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.PIPELINE_SQL, RequestType.GET, self._basic_auth, params=p)
+
+    def get_backfill_intervals(self, schema_name: str, table_name: str) -> List[datetime]:
+        """
+        Gets the backfill intervals necessary for the parameterized backfill SQL obtained from the
+        :py:meth:`features.FeatureStore.get_backfill_sql` function. This function will likely not be
+        necessary as you can perform backfill at the time of feature set creation automatically.
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The list of datetimes necessary to parameterize the backfill SQL
+        """
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.BACKFILL_INTERVALS, RequestType.GET, self._basic_auth, params=p)
 
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
+
         :param schema_name: model schema name
         :param table_name: model table name
         :return:

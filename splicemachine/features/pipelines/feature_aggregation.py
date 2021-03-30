@@ -20,8 +20,9 @@ class FeatureAggregation:
         :Example:
             .. code-block:: python
 
-                from splicemachine.features.pipelines import WindowAgg, FeatureAgg, FeatureAggregation
-                FeatureAggregation('revenue', ['sum','mean'], ['1d','5w'], 0.0)
+                from splicemachine.features.pipelines import AggWindow, FeatureAgg, FeatureAggregation
+                FeatureAggregation('revenue', [FeatureAgg.SUM, FeatureAgg.AVG],\
+                        [AggWindow.get_window(5, AggWindow.DAY), AggWindow.get_window(10, AggWindow.SECOND)], 0.0)
 
         would yield:
             customer_rfm_revenue_wrate_sum_1d
@@ -29,3 +30,8 @@ class FeatureAggregation:
             customer_rfm_revenue_wrate_mean_1d
             customer_rfm_revenue_wrate_mean_5w
       """
+        self.column_name=column_name
+        self.agg_functions= agg_functions
+        self.agg_windows = agg_windows
+        self.agg_default_value = agg_default_value
+        self.feature_name_prefix = feature_name_prefix

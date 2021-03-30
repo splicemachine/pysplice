@@ -45,6 +45,10 @@ class Endpoints:
     TRAINING_VIEW_ID: str = "training-view-id"
     SUMMARY: str = "summary"
     SOURCE: str = "source"
+    AGG_FEATURE_SET_FROM_SOURCE: str = 'agg-feature-set-from-source'
+    BACKFILL_SQL: str = 'backfill-sql'
+    BACKFILL_INTERVALS: str = 'backfill-intervals'
+    PIPELINE_SQL: str = 'pipeline-sql'
 
 def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth,
                  params: Optional[Dict[str, Any]] = None,
