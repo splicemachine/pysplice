@@ -572,12 +572,12 @@ class PySpliceContext:
         :param dataframe: (DataFrame)
         :param schema_table_name: (str) Full table name in the format of "schema.table"
         :param options: (Dict) Dictionary of options to be passed to --splice-properties; bulkImportDirectory is required
-        :return: None
+        :return: (int) Number of records imported
         """
         optionsMap = self.jvm.java.util.HashMap()
         for k, v in options.items():
             optionsMap.put(k, v)
-        self.context.bulkImportHFile(dataframe._jdf, schema_table_name, optionsMap)
+        return self.context.bulkImportHFile(dataframe._jdf, schema_table_name, optionsMap)
 
     def bulkImportHFileWithRdd(self, rdd, schema, schema_table_name, options):
         """
@@ -587,9 +587,9 @@ class PySpliceContext:
         :param schema: (StructType) The schema of the rows in the RDD
         :param schema_table_name: (str) Full table name in the format of "schema.table"
         :param options: (Dict) Dictionary of options to be passed to --splice-properties; bulkImportDirectory is required
-        :return: None
+        :return:  (int) Number of records imported
         """
-        self.bulkImportHFile(
+        return self.bulkImportHFile(
             self.createDataFrame(rdd, schema),
             schema_table_name,
             options
