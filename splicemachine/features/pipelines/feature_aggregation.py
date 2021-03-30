@@ -7,7 +7,7 @@ class FeatureAggregation:
         A class abstraction for defining aggregations that will generate a set of features for a feature set from a Pipeline
 
         :param column_name: Name of the source column from a Source SQL statement
-        :param agg_function: type of SQL aggregation (sum, min, max, avg, std, count etc). Available aggregations
+        :param agg_function: type of SQL aggregation (sum, min, max, avg, count etc). Available aggregations
         are in the splicemachine.features.pipelines.FeatureAgg class
         :param agg_windows: list of time windows over which to perform the aggregation ("1w","5d","3m")
         available windows: "s"econd, "m"inute, "d"ay, "w"eek, "mn"onth, "q"uarter, "y"ear
@@ -20,7 +20,7 @@ class FeatureAggregation:
         :Example:
             .. code-block:: python
 
-
+                from splicemachine.features.pipelines import WindowAgg, FeatureAgg, FeatureAggregation
                 FeatureAggregation('revenue', ['sum','mean'], ['1d','5w'], 0.0)
 
         would yield:
