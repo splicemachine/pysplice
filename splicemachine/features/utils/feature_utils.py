@@ -1,7 +1,7 @@
 from typing import Dict, Union
 
 
-def sql_to_datatype(typ: Union[str, Dict[str,str]]) -> Dict[str,str]:
+def sql_to_datatype(typ: str) -> Dict[str,str]:
     """
     Converts a SQL datatype to a DataType object
     ex:
@@ -10,7 +10,7 @@ def sql_to_datatype(typ: Union[str, Dict[str,str]]) -> Dict[str,str]:
     :param typ: the SQL data type
     :return: Dict representing a HTTP friendly datatype
     """
-    if type(typ) == dict: # Already been converted from server
+    if isinstance(typ, dict): # Already been converted from server
         return typ
     # If it's a type that has params and those params have been set
     tsplit = typ.split('(')
