@@ -63,9 +63,9 @@ class FeatureStore:
 
         :param name: The view name
         """
-        print(f"Removing Training View {name}")
+        print(f"Removing Training View {name}...", end=' ')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
-        print('Done')
+        print('Done.')
 
     def get_summary(self) -> TrainingView:
         """
@@ -484,9 +484,9 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-        print(f'Deploying Feature Set {schema_name}.{table_name}')
+        print(f'Deploying Feature Set {schema_name}.{table_name}...',end=' ')
         make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._basic_auth, { "schema": schema_name, "table": table_name })
-        print('Done')
+        print('Done.')
 
     def describe_feature_sets(self) -> None:
         """
@@ -625,9 +625,9 @@ class FeatureStore:
             :param name: feature name
             :return:
         """
-        print(f"Removing feature {name}")
+        print(f"Removing feature {name}...",end=' ')
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
-        print('Done')
+        print('Done.')
 
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
         """
@@ -672,10 +672,10 @@ class FeatureStore:
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
-        print(f'Removing Feature Set {schema_name}.{table_name}')
+        print(f'Removing Feature Set {schema_name}.{table_name}...',end=' ')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
                      RequestType.DELETE, self._basic_auth, { "schema": schema_name, "table":table_name, "purge": purge })
-        print('Done')
+        print('Done.')
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
                       update_ts_column: datetime, primary_keys: List[str]):
@@ -724,9 +724,10 @@ class FeatureStore:
 
         :param name: The Source name
         """
-        print(f'Deleting Source {name}')
+        print(f'Deleting Source {name}...',end=' ')
         make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.DELETE,
                      auth=self._basic_auth, params={'name': name})
+        print('Done.')
 
     def create_aggregation_feature_set_from_source(self, source_name: str, schema_name: str, table_name: str,
                                                    start_time: datetime, schedule_interval: str,
@@ -808,9 +809,10 @@ class FeatureStore:
         }
         num_features = sum([len(f.agg_functions)*len(f.agg_windows) for f in aggregations])
         print(f'Registering aggregation feature set {schema_name}.{table_name} and {num_features} features'
-              f' in the Feature Store')
+              f' in the Feature Store...', end=' ')
         r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._basic_auth,
                      params={'run_backfill': run_backfill}, body=agg_feature_set)
+        print('Done.')
         return FeatureSet(**r)
 
     def get_backfill_sql(self, schema_name: str, table_name: str):
