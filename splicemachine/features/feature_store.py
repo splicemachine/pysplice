@@ -735,7 +735,8 @@ class FeatureStore:
                                                    description: Optional[str] = None, run_backfill: Optional[bool] = True
                                                    ):
         """
-        Creates a temporal aggregation feature set by creating a pipeline linking a source to a feature set.
+        Creates a temporal aggregation feature set by creating a pipeline linking a Source to a feature set.
+        Sources are created with :py:meth:`features.FeatureStore.create_source`.
         Provided aggregations will generate the features for the feature set. This will create the feature set
         along with aggregation calculations to create features
 
