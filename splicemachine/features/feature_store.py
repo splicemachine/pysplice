@@ -787,9 +787,10 @@ class FeatureStore:
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
             The Feature Set will have 15 features:
-            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
-            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
-            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+                * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
+                * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
+                * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+
             A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
         """
