@@ -581,6 +581,7 @@ class FeatureStore:
                                         return_pk_cols: bool = False, return_ts_col: bool = False):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
+
         :param schema_name: model schema name
         :param table_name: model table name
         :param label: An optional label to specify for the training set. If specified, the feature set of that feature
@@ -589,7 +590,7 @@ class FeatureStore:
             (but not others in the future, unless this label is again specified).
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
-        :return:
+        :return: SparkDF the Training Frame
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
@@ -745,10 +746,10 @@ class FeatureStore:
         :param schedule_interval: The frequency with which to run the pipeline.
         :param aggregations: The list of FeatureAggregations to apply to the column names of the source SQL statement
         :param backfill_start_time: The datetime representing the earliest point in time to get data from when running
-        backfill
+            backfill
         :param backfill_interval: The "sliding window" interval to increase each timepoint by when performing backfill
         :param run_backfill: Whether or not to run backfill when calling this function. Default False. If this is True
-        backfill_start_time and backfill_interval MUST BE SET
+            backfill_start_time and backfill_interval MUST BE SET
         :return: (FeatureSet) the created Feature Set
 
         :Example:
