@@ -715,6 +715,18 @@ class FeatureStore:
         print(f'Registering Source {name.upper()} in the Feature Store')
         make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.POST, auth=self._basic_auth, body=source)
 
+    def remove_source(self, name: str):
+        """
+        Removes a Source by name. You cannot remove a Source that has child dependencies (Feature Sets). If there is a
+        Feature Set that is deployed and a Pipeline that is feeding it, you cannot delete the Source until you remove
+        the Feature Set (which in turn removes the Pipeline)
+
+        :param name: The Source name
+        """
+        print(f'Deleting Source {name}')
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.DELETE,
+                     auth=self._basic_auth, params={'name': name})
+
     def create_aggregation_feature_set_from_source(self, source_name: str, schema_name: str, table_name: str,
                                                    start_time: datetime, schedule_interval: str,
                                                    aggregations: List[FeatureAggregation],
