@@ -22,7 +22,7 @@ def sql_to_datatype(typ: str) -> Dict[str,str]:
             prec, scale = params.strip(')'), None
         data_type = dict(data_type=dtype, precision=prec, scale=scale)
     # If it's a type VARCHAR that has a length
-    elif tsplit == 'VARCHAR' and len(tsplit) == 2:
+    elif tsplit[0] == 'VARCHAR' and len(tsplit) == 2:
         dtype, length = tsplit
         data_type = dict(data_type=dtype, length=length.strip(')'))
     else:
