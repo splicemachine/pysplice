@@ -143,7 +143,8 @@ class FeatureStore:
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._basic_auth, 
-            { "pks": return_primary_keys, "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
+            params={ "pks": return_primary_keys, "sql": return_sql }, 
+            body={ "features": features, "join_key_values": join_key_values })
         return r if return_sql else pd.DataFrame(r, index=[0])
 
 
