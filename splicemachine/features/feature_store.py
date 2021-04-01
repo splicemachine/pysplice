@@ -385,6 +385,24 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._basic_auth, body=fset_dict)
         return FeatureSet(**r)
 
+    def update_feature_metadata(self, name: str, desc: Optional[str] = None, tags: Optional[List[str]] = None,
+                                attributes: Optional[Dict[str,str]] = None):
+        """
+        Update the metadata of a feature
+
+        :param name: The feature name
+        :param desc: The (optional) feature description (default None)
+        :param tags: (optional) List of (str) tag words (default None)
+        :param attributes: (optional) Dict of (str) attribute key/value pairs (default None)
+        :return: updated Feature
+        """
+        f_dict = { "description": desc, 'tags': tags, "attributes": attributes }
+        print(f'Registering feature {name} in Feature Store')
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.PUT, self._basic_auth,
+                         params={"name": name}, body=f_dict)
+        f = Feature(**r)
+        return f
+
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
                        feature_type: str, desc: str = None, tags: List[str] = None, attributes: Dict[str, str] = None):
         """
