@@ -131,18 +131,19 @@ class FeatureStore:
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
     def get_feature_vector(self, features: List[Union[str, Feature]],
-                           join_key_values: Dict[str, str], return_sql=False) -> Union[str, PandasDF]:
+                           join_key_values: Dict[str, str], return_primary_keys = True, return_sql=False) -> Union[str, PandasDF]:
         """
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
         :param features: List of str Feature names or Features
         :param join_key_values: (dict) join key values to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param return_primary_keys: Whether to return the Feature Set primary keys in the vector. Default True
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._basic_auth, 
-            { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
+            { "pks": return_primary_keys, "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
         return r if return_sql else pd.DataFrame(r, index=[0])
 
 
