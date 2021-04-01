@@ -1,10 +1,11 @@
 from splicemachine.features.constants import FeatureType
+from .utils.feature_utils import sql_to_datatype
 
 class Feature:
     def __init__(self, *, name, description, feature_data_type, feature_type, tags, attributes, feature_set_id=None, feature_id=None, **kwargs):
         self.name = name.upper()
         self.description = description
-        self.feature_data_type = feature_data_type
+        self.feature_data_type = sql_to_datatype(feature_data_type)
         self.feature_type = feature_type
         self.feature_set_id = feature_set_id
         self.feature_id = feature_id

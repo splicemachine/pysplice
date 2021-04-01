@@ -17,13 +17,14 @@ from splicemachine import SpliceMachineException
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
+from .utils.feature_utils import sql_to_datatype
 from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split, build_feature_drift_plot, build_model_drift_plot)
 from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
                                    _generate_training_set_sql, _create_temp_training_view)
+from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials
+
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
-from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials
-import requests
 import warnings
 from requests.auth import HTTPBasicAuth
 
@@ -374,7 +375,7 @@ class FeatureStore:
         features = [f.__dict__ for f in features] if features else None
         fset_dict = { "schema_name": schema_name,
                       "table_name": table_name,
-                      "primary_keys": primary_keys,
+                      "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
                       "description": desc,
                       "features": features}
 
@@ -414,7 +415,7 @@ class FeatureStore:
                                                         f"types include {FeatureType.get_valid()}. Use the FeatureType" \
                                                         f" class provided by splicemachine.features"
 
-        f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
+        f_dict = { "name": name, "description": desc or '', "feature_data_type": sql_to_datatype(feature_data_type),
                     "feature_type": feature_type, "tags": tags, "attributes": attributes }
         print(f'Registering feature {name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._basic_auth, 
