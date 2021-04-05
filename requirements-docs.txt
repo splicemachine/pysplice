@@ -1,7 +1,7 @@
 py4j==0.10.7.0
 pytest
 mlflow==1.8.0
-pyyaml==5.3.1
+pyyaml==5.4
 mleap==0.15.0
 graphviz==0.13
 requests
