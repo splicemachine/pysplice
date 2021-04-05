@@ -471,6 +471,7 @@ class FeatureStore:
 
         tv_dict = { "name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
+        print(f'Registering Training View {name} in the Feature Store')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._basic_auth, body=tv_dict)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
@@ -1046,7 +1047,7 @@ class FeatureStore:
         :return: List[Features] the pruned list
         """
         from splicemachine.spark.constants import SQL_MODELING_TYPES
-        invalid_features = {f for f in features if f.feature_data_type not in SQL_MODELING_TYPES}
+        invalid_features = {f for f in features if f.feature_data_type['data_type'] not in SQL_MODELING_TYPES}
         valid_features = list(set(features) - invalid_features)
         if invalid_features: print('The following features are invalid for modeling based on their Data Types:\n')
         for f in invalid_features:
