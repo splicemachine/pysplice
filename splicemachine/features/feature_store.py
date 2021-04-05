@@ -7,25 +7,22 @@ import pandas as pd
 from pandas import DataFrame as PandasDF
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
-import pyspark.sql.functions as psf
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
+from splicemachine.features.utils.feature_utils import sql_to_datatype
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split,
-                                build_feature_drift_plot, build_model_drift_plot)
+from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
 from .pipelines import FeatureAggregation
-from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
-                                   _generate_training_set_sql, _create_temp_training_view)
+from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials
+
 from .constants import SQL, FeatureType
 from .training_view import TrainingView
-from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials
-import requests
 import warnings
 from requests.auth import HTTPBasicAuth
 
@@ -132,18 +129,20 @@ class FeatureStore:
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
     def get_feature_vector(self, features: List[Union[str, Feature]],
-                           join_key_values: Dict[str, str], return_sql=False) -> Union[str, PandasDF]:
+                           join_key_values: Dict[str, str], return_primary_keys = True, return_sql=False) -> Union[str, PandasDF]:
         """
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
         :param features: List of str Feature names or Features
         :param join_key_values: (dict) join key values to get the proper Feature values formatted as {join_key_column_name: join_key_value}
+        :param return_primary_keys: Whether to return the Feature Set primary keys in the vector. Default True
         :param return_sql: Whether to return the SQL needed to get the vector or the values themselves. Default False
         :return: Pandas Dataframe or str (SQL statement)
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._basic_auth, 
-            { "sql": return_sql }, { "features": features, "join_key_values": join_key_values })
+            params={ "pks": return_primary_keys, "sql": return_sql }, 
+            body={ "features": features, "join_key_values": join_key_values })
         return r if return_sql else pd.DataFrame(r, index=[0])
 
 
@@ -379,7 +378,7 @@ class FeatureStore:
         features = [f.__dict__ for f in features] if features else None
         fset_dict = { "schema_name": schema_name,
                       "table_name": table_name,
-                      "primary_keys": primary_keys,
+                      "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
                       "description": desc,
                       "features": features}
 
@@ -388,6 +387,24 @@ class FeatureStore:
             print(f'Registering {len(features)} features for {schema_name}.{table_name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._basic_auth, body=fset_dict)
         return FeatureSet(**r)
+
+    def update_feature_metadata(self, name: str, desc: Optional[str] = None, tags: Optional[List[str]] = None,
+                                attributes: Optional[Dict[str,str]] = None):
+        """
+        Update the metadata of a feature
+
+        :param name: The feature name
+        :param desc: The (optional) feature description (default None)
+        :param tags: (optional) List of (str) tag words (default None)
+        :param attributes: (optional) Dict of (str) attribute key/value pairs (default None)
+        :return: updated Feature
+        """
+        f_dict = { "description": desc, 'tags': tags, "attributes": attributes }
+        print(f'Registering feature {name} in Feature Store')
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.PUT, self._basic_auth,
+                         params={"name": name}, body=f_dict)
+        f = Feature(**r)
+        return f
 
     def create_feature(self, schema_name: str, table_name: str, name: str, feature_data_type: str,
                        feature_type: str, desc: str = None, tags: List[str] = None, attributes: Dict[str, str] = None):
@@ -419,7 +436,7 @@ class FeatureStore:
                                                         f"types include {FeatureType.get_valid()}. Use the FeatureType" \
                                                         f" class provided by splicemachine.features"
 
-        f_dict = { "name": name, "description": desc or '', "feature_data_type": feature_data_type,
+        f_dict = { "name": name, "description": desc or '', "feature_data_type": sql_to_datatype(feature_data_type),
                     "feature_type": feature_type, "tags": tags, "attributes": attributes }
         print(f'Registering feature {name} in Feature Store')
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._basic_auth, 
@@ -629,17 +646,20 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._basic_auth, { "name": name })
         print('Done.')
 
-    def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None):
+    def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None,
+                        feature: str = None, feature_set: str = None):
         """
         Returns a list of all (or specified) available deployments
 
         :param schema_name: model schema name
         :param table_name: model table name
         :param training_set: training set name
+        :param feature: passing this in will return all deployments that used this feature
+        :param feature_set: passing this in will return all deployments that used this feature set
         :return: List[Deployment] the list of Deployments as dicts
         """
         return make_request(self._FS_URL, Endpoints.DEPLOYMENTS, RequestType.GET, self._basic_auth, 
-            { 'schema': schema_name, 'table': table_name, 'name': training_set })
+            { 'schema': schema_name, 'table': table_name, 'name': training_set, 'feat': feature, 'fset': feature_set})
       
     def get_training_set_features(self, training_set: str = None):
         """
