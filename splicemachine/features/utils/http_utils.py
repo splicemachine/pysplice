@@ -45,19 +45,29 @@ class Endpoints:
     TRAINING_VIEW_ID: str = "training-view-id"
     SUMMARY: str = "summary"
 
-def make_request(url: str, endpoint: str, method: str, token: str,
+def make_request(url: str, endpoint: str, method: str, auth: str,
                  params: Optional[Dict[str, Any]] = None,
                  body: Union[Dict[str,Any], List[Any]] = None) -> Union[dict,List[dict]]:
-    if not token:
+    if not auth:
         raise Exception(
             "You have not logged into Feature Store."
-            " Please run fs.login_fs(token)"
+            " Please run fs.login_fs(username, password) "
+            " or fs.set_token(token)."
         )
     if not url:
         raise KeyError("Uh Oh! FS_URL variable was not found... you should call 'fs.set_feature_store_url(<url>)' before doing trying again.")
     url = f'{url}/{endpoint}'
     try:
-        r = RequestType.method_map[method](url, params=params, json=body, headers={'Authorization': f'Bearer {token}'})
+        if isinstance(auth, HTTPBasicAuth):
+            r = RequestType.method_map[method](url, params=params, json=body, auth=auth)
+        elif isinstance(auth, str):
+            r = RequestType.method_map[method](url, params=params, json=body, headers={'Authorization': f'Bearer {auth}'})
+        else:
+            raise Exception(
+                "Authorization credentials are not valid."
+                " Please run fs.login_fs(username, password) "
+                " or fs.set_token(token)."
+            )
     except KeyError:
         raise SpliceMachineException(f'Not a recognized HTTP method: {method}.'
                                      f'Please use one of the following: {RequestType.get_valid()}')
@@ -79,6 +89,13 @@ def _get_feature_store_url():
     """
     url = env_vars.get('FS_URL')
     return url
+
+def _get_credentials():
+    """
+    Returns the username and password of the user if stored in env variables
+    :return: str, str
+    """
+    return env_vars.get('SPLICE_JUPYTER_USER'), env_vars.get('SPLICE_JUPYTER_PASSWORD')
 
 def _get_token():
     """
