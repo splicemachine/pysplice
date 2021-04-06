@@ -128,6 +128,16 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._basic_auth, { "name": names })
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
+    def get_feature_details(self, name: str) -> Feature:
+        """
+        Returns a Feature and it's detailed information
+
+        :param name: The feature name
+        :return: Feature
+        """
+        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._basic_auth, { "name": name })
+        return Feature(**r)
+
     def get_feature_vector(self, features: List[Union[str, Feature]],
                            join_key_values: Dict[str, str], return_primary_keys = True, return_sql=False) -> Union[str, PandasDF]:
         """
@@ -513,7 +523,7 @@ class FeatureStore:
 
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._basic_auth)
         
         print('Available feature sets')
         for desc in r:
@@ -535,7 +545,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._basic_auth,
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._basic_auth,
                          params={'schema':schema_name, 'table':table_name})
         descs = r
         if not descs: raise SpliceMachineException(
@@ -558,7 +568,7 @@ class FeatureStore:
         :param training_view: The training view name
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._basic_auth)
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._basic_auth)
 
         print('Available training views')
         for desc in r:
@@ -575,7 +585,7 @@ class FeatureStore:
         :return: None
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._basic_auth, {'name': training_view})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._basic_auth, {'name': training_view})
         descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
