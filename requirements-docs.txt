@@ -1,8 +1,5 @@
 py4j==0.10.7.0
-pytest
 mlflow==1.8.0
-pyyaml==5.4
-mleap==0.15.0
 graphviz==0.13
 requests
 gorilla==0.3.0
@@ -11,9 +8,7 @@ pyspark-dist-explore==0.1.8
 numpy==1.18.2
 pandas==1.0.3
 scipy==1.4.1
-tensorflow==2.2.1
 pyspark
-h2o-pysparkling-2.4==3.28.1.2-1
+h2o-pysparkling-3.0==3.32.0.4-1
 sphinx-tabs
 IPython
-cloudpickle==1.6.0

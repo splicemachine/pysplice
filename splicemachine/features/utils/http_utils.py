@@ -30,8 +30,9 @@ class Endpoints:
     """
     DEPLOYMENTS: str = "deployments"
     FEATURES: str = "features"
+    FEATURE_DETAILS: str = "feature-details"
     FEATURE_SETS: str = "feature-sets"
-    FEATURE_SET_DESCRIPTIONS: str = "feature-set-descriptions"
+    FEATURE_SET_DETAILS: str = "feature-set-details"
     DEPLOY_FEATURE_SET: str = "deploy-feature-set"
     FEATURE_VECTOR: str = "feature-vector"
     FEATURE_VECTOR_SQL: str = "feature-vector-sql"
@@ -40,10 +41,15 @@ class Endpoints:
     TRAINING_SET_FROM_DEPLOYMENT: str = "training-set-from-deployment"
     TRAINING_SET_FROM_VIEW: str = "training-set-from-view"
     TRAINING_VIEWS: str = "training-views"
-    TRAINING_VIEW_DESCRIPTIONS: str = "training-view-descriptions"
+    TRAINING_VIEW_DETAILS: str = "training-view-details"
     TRAINING_VIEW_FEATURES: str = "training-view-features"
     TRAINING_VIEW_ID: str = "training-view-id"
     SUMMARY: str = "summary"
+    SOURCE: str = "source"
+    AGG_FEATURE_SET_FROM_SOURCE: str = 'agg-feature-set-from-source'
+    BACKFILL_SQL: str = 'backfill-sql'
+    BACKFILL_INTERVALS: str = 'backfill-intervals'
+    PIPELINE_SQL: str = 'pipeline-sql'
 
 def make_request(url: str, endpoint: str, method: str, auth: HTTPBasicAuth,
                  params: Optional[Dict[str, Any]] = None,
