@@ -7,20 +7,18 @@ import pandas as pd
 from pandas import DataFrame as PandasDF
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
-import pyspark.sql.functions as psf
 from pyspark.ml import Pipeline
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
+from splicemachine.features.utils.feature_utils import sql_to_datatype
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
-from .utils.feature_utils import sql_to_datatype
-from .utils.drift_utils import (add_feature_plot, remove_outliers, datetime_range_split, build_feature_drift_plot, build_model_drift_plot)
-from .utils.training_utils import (dict_to_lower, _generate_training_set_history_sql,
-                                   _generate_training_set_sql, _create_temp_training_view)
+from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
+from .pipelines import FeatureAggregation
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
 
 from .constants import SQL, FeatureType
@@ -62,9 +60,9 @@ class FeatureStore:
 
         :param name: The view name
         """
-        print(f"Removing Training View {name}")
+        print(f"Removing Training View {name}...", end=' ')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
-        print('Done')
+        print('Done.')
 
     def get_summary(self) -> TrainingView:
         """
@@ -130,6 +128,16 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._auth, { "name": names })
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
+    def get_feature_details(self, name: str) -> Feature:
+        """
+        Returns a Feature and it's detailed information
+
+        :param name: The feature name
+        :return: Feature
+        """
+        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._basic_auth, { "name": name })
+        return Feature(**r)
+
     def get_feature_vector(self, features: List[Union[str, Feature]],
                            join_key_values: Dict[str, str], return_primary_keys = True, return_sql=False) -> Union[str, PandasDF]:
         """
@@ -158,8 +166,8 @@ class FeatureStore:
             :NOTE:
                 .. code-block:: text
 
-                    This function will error if the view SQL is missing a view key required to retrieve the\
-                    desired features
+                    This function will error if the view SQL is missing a view key required \n
+                    to retrieve the desired features
 
         :return: (str) the parameterized feature vector SQL
         """
@@ -202,12 +210,15 @@ class FeatureStore:
         :py:meth:`features.FeatureStore.get_training_set` . The dataset's metadata and features used will be tracked in mlflow automatically (see
         get_training_set for more details).
 
-        The way point-in-time correctness is guaranteed here is by choosing one of the Feature Sets as the "anchor" dataset.
-        This means that the points in time that the query is based off of will be the points in time in which the anchor
-        Feature Set recorded changes. The anchor Feature Set is the Feature Set that contains the superset of all primary key
-        columns across all Feature Sets from all Features provided. If more than 1 Feature Set has the superset of
-        all Feature Sets, the Feature Set with the most primary keys is selected. If more than 1 Feature Set has the same
-        maximum number of primary keys, the Feature Set is chosen by alphabetical order (schema_name, table_name).
+        :NOTE:
+            .. code-block:: text
+
+                The way point-in-time correctness is guaranteed here is by choosing one of the Feature Sets as the "anchor" dataset.
+                This means that the points in time that the query is based off of will be the points in time in which the anchor
+                Feature Set recorded changes. The anchor Feature Set is the Feature Set that contains the superset of all primary key
+                columns across all Feature Sets from all Features provided. If more than 1 Feature Set has the superset of
+                all Feature Sets, the Feature Set with the most primary keys is selected. If more than 1 Feature Set has the same
+                maximum number of primary keys, the Feature Set is chosen by alphabetical order (schema_name, table_name).
 
         :param features: List of Features or strings of feature names
 
@@ -470,6 +481,7 @@ class FeatureStore:
 
         tv_dict = { "name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
+        print(f'Registering Training View {name} in the Feature Store')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._auth, body=tv_dict)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
@@ -500,9 +512,9 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-        print(f'Deploying Feature Set {schema_name}.{table_name}')
+        print(f'Deploying Feature Set {schema_name}.{table_name}...',end=' ')
         make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth, { "schema": schema_name, "table": table_name })
-        print('Done')
+        print('Done.')
 
     def describe_feature_sets(self) -> None:
         """
@@ -511,7 +523,7 @@ class FeatureStore:
 
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._auth)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth)
         
         print('Available feature sets')
         for desc in r:
@@ -533,7 +545,7 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DESCRIPTIONS, RequestType.GET, self._auth,
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
                          params={'schema':schema_name, 'table':table_name})
         descs = r
         if not descs: raise SpliceMachineException(
@@ -556,7 +568,7 @@ class FeatureStore:
         :param training_view: The training view name
         :return: None
         """
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._auth)
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth)
 
         print('Available training views')
         for desc in r:
@@ -573,7 +585,7 @@ class FeatureStore:
         :return: None
         """
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DESCRIPTIONS, RequestType.GET, self._auth, {'name': training_view})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth, {'name': training_view})
         descs = r
         if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
         desc = descs[0]
@@ -597,6 +609,7 @@ class FeatureStore:
                                         return_pk_cols: bool = False, return_ts_col: bool = False):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
+
         :param schema_name: model schema name
         :param table_name: model table name
         :param label: An optional label to specify for the training set. If specified, the feature set of that feature
@@ -605,7 +618,7 @@ class FeatureStore:
             (but not others in the future, unless this label is again specified).
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
-        :return:
+        :return: SparkDF the Training Frame
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
@@ -634,18 +647,21 @@ class FeatureStore:
         Removes a feature. This will run 2 checks.
             1. See if the feature exists.
             2. See if the feature belongs to a feature set that has already been deployed.
+
             If either of these are true, this function will throw an error explaining which check has failed
+
             :param name: feature name
             :return:
         """
-        print(f"Removing feature {name}")
+        print(f"Removing feature {name}...",end=' ')
         make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._auth, { "name": name })
-        print('Done')
+        print('Done.')
 
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None,
                         feature: str = None, feature_set: str = None):
         """
         Returns a list of all (or specified) available deployments
+
         :param schema_name: model schema name
         :param table_name: model table name
         :param training_set: training set name
@@ -659,6 +675,7 @@ class FeatureStore:
     def get_training_set_features(self, training_set: str = None):
         """
         Returns a list of all features from an available Training Set, as well as details about that Training Set
+
         :param training_set: training set name
         :return: TrainingSet as dict
         """
@@ -667,7 +684,7 @@ class FeatureStore:
         r['features'] = [Feature(**f) for f in r['features']]
         return r
 
-    def remove_feature_set(self, schema: str, table: str, purge: bool = False) -> None:
+    def remove_feature_set(self, schema_name: str, table_name: str, purge: bool = False) -> None:
         """
         Deletes a feature set if appropriate. You can currently delete a feature set in two scenarios:
         1. The feature set has not been deployed
@@ -679,21 +696,218 @@ class FeatureStore:
         Feature Set. ONLY USE IF YOU KNOW WHAT YOU ARE DOING. This will delete Training Sets, but will still fail if
         there is an active deployment with this feature set. That cannot be overwritten
 
-        :param schema: The Feature Set Schema
-        :param table: The Feature Set Table
+        :param schema_name: The Feature Set Schema
+        :param table_name: The Feature Set Table
         :param purge: Whether to force delete training sets that use the feature set (that are not used in deployments)
         """
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
-        print(f'Removing Feature Set {schema}.{table}')
+        print(f'Removing Feature Set {schema_name}.{table_name}...',end=' ')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
-                     RequestType.DELETE, self._auth, { "schema": schema, "table":table, "purge": purge })
-        print('Done')
+                     RequestType.DELETE, self._auth, { "schema": schema_name, "table":table_name, "purge": purge })
+        print('Done.')
+
+    def create_source(self, name: str, sql: str, event_ts_column: datetime,
+                      update_ts_column: datetime, primary_keys: List[str]):
+        """
+        Creates, validates, and stores a source in the Feature Store that can be used to create a Pipeline that
+        feeds a feature set
+
+        :Example:
+            .. code-block:: python
+
+                fs.create_source(
+                    name='CUSTOMER_RFM',
+                    sql='SELECT * FROM RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY',
+                    event_ts_column='INVOICEDATE',
+                    update_ts_column='LAST_UPDATE_TS',
+                    primary_keys=['CUSTOMERID']
+                )
+
+        :param name: The name of the source. This must be unique across the feature store
+        :param sql: the SQL statement that returns the base result set to be used in future aggregation pipelines
+        :param event_ts_column: The column of the source query that determines the time of the event (row) being
+        described. This is not necessarily the time the record was recorded, but the time the event itself occured.
+
+        :param update_ts_column: The column that indicates the time when the record was last updated. When scheduled
+        pipelines run, they will filter on this column to get only the records that have not been queried before.
+
+        :param primary_keys: The list of columns in the source SQL that uniquely identifies each row. These become
+        the primary keys of the feature set(s) that is/are eventually created from this source.
+        """
+        source = {
+            'name': name.upper(),
+            'sql_text': sql,
+            'event_ts_column': event_ts_column,
+            'update_ts_column': update_ts_column,
+            'pk_columns': primary_keys
+
+        }
+        print(f'Registering Source {name.upper()} in the Feature Store')
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.POST, auth=self._basic_auth, body=source)
+
+    def remove_source(self, name: str):
+        """
+        Removes a Source by name. You cannot remove a Source that has child dependencies (Feature Sets). If there is a
+        Feature Set that is deployed and a Pipeline that is feeding it, you cannot delete the Source until you remove
+        the Feature Set (which in turn removes the Pipeline)
+
+        :param name: The Source name
+        """
+        print(f'Deleting Source {name}...',end=' ')
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.DELETE,
+                     auth=self._basic_auth, params={'name': name})
+        print('Done.')
+
+    def create_aggregation_feature_set_from_source(self, source_name: str, schema_name: str, table_name: str,
+                                                   start_time: datetime, schedule_interval: str,
+                                                   aggregations: List[FeatureAggregation],
+                                                   backfill_start_time: datetime = None, backfill_interval: str = None,
+                                                   description: Optional[str] = None, run_backfill: Optional[bool] = True
+                                                   ):
+        """
+        Creates a temporal aggregation feature set by creating a pipeline linking a Source to a feature set.
+        Sources are created with :py:meth:`features.FeatureStore.create_source`.
+        Provided aggregations will generate the features for the feature set. This will create the feature set
+        along with aggregation calculations to create features
+
+        :param source_name: The name of the of the source created via create_source
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :param start_time: The start time for the pipeline to run
+        :param schedule_interval: The frequency with which to run the pipeline.
+        :param aggregations: The list of FeatureAggregations to apply to the column names of the source SQL statement
+        :param backfill_start_time: The datetime representing the earliest point in time to get data from when running
+            backfill
+        :param backfill_interval: The "sliding window" interval to increase each timepoint by when performing backfill
+        :param run_backfill: Whether or not to run backfill when calling this function. Default False. If this is True
+            backfill_start_time and backfill_interval MUST BE SET
+        :return: (FeatureSet) the created Feature Set
+
+        :Example:
+            .. code-block:: python
+
+                from splicemachine.features.pipelines import AggWindow, FeatureAgg, FeatureAggregation
+                from datetime import datetime
+                source_name = 'CUSTOMER_RFM'
+                fs.create_source(
+                    name=source_name,
+                    sql='SELECT * FROM RETAIL_RFM.CUSTOMER_CATEGORY_ACTIVITY',
+                    event_ts_column='INVOICEDATE',
+                    update_ts_column='LAST_UPDATE_TS',
+                    primary_keys=['CUSTOMERID']
+                )
+                fs.create_aggregation_feature_set_from_source(
+
+                )
+                start_time = datetime.today()
+                schedule_interval = AggWindow.get_window(5,AggWindow.DAY)
+                backfill_start = datetime.strptime('2002-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+                backfill_interval = schedule_interval
+                fs.create_aggregation_feature_set_from_source
+                (
+                    source_name, 'RETAIL_FS', 'AUTO_RFM', start_time=start_time,
+                    schedule_interval=schedule_interval, backfill_start_time=backfill_start,
+                    backfill_interval=backfill_interval,
+                    aggregations = [
+                        FeatureAggregation(feature_name_prefix = 'AR_CLOTHING_QTY',     column_name = 'CLOTHING_QTY',     agg_functions=['sum','max'],   agg_windows=['1d','2d','90d'], agg_default_value = 0.0 ),
+                        FeatureAggregation(feature_name_prefix = 'AR_DELICATESSEN_QTY', column_name = 'DELICATESSEN_QTY', agg_functions=['avg'],         agg_windows=['1d','2d', '2w'], agg_default_value = 11.5 ),
+                        FeatureAggregation(feature_name_prefix = 'AR_GARDEN_QTY' ,      column_name = 'GARDEN_QTY',       agg_functions=['count','avg'], agg_windows=['30d','90d', '1q'], agg_default_value = 8 )
+                    ]
+                )
+
+            This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
+            The Feature Set will have 15 features:
+                * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
+                * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
+                * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+
+            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
+            Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
+        """
+        schema_name, table_name, source_name = schema_name.upper(), table_name.upper(), source_name.upper()
+        agg_feature_set = {
+            'source_name': source_name,
+            'schema_name': schema_name,
+            'table_name': table_name,
+            'start_time': str(start_time),
+            'schedule_interval': schedule_interval,
+            'aggregations': [f.__dict__ for f in aggregations],
+            'backfill_start_time': str(backfill_start_time),
+            'backfill_interval': backfill_interval,
+            'description': description
+        }
+        num_features = sum([len(f.agg_functions)*len(f.agg_windows) for f in aggregations])
+        print(f'Registering aggregation feature set {schema_name}.{table_name} and {num_features} features'
+              f' in the Feature Store...', end=' ')
+        r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._basic_auth,
+                     params={'run_backfill': run_backfill}, body=agg_feature_set)
+        print('Done.')
+        return FeatureSet(**r)
+
+    def get_backfill_sql(self, schema_name: str, table_name: str):
+        """
+        Returns the necessary parameterized SQL statement to perform backfill on an Aggregate Feature Set. The Feature
+        Set must have been deployed using the :py:meth:`features.FeatureStore.create_aggregation_feature_set_from_source`
+        function. Meaning there must be a Source and a Pipeline associated to it. This function will likely not be
+        necessary as you can perform backfill at the time of feature set creation automatically.
+
+        This SQL will be parameterized and need a timestamp to execute. You can get those timestamps with the
+        :py:meth:`features.FeatureStore.get_backfill_interval` with the same parameters
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The parameterized Backfill SQL
+        """
+
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.BACKFILL_SQL, RequestType.GET, self._basic_auth, params=p)
+
+    def get_pipeline_sql(self, schema_name: str, table_name: str):
+        """
+        Returns the incremental pipeline SQL that feeds a feature set from a source (thus creating a pipeline).
+        Pipelines are managed for you by default by Splice Machine via Airflow, but if you opt out of using the
+        managed pipelines you can use this function to get the incremental SQL.
+
+        This SQL will be parameterized and need a timestamp to execute. You can get those timestamps with the
+        :py:meth:`features.FeatureStore.get_backfill_interval` with the same parameters
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The incremental Pipeline SQL
+        """
+
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.PIPELINE_SQL, RequestType.GET, self._basic_auth, params=p)
+
+    def get_backfill_intervals(self, schema_name: str, table_name: str) -> List[datetime]:
+        """
+        Gets the backfill intervals necessary for the parameterized backfill SQL obtained from the
+        :py:meth:`features.FeatureStore.get_backfill_sql` function. This function will likely not be
+        necessary as you can perform backfill at the time of feature set creation automatically.
+
+        :param schema_name: The schema name of the feature set
+        :param table_name: The table name of the feature set
+        :return: The list of datetimes necessary to parameterize the backfill SQL
+        """
+        p = {
+            'schema': schema_name,
+            'table': table_name
+        }
+        return make_request(self._FS_URL, Endpoints.BACKFILL_INTERVALS, RequestType.GET, self._basic_auth, params=p)
+
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
+
         :param schema_name: model schema name
         :param table_name: model table name
         :return:
@@ -727,6 +941,7 @@ class FeatureStore:
         """
         Displays feature by feature comparison between the training set of the deployed model and the input feature
         values used with the model since deployment.
+
         :param schema_name: name of database schema where model table is deployed
         :param table_name: name of the model table
         :return: None
@@ -750,6 +965,7 @@ class FeatureStore:
         period. Time periods are equal periods of time where predictions are present in the model table
         'schema_name'.'table_name'. Model predictions are first filtered to only those occurring after 'start_time' if
         specified and before 'end_time' if specified.
+
         :param schema_name: schema where the model table resides
         :param table_name: name of the model table
         :param time_intervals: number of time intervals to plot
@@ -817,6 +1033,7 @@ class FeatureStore:
     def __log_mlflow_results(self, name, rounds, mlflow_results):
         """
         Logs the results of feature elimination to mlflow
+
         :param name: MLflow run name
         :param rounds: Number of rounds of feature elimination that were run
         :param mlflow_results: The params / metrics to log
@@ -840,7 +1057,7 @@ class FeatureStore:
         :return: List[Features] the pruned list
         """
         from splicemachine.spark.constants import SQL_MODELING_TYPES
-        invalid_features = {f for f in features if f.feature_data_type not in SQL_MODELING_TYPES}
+        invalid_features = {f for f in features if f.feature_data_type['data_type'] not in SQL_MODELING_TYPES}
         valid_features = list(set(features) - invalid_features)
         if invalid_features: print('The following features are invalid for modeling based on their Data Types:\n')
         for f in invalid_features:
