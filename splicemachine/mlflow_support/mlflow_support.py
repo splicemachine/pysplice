@@ -123,9 +123,12 @@ def __try_auto_login():
 
     :return: None
     """
+    jwt = os.environ.get('SPLICE_JUPYTER_JWTTOKEN')
+    if jwt:
+        mlflow.login_director(jwt_token=jwt)
     user, password = os.environ.get('SPLICE_JUPYTER_USER'), os.environ.get('SPLICE_JUPYTER_PASSWORD')
     if user and password:
-        mlflow.login_director(user, password)
+        mlflow.login_director(username=user, password=password)
 
 def _mlflow_patch(name):
     """
@@ -152,8 +155,8 @@ def __get_active_user():
         return mlflow._username
     if get_user():
         return get_user()
-    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your database"
-                                  "username and password.")
+    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
+                                  "username and password or JWT token.")
 
 @_mlflow_patch('get_run_ids_by_name')
 def _get_run_ids_by_name(run_name, experiment_id=None):
@@ -657,15 +660,26 @@ def _log_artifact(file_name, name=None, run_uuid=None):
 
 
 @_mlflow_patch('login_director')
-def _login_director(username, password):
+def _login_director(username=None, password=None, jwt_token=None):
     """
     Authenticate into the MLManager Director
 
     :param username: (str) database username
     :param password: (str) database password
+    :param jwt_token: (str) database JWT token authentication
+
+    Either (username/password) for basic auth or jwt_token must be provided. Basic authentication takes precedence if set (mlflow default)
     """
-    mlflow._basic_auth = HTTPBasicAuth(username, password)
-    mlflow._username = username
+    if (username and not password) or (password and not username):
+        raise SpliceMachineException("You must either set both username and password, or neither. You cannot set just one")
+
+    if username and password:
+        mlflow._basic_auth = HTTPBasicAuth(username, password)
+        mlflow._username = username
+        os.environ['MLFLOW_TRACKING_USERNAME'] = username
+        os.environ['MLFLOW_TRACKING_PASSWORD'] = password
+    if jwt_token:
+        os.environ['MLFLOW_TRACKING_TOKEN'] = jwt_token
 
 
 def __initiate_job(payload, endpoint):
