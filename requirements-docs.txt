@@ -1,5 +1,5 @@
 py4j==0.10.7.0
-mlflow==1.8.0
+mlflow>=1.13.1
 graphviz==0.13
 requests
 gorilla==0.3.0
