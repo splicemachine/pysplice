@@ -63,6 +63,7 @@ import pyspark
 import requests
 import sklearn
 import yaml
+import warnings
 
 from pandas.core.frame import DataFrame as PandasDF
 from pyspark.ml.base import Model as SparkModel
@@ -988,7 +989,7 @@ def _watch_job(job_id: int):
     NOTE: If the job being watched fails, this function will throw a SpliceMachineException
     """
     previous_lines = []
-
+    warn = False # If there were any warnings from the log, we want to notify the user explicitly
     while True:
         logs_retrieved = __get_logs(job_id)
         logs_retrieved.remove('')
@@ -1000,6 +1001,9 @@ def _watch_job(job_id: int):
 
         idx = log_idx+1 if log_idx else log_idx # First time getting logs, go to 0th index, else log_idx+1
         for n in logs_retrieved[idx:]:
+            if 'WARNING' in n:
+                warnings.warn(n)
+                warn = True
             print(f'\n{n}',end='')
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
@@ -1011,6 +1015,8 @@ def _watch_job(job_id: int):
                     raise SpliceMachineException(
                         'An error occured in your Job. See the log above for more information'
                     ) from None
+            if warn:
+                print('\n','Note! Your deployment had some warnings you should consider.')
             return
 
         time.sleep(1)
