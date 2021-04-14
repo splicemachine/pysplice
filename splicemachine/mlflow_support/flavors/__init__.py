@@ -10,3 +10,6 @@ from .mlflow_sklearn import *
 from .mlflow_spark import *
 from .mlflow_tensorflow import *
 from .mlflow_xgboost import *
+from .mlflow_fastai import *
+from .mlflow_spacy import *
+from .mlflow_statsmodels import *
