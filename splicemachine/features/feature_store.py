@@ -61,7 +61,7 @@ class FeatureStore:
         :param name: The view name
         """
         print(f"Removing Training View {name}...", end=' ')
-        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._basic_auth, { "name": name })
+        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._auth, { "name": name })
         print('Done.')
 
     def get_summary(self) -> TrainingView:
@@ -158,7 +158,7 @@ class FeatureStore:
         :param name: The feature name
         :return: Feature
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._basic_auth, { "name": name })
+        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._auth, { "name": name })
         return Feature(**r)
 
     def get_feature_vector(self, features: List[Union[str, Feature]],
@@ -434,7 +434,7 @@ class FeatureStore:
         """
         f_dict = { "description": desc, 'tags': tags, "attributes": attributes }
         print(f'Registering feature {name} in Feature Store')
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.PUT, self._basic_auth,
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.PUT, self._auth,
                          params={"name": name}, body=f_dict)
         f = Feature(**r)
         return f
@@ -768,7 +768,7 @@ class FeatureStore:
 
         }
         print(f'Registering Source {name.upper()} in the Feature Store')
-        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.POST, auth=self._basic_auth, body=source)
+        make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.POST, auth=self._auth, body=source)
 
     def remove_source(self, name: str):
         """
@@ -780,7 +780,7 @@ class FeatureStore:
         """
         print(f'Deleting Source {name}...',end=' ')
         make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.DELETE,
-                     auth=self._basic_auth, params={'name': name})
+                     auth=self._auth, params={'name': name})
         print('Done.')
 
     def create_aggregation_feature_set_from_source(self, source_name: str, schema_name: str, table_name: str,
@@ -864,7 +864,7 @@ class FeatureStore:
         num_features = sum([len(f.agg_functions)*len(f.agg_windows) for f in aggregations])
         print(f'Registering aggregation feature set {schema_name}.{table_name} and {num_features} features'
               f' in the Feature Store...', end=' ')
-        r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._basic_auth,
+        r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._auth,
                      params={'run_backfill': run_backfill}, body=agg_feature_set)
         print('Done.')
         return FeatureSet(**r)
@@ -888,7 +888,7 @@ class FeatureStore:
             'schema': schema_name,
             'table': table_name
         }
-        return make_request(self._FS_URL, Endpoints.BACKFILL_SQL, RequestType.GET, self._basic_auth, params=p)
+        return make_request(self._FS_URL, Endpoints.BACKFILL_SQL, RequestType.GET, self._auth, params=p)
 
     def get_pipeline_sql(self, schema_name: str, table_name: str):
         """
@@ -908,7 +908,7 @@ class FeatureStore:
             'schema': schema_name,
             'table': table_name
         }
-        return make_request(self._FS_URL, Endpoints.PIPELINE_SQL, RequestType.GET, self._basic_auth, params=p)
+        return make_request(self._FS_URL, Endpoints.PIPELINE_SQL, RequestType.GET, self._auth, params=p)
 
     def get_backfill_intervals(self, schema_name: str, table_name: str) -> List[datetime]:
         """
@@ -924,7 +924,7 @@ class FeatureStore:
             'schema': schema_name,
             'table': table_name
         }
-        return make_request(self._FS_URL, Endpoints.BACKFILL_INTERVALS, RequestType.GET, self._basic_auth, params=p)
+        return make_request(self._FS_URL, Endpoints.BACKFILL_INTERVALS, RequestType.GET, self._auth, params=p)
 
 
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
