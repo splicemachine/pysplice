@@ -226,7 +226,7 @@ class FeatureStore:
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
                          start_time: datetime = None, end_time: datetime = None, label: str = None, return_pk_cols: bool = False, 
-                         return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
+                         return_ts_col: bool = False, return_sql: bool = False, save_as: str = None) -> SparkDF or str:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -265,12 +265,19 @@ class FeatureStore:
             (but not others in the future, unless this label is again specified).
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
-        :return: Spark DF
+        :param save_as: Whether or not to save this Training Set (metadata) in the feature store for reproducibility. This
+            enables you to version and persist the metadata for a training set of a specific model development. If you are
+            using the Splice Machine managed MLFlow Service, this will be fully automated and managed for you upon model deployment,
+            however you can still use this parameter to customize the name of the training set (it will default to the run id).
+            If you are NOT using Splice Machine's mlflow service, this is a useful way to link specific modeling experiments
+            to the exact training sets used. This DOES NOT persist the training set itself, rather the metadata required
+            to reproduce the identical training set.
+        :return: Spark DF or SQL statement necessary to generate the Training Set
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._auth, 
                         { "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col }, 
-                        { "features": features, "start_time": start_time, "end_time": end_time })
+                        { "features": features, "start_time": start_time, "end_time": end_time, 'save_as':save_as})
         create_time = r['metadata']['training_set_create_ts']
         sql = r['sql']
         tvw = TrainingView(**r['training_view'])
@@ -289,12 +296,18 @@ class FeatureStore:
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw)
+            # These will only exist if the user called "save_as" otherwise they will be None
+            training_set_id = r['metadata'].get('training_set_id')
+            training_set_version = r['metadata'].get('training_set_version')
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
+                                             training_set_id=training_set_id,
+                                             training_set_version=training_set_version,training_set_name=save_as)
         return sql if return_sql else self.splice_ctx.df(sql)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
-                                   return_pk_cols: bool = False, return_ts_col: bool = False, return_sql: bool = False) -> SparkDF or str:
+                                   return_pk_cols: bool = False, return_ts_col: bool = False, return_sql: bool = False,
+                                   save_as: str = None) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
@@ -334,22 +347,34 @@ class FeatureStore:
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
         :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :param save_as: Whether or not to save this Training Set (metadata) in the feature store for reproducibility. This
+            enables you to version and persist the metadata for a training set of a specific model development. If you are
+            using the Splice Machine managed MLFlow Service, this will be fully automated and managed for you upon model deployment,
+            however you can still use this parameter to customize the name of the training set (it will default to the run id).
+            If you are NOT using Splice Machine's mlflow service, this is a useful way to link specific modeling experiments
+            to the exact training sets used. This DOES NOT persist the training set itself, rather the metadata required
+            to reproduce the identical training set.
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
-        # # Generate the SQL needed to create the dataset
+        # Generate the SQL needed to create the dataset
         features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._auth, 
-                        { "view": training_view, "pks": return_pk_cols, "ts": return_ts_col }, 
+                        { "view": training_view, "pks": return_pk_cols, "ts": return_ts_col, 'save_as': save_as },
                         { "features": features, "start_time": start_time, "end_time": end_time })
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
         features = [Feature(**f) for f in r["features"]]
         create_time = r['metadata']['training_set_create_ts']
 
-        # Link this to mlflow for model deployment
+        # Link this to mlflow for reproducibility and model deployment
         if self.mlflow_ctx and not return_sql:
-            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw)
+            # These will only exist if the user called "save_as" otherwise they will be None
+            training_set_id = r['metadata'].get('training_set_id')
+            training_set_version = r['metadata'].get('training_set_version')
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
+                                             training_set_id=training_set_id,
+                                             training_set_version=training_set_version, training_set_name=save_as)
 
         return sql if return_sql else self.splice_ctx.df(sql)
 
@@ -1152,12 +1177,15 @@ class FeatureStore:
             drop=True) if return_importances else remaining_features
 
     def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], create_time: datetime, start_time: datetime = None, 
-                                    end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False):
+                                    end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False,
+                                    training_set_id: Optional[int] = None, training_set_version: Optional[int] = None,
+                                    training_set_name: Optional[str] = None):
         if not tvw:
             tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
                                 description=None)
         ts = TrainingSet(training_view=tvw, features=features, create_time=create_time,
-                        start_time=start_time, end_time=end_time)
+                        start_time=start_time, end_time=end_time, training_set_id=training_set_id,
+                         training_set_version=training_set_version, training_set_name=training_set_name)
 
         # For metadata purposes
         if current_values_only:
