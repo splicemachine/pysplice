@@ -998,11 +998,11 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        metadata = self._retrieve_training_set_metadata_from_deployement(schema_name, table_name)
-        if not metadata:
-            raise SpliceMachineException(f"Could not find deployment for model table {schema_name}.{table_name}") from None
+        metadata = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET,
+                                self._auth, params={ "schema": schema_name, "table": table_name})['metadata']
+
         training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
-        features = metadata['FEATURES'].split(',')
+        features = metadata['features']
         build_feature_drift_plot(features, training_set_df, model_table_df)
 
 
