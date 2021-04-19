@@ -128,13 +128,22 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._auth, { "name": names })
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
+    def training_view_exists(self, name: str) -> bool:
+        """
+        Returns if a training view exists or not
+
+        :param name: The training view name
+        :return: bool True if the training view exists, False otherwise
+        """
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_EXISTS, RequestType.GET, self._auth, params={ "name": name })
+        return r
 
     def feature_exists(self, name: str) -> bool:
         """
         Returns if a feature exists or not
 
         :param name: The feature name
-        :return: Boolean True if the feature exists, False otherwise
+        :return: bool True if the feature exists, False otherwise
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_EXISTS, RequestType.GET, self._auth, params={ "name": name })
         return r
@@ -145,7 +154,7 @@ class FeatureStore:
 
         :param schema: The feature set schema
         :param table: The feature set table
-        :return: Boolean True if the feature exists, False otherwise
+        :return: bool True if the feature exists, False otherwise
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_EXISTS, RequestType.GET, self._auth,
                          params={ "schema": schema, "table": table })
