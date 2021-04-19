@@ -1002,7 +1002,7 @@ class FeatureStore:
                                 self._auth, params={ "schema": schema_name, "table": table_name})['metadata']
 
         training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
-        features = metadata['features']
+        features = metadata['features'].split(',')
         build_feature_drift_plot(features, training_set_df, model_table_df)
 
 
