@@ -279,6 +279,8 @@ class FeatureStore:
                         { "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col }, 
                         { "features": features, "start_time": start_time, "end_time": end_time, 'save_as':save_as})
         create_time = r['metadata']['training_set_create_ts']
+        start_time = r['metadata']['training_set_start_ts']
+        end_time = r['metadata']['training_set_end_ts']
         sql = r['sql']
         tvw = TrainingView(**r['training_view'])
         features = [Feature(**f) for f in r['features']]
@@ -302,6 +304,39 @@ class FeatureStore:
             self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
                                              training_set_id=training_set_id,
                                              training_set_version=training_set_version,training_set_name=save_as)
+        return sql if return_sql else self.splice_ctx.df(sql)
+
+    def get_training_set_by_name(self, name, version: int = None, return_pk_cols: bool = False,
+                                 return_ts_col: bool = False, return_sql = False):
+        """
+        Returns a Spark DF (or SQL) of an EXISTING Training Set (one that was saved with the save_as parameter in
+        :py:meth:`~fs.get_training_set` or :py:meth:`~fs.get_training_set_from_view`. This is useful if you've deployed
+        a model with a Training Set and
+
+        :param name: Training Set name
+        :param version: The version of this training set. If not set, it will grab the newest version
+        :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
+        :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
+        :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :return: Spark DF or SQL
+        """
+
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_BY_NAME, RequestType.GET, self._auth,
+                        params={ "name": name, "version": version, "pks": return_pk_cols, "ts": return_ts_col})
+        sql = r["sql"]
+        tvw = TrainingView(**r["training_view"])
+        features = [Feature(**f) for f in r["features"]]
+        create_time = r['metadata']['training_set_create_ts']
+        start_time = r['metadata']['training_set_start_ts']
+        end_time = r['metadata']['training_set_end_ts']
+         # Link this to mlflow for reproducibility and model deployment
+        if self.mlflow_ctx and not return_sql:
+            # These will only exist if the user called "save_as" otherwise they will be None
+            training_set_id = r['metadata'].get('training_set_id')
+            self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
+                                             training_set_id=training_set_id,
+                                             training_set_version=version, training_set_name=name)
+
         return sql if return_sql else self.splice_ctx.df(sql)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
@@ -366,7 +401,8 @@ class FeatureStore:
         tvw = TrainingView(**r["training_view"])
         features = [Feature(**f) for f in r["features"]]
         create_time = r['metadata']['training_set_create_ts']
-
+        start_time = r['metadata']['training_set_start_ts']
+        end_time = r['metadata']['training_set_end_ts']
         # Link this to mlflow for reproducibility and model deployment
         if self.mlflow_ctx and not return_sql:
             # These will only exist if the user called "save_as" otherwise they will be None
