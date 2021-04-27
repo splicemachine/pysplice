@@ -42,6 +42,7 @@ class Endpoints:
     TRAINING_SET_FEATURES: str = "training-set-features"
     TRAINING_SET_FROM_DEPLOYMENT: str = "training-set-from-deployment"
     TRAINING_SET_FROM_VIEW: str = "training-set-from-view"
+    TRAINING_SET_BY_NAME: str = 'training-set-by-name'
     TRAINING_VIEWS: str = "training-views"
     TRAINING_VIEW_EXISTS: str = "training-view-exists"
     TRAINING_VIEW_DETAILS: str = "training-view-details"
