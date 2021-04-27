@@ -285,8 +285,9 @@ class FeatureStore:
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._auth, 
-                        { "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col }, 
-                        { "features": features, "start_time": start_time, "end_time": end_time, 'save_as':save_as})
+                        params={ "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col,
+                          'save_as':save_as },
+                        body={ "features": features, "start_time": start_time, "end_time": end_time})
         create_time = r['metadata']['training_set_create_ts']
         start_time = r['metadata']['training_set_start_ts']
         end_time = r['metadata']['training_set_end_ts']
