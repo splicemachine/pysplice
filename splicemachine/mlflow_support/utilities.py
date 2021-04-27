@@ -1,4 +1,5 @@
 from os import environ as env_vars
+import os
 
 from sys import getsizeof
 from typing import Dict, List
@@ -6,6 +7,7 @@ from typing import Dict, List
 from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.pipeline import PipelineModel
 from pyspark.ml.wrapper import JavaModel
+import requests
 
 from ..spark.context import PySpliceContext
 
@@ -182,33 +184,33 @@ def get_user():
     uname = env_vars.get('JUPYTERHUB_USER') or env_vars.get('USER')
     return uname
 
-def insert_artifact(splice_context: PySpliceContext,
-                    name: str,
-                    byte_array: bytearray,
-                    run_uuid: str,
-                    file_ext: str = None):
-    """
-    Insert a serialized object into the Mlmanager artifacts table
-
-    :param splice_context: (PySpliceContext) the PySpliceContext
-    :param name: (str) the path to store the binary under (with respect to the current run)
-    :param byte_array: (bytearray) Java byte array
-    :param run_uuid: (str) run uuid for the run
-    :param file_ext: (str) the file extension of the model (used for downloading)
-    """
-    db_connection = splice_context.getConnection()
-    file_size = getsizeof(byte_array)
-    print(f"Saving artifact of size: {file_size / 1000.0} KB to Splice Machine DB")
-    binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
-    prepared_statement = db_connection.prepareStatement(SQL.ARTIFACT_INSERT_SQL)
-    prepared_statement.setString(1, run_uuid)
-    prepared_statement.setString(2, name)
-    prepared_statement.setInt(3, file_size)
-    prepared_statement.setBinaryStream(4, binary_input_stream)
-    prepared_statement.setString(5, file_ext)
-
-    prepared_statement.execute()
-    prepared_statement.close()
+# def insert_artifact(splice_context: PySpliceContext,
+#                     name: str,
+#                     byte_array: bytearray,
+#                     run_uuid: str,
+#                     file_ext: str = None):
+#     """
+#     Insert a serialized object into the Mlmanager artifacts table
+#
+#     :param splice_context: (PySpliceContext) the PySpliceContext
+#     :param name: (str) the path to store the binary under (with respect to the current run)
+#     :param byte_array: (bytearray) Java byte array
+#     :param run_uuid: (str) run uuid for the run
+#     :param file_ext: (str) the file extension of the model (used for downloading)
+#     """
+#     db_connection = splice_context.getConnection()
+#     file_size = getsizeof(byte_array)
+#     print(f"Saving artifact of size: {file_size / 1000.0} KB to Splice Machine DB")
+#     binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
+#     prepared_statement = db_connection.prepareStatement(SQL.ARTIFACT_INSERT_SQL)
+#     prepared_statement.setString(1, run_uuid)
+#     prepared_statement.setString(2, name)
+#     prepared_statement.setInt(3, file_size)
+#     prepared_statement.setBinaryStream(4, binary_input_stream)
+#     prepared_statement.setString(5, file_ext)
+#
+#     prepared_statement.execute()
+#     prepared_statement.close()
 
 
 def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
@@ -231,3 +233,33 @@ def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
         raise KeyError(
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
     return url
+
+def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path = None):
+    """
+    Inserts an artifact into the Splice Artifact Store
+
+    :param filepath: The local path to the file
+    :param name: File name
+    :param run_id: Run ID
+    :param file_extension: File extension
+    :param auth: Auth
+    :param artifact_path: Optional artifact directory path. This is for storing directories as artifacts
+    """
+    payload = dict(
+        name = name,
+        run_id = run_id,
+        file_extension=file_extension,
+        artifact_path=artifact_path
+    )
+    print('Uploading file... ', end='')
+    with open(filepath, 'rb') as file:
+        r = requests.post(
+            get_pod_uri('mlflow', 5003) + '/api/rest/upload-artifact',
+            auth=auth,
+            data=payload,
+            files={'file': file}
+        )
+    if not r.ok:
+        raise SpliceMachineException(r.text)
+    print('Done.')
+

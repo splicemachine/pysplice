@@ -337,8 +337,6 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
         (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
         https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
     """
-    _check_for_splice_ctx()
-
     # Make sure no models have been logged to this run
     if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
         raise SpliceMachineException("Only one model is permitted per run.")
@@ -351,8 +349,13 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     run_id = mlflow.active_run().info.run_uuid
     buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
-    insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
-                    run_uuid=run_id, file_ext=file_ext)
+    # insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
+    #                 run_uuid=run_id, file_ext=file_ext)
+
+    with open(f'/tmp/{name}.zip','wb') as f:
+        f.write(buffer.read())
+
+    insert_artifact(f'/tmp/{name}.zip', name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
 
     # Set the model metadata as tags after successful logging
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
@@ -560,27 +563,31 @@ def _timer(timer_name, param=False):
 
 
 @_mlflow_patch('download_artifact')
-def _download_artifact(name, local_path, run_id=None):
+def _download_artifact(name, local_path=None, run_id=None):
     """
     Download the artifact at the given run id (active default) + name to the local path
 
     :param name: (str) artifact name to load (with respect to the run)
-    :param local_path: (str) local path to download the model to. This path MUST include the file extension
+    :param local_path: (str) local path to download the model to. If set, this path MUST include the file extension.
+        Will default to the current directory and the name of the saved artifact
     :param run_id: (str) the run id to download the artifact from. Defaults to active run
-    :return: None
     """
-    _check_for_splice_ctx()
-    file_ext = path.splitext(local_path)[1]
-
     run_id = run_id or mlflow.active_run().info.run_uuid
-    blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-    if f_ext in FileExtensions.get_valid():
-        f_ext = 'zip'  # we zip up these models, even though we use the file ext to identify model type
-    if not file_ext:  # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
-        local_path += f'/{name}.{f_ext}'
-
-    with open(local_path, 'wb') as artifact_file:
-        artifact_file.write(blob_data)
+    payload = dict(
+        name = name,
+        run_id = run_id
+    )
+    print(f'Downloading file {name}')
+    r = requests.post(
+        get_pod_uri('mlflow', 5003, _testing=_TESTING) + '/api/rest/download-artifact',
+        json=payload
+    )
+    if not r.ok:
+        raise SpliceMachineException(r.text)
+    file_name = local_path or r.headers['Content-Disposition'].split('filename=')[1]
+    with open(file_name, 'wb') as file:
+        file.write(r.content)
+    print('Done.')
 
 
 @_mlflow_patch('get_model_name')
@@ -630,7 +637,7 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
 
 
 @_mlflow_patch('log_artifact')
-def _log_artifact(file_name, name=None, run_uuid=None):
+def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     """
     Log an artifact for the active run
 
@@ -644,20 +651,20 @@ def _log_artifact(file_name, name=None, run_uuid=None):
     :param name: (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file
         extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).
     :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run
+    :param artifact_path: If you would like the artifact logged as a subdirectory of an particular folder,
+        you can set this value. If the directory doesn't exist, it will be created for this run's artifact path.
     :return: None
     
     :NOTE: 
         We do not currently support logging directories. If you would like to log a directory, please zip it first and log the zip file
     """
-    _check_for_splice_ctx()
+    if not os.path.exists(file_name):
+        raise SpliceMachineException(f'Cannot find file {file_name}')
     file_ext = path.splitext(file_name)[1].lstrip('.')
-
-    with open(file_name, 'rb') as artifact:
-        byte_stream = bytearray(bytes(artifact.read()))
 
     run_id = run_uuid or mlflow.active_run().info.run_uuid
     name = name or file_name
-    insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
+    insert_artifact(file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
 
 
 @_mlflow_patch('login_director')
