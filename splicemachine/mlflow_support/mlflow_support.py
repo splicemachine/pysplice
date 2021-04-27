@@ -74,7 +74,7 @@ from sklearn.base import BaseEstimator as ScikitModel
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
-                                                    insert_artifact, download_artifact)
+                                                    insert_artifact, download_artifact, get_jobs_uri)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
@@ -561,12 +561,11 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     run_id = mlflow.active_run().info.run_uuid
     buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
-    # insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
-    #                 run_uuid=run_id, file_ext=file_ext)
 
     with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
         f.write(buffer.read())
-        insert_artifact(f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
+        host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+        insert_artifact(host, f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
 
     # Set the model metadata as tags after successful logging
     mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
@@ -593,7 +592,8 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
 
-    r = download_artifact(name, run_id, mlflow._basic_auth)
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    r = download_artifact(host, name, run_id, mlflow._basic_auth)
     buffer = BytesIO()
     buffer.seek(0)
     buffer.write(r.content)
@@ -639,7 +639,8 @@ def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     run_id = run_uuid or mlflow.active_run().info.run_uuid
     name = name or os.path.split(file_name)[-1]
 
-    insert_artifact(file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    insert_artifact(host, file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
     print(f'Saved artifact as {name} in mlflow')
 
 @_mlflow_patch('download_artifact')
@@ -653,7 +654,8 @@ def _download_artifact(name, local_path=None, run_id=None):
     :param run_id: (str) the run id to download the artifact from. Defaults to active run
     """
     run_id = run_id or mlflow.active_run().info.run_uuid
-    r = download_artifact(name, run_id, mlflow._basic_auth)
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    r = download_artifact(host, name, run_id, mlflow._basic_auth)
     file_name = local_path or r.headers['Content-Disposition'].split('filename=')[1]
     with open(file_name, 'wb') as file:
         file.write(r.content)
@@ -696,7 +698,7 @@ def __initiate_job(payload, endpoint):
             " Please run mlflow.login_director(username, password)"
         )
     request = requests.post(
-        get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
+        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + endpoint,
         auth=mlflow._basic_auth,
         json=payload
     )
@@ -972,7 +974,7 @@ def __get_logs(job_id: int):
     Retrieve the logs associated with the specified job id
     """
     request = requests.post(
-        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
+        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/logs",
         json={"task_id": job_id}, auth=mlflow._basic_auth
     )
     if not request.ok:

@@ -234,10 +234,27 @@ def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
     return url
 
-def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path = None):
+def get_jobs_uri(mlflow_uri: str):
+    """
+    Returns the Jobs uri given an mlflow URI. The mlflow uri will either be a URL:5001 or
+    a cloud url /mlflow depending on where the user is. This handles either and returns the proper uri.
+
+    :param mlflow_uri: The mlflow uri
+    :return: The jobs uri
+    """
+    if mlflow_uri.endswith(':5001'):
+        return mlflow_uri.replace(':5001',':5003')
+    elif mlflow_uri.endswith('/mlflow'):
+        return mlflow_uri + '-jobs'
+    else:
+        raise SpliceMachineException(f'The provided URI {mlflow_uri} doesn\'t conform for the expected uri.'
+                                     f'The Mlflow URI should either end :5001 or /mlflow')
+
+def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact_path = None):
     """
     Inserts an artifact into the Splice Artifact Store
 
+    :param host: The Splice Artifact store host
     :param filepath: The local path to the file
     :param name: File name
     :param run_id: Run ID
@@ -254,7 +271,7 @@ def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path 
     print('Uploading file... ', end='')
     with open(filepath, 'rb') as file:
         r = requests.post(
-            get_pod_uri('mlflow', 5003) + '/api/rest/upload-artifact',
+            host + '/api/rest/upload-artifact',
             auth=auth,
             data=payload,
             files={'file': file}
@@ -263,10 +280,11 @@ def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path 
         raise SpliceMachineException(r.text)
     print('Done.')
 
-def download_artifact(name: str, run_id: str, auth) -> requests.models.Response:
+def download_artifact(host, name: str, run_id: str, auth) -> requests.models.Response:
     """
     Downloads an artifact from the Splice Machine artifact store
 
+    :param host: The Splice Artifact store host
     :param name: Artifact name. If the artifact was stored with an extension, this name must include that extension.
     :param run_id: The run ID that the artifact is stored under
     :param auth: Basic Auth or JWT
@@ -278,7 +296,7 @@ def download_artifact(name: str, run_id: str, auth) -> requests.models.Response:
     )
     print(f'Downloading file {name}')
     r = requests.post(
-        get_pod_uri('mlflow', 5003) + '/api/rest/download-artifact',
+        host + '/api/rest/download-artifact',
         json=payload,
         auth=auth
     )
