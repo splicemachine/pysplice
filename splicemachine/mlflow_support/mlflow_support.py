@@ -74,7 +74,7 @@ from sklearn.base import BaseEstimator as ScikitModel
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
-                                                    insert_artifact)
+                                                    insert_artifact, download_artifact)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
@@ -322,47 +322,6 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
         return buffer, file_ext
 
 
-@_mlflow_patch('log_model')
-def _log_model(model, name='model', model_lib=None, **flavor_options):
-    """
-    Log a trained machine learning model
-
-    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
-        with the current run
-    :param name: (str) the run relative name to store the model under. [Deault 'model']
-    :param model_lib: An optional param specifying the model type of the model to log
-        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
-    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,
-        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
-        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
-        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
-    """
-    # Make sure no models have been logged to this run
-    if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
-        raise SpliceMachineException("Only one model is permitted per run.")
-    if flavor_options and not model_lib:
-        raise SpliceMachineException("You cannot set mlflow-flavor specific options without setting the model library. "
-                                     "Either set model_lib, or use the native mlflow.<flavor>.log_model function")
-
-    model_class = str(model.__class__)
-
-    run_id = mlflow.active_run().info.run_uuid
-    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
-    buffer.seek(0)
-    # insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
-    #                 run_uuid=run_id, file_ext=file_ext)
-
-    with open(f'/tmp/{name}.zip','wb') as f:
-        f.write(buffer.read())
-
-    insert_artifact(f'/tmp/{name}.zip', name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
-
-    # Set the model metadata as tags after successful logging
-    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
-    mlflow.set_tag('splice.model_type', model_class)
-    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
-
-
 @_mlflow_patch('end_run')
 def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
     """End an active MLflow run (if there is one).
@@ -562,34 +521,6 @@ def _timer(timer_name, param=False):
         )
 
 
-@_mlflow_patch('download_artifact')
-def _download_artifact(name, local_path=None, run_id=None):
-    """
-    Download the artifact at the given run id (active default) + name to the local path
-
-    :param name: (str) artifact name to load (with respect to the run)
-    :param local_path: (str) local path to download the model to. If set, this path MUST include the file extension.
-        Will default to the current directory and the name of the saved artifact
-    :param run_id: (str) the run id to download the artifact from. Defaults to active run
-    """
-    run_id = run_id or mlflow.active_run().info.run_uuid
-    payload = dict(
-        name = name,
-        run_id = run_id
-    )
-    print(f'Downloading file {name}')
-    r = requests.post(
-        get_pod_uri('mlflow', 5003, _testing=_TESTING) + '/api/rest/download-artifact',
-        json=payload
-    )
-    if not r.ok:
-        raise SpliceMachineException(r.text)
-    file_name = local_path or r.headers['Content-Disposition'].split('filename=')[1]
-    with open(file_name, 'wb') as file:
-        file.write(r.content)
-    print('Done.')
-
-
 @_mlflow_patch('get_model_name')
 def _get_model_name(run_id):
     """
@@ -599,6 +530,48 @@ def _get_model_name(run_id):
     :return: (str or None) The model name if it exists
     """
     return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
+
+@_mlflow_patch('log_model')
+def _log_model(model, name='model', model_lib=None, **flavor_options):
+    """
+    Log a trained machine learning model
+
+    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
+        with the current run
+    :param name: (str) the run relative name to store the model under. [Deault 'model']
+    :param model_lib: An optional param specifying the model type of the model to log
+        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
+    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,
+        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
+        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
+        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
+    """
+    # Make sure no models have been logged to this run
+    if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
+        raise SpliceMachineException("Only one model is permitted per run.")
+    if flavor_options and not model_lib:
+        raise SpliceMachineException("You cannot set mlflow-flavor specific options without setting the model library. "
+                                     "Either set model_lib, or use the native mlflow.<flavor>.log_model function")
+
+    model_class = str(model.__class__)
+
+    if not mlflow.active_run():
+        raise SpliceMachineException("You must have an active run to log a model")
+
+    run_id = mlflow.active_run().info.run_uuid
+    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
+    buffer.seek(0)
+    # insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
+    #                 run_uuid=run_id, file_ext=file_ext)
+
+    with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
+        f.write(buffer.read())
+        insert_artifact(f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
+
+    # Set the model metadata as tags after successful logging
+    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
+    mlflow.set_tag('splice.model_type', model_class)
+    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
 
 def _load_model(run_id=None, name=None, as_pyfunc=False):
@@ -619,10 +592,11 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     if not name:
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
-    model_blob, _ = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+
+    r = download_artifact(name, run_id, mlflow._basic_auth)
     buffer = BytesIO()
     buffer.seek(0)
-    buffer.write(model_blob)
+    buffer.write(r.content)
 
     with TemporaryDirectory() as tempdir:
         ZipFile(buffer).extractall(path=tempdir)
@@ -663,9 +637,27 @@ def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     file_ext = path.splitext(file_name)[1].lstrip('.')
 
     run_id = run_uuid or mlflow.active_run().info.run_uuid
-    name = name or file_name
-    insert_artifact(file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
+    name = name or os.path.split(file_name)[-1]
 
+    insert_artifact(file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
+    print(f'Saved artifact as {name} in mlflow')
+
+@_mlflow_patch('download_artifact')
+def _download_artifact(name, local_path=None, run_id=None):
+    """
+    Download the artifact at the given run id (active default) + name to the local path
+
+    :param name: (str) artifact name to load (with respect to the run)
+    :param local_path: (str) local path to download the model to. If set, this path MUST include the file extension.
+        Will default to the current directory and the name of the saved artifact
+    :param run_id: (str) the run id to download the artifact from. Defaults to active run
+    """
+    run_id = run_id or mlflow.active_run().info.run_uuid
+    r = download_artifact(name, run_id, mlflow._basic_auth)
+    file_name = local_path or r.headers['Content-Disposition'].split('filename=')[1]
+    with open(file_name, 'wb') as file:
+        file.write(r.content)
+    print(f'Done. File has been written to {file_name}')
 
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):

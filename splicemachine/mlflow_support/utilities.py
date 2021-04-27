@@ -242,7 +242,7 @@ def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path 
     :param name: File name
     :param run_id: Run ID
     :param file_extension: File extension
-    :param auth: Auth
+    :param auth: Basic Auth or JWT
     :param artifact_path: Optional artifact directory path. This is for storing directories as artifacts
     """
     payload = dict(
@@ -263,3 +263,26 @@ def insert_artifact(filepath, name, run_id, file_extension, auth, artifact_path 
         raise SpliceMachineException(r.text)
     print('Done.')
 
+def download_artifact(name: str, run_id: str, auth) -> requests.models.Response:
+    """
+    Downloads an artifact from the Splice Machine artifact store
+
+    :param name: Artifact name. If the artifact was stored with an extension, this name must include that extension.
+    :param run_id: The run ID that the artifact is stored under
+    :param auth: Basic Auth or JWT
+    :return: Http Response
+    """
+    payload = dict(
+        name = name,
+        run_id = run_id
+    )
+    print(f'Downloading file {name}')
+    r = requests.post(
+        get_pod_uri('mlflow', 5003) + '/api/rest/download-artifact',
+        json=payload,
+        auth=auth
+    )
+    if not r.ok:
+        raise SpliceMachineException(r.text)
+    print('Done. Unpacking artifact')
+    return r
