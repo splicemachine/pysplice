@@ -295,9 +295,9 @@ def download_artifact(host, name: str, run_id: str, auth) -> requests.models.Res
         run_id = run_id
     )
     print(f'Downloading file {name}')
-    r = requests.post(
+    r = requests.get(
         host + '/api/rest/download-artifact',
-        json=payload,
+        params=payload,
         auth=auth
     )
     if not r.ok:

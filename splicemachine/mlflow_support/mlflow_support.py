@@ -634,6 +634,10 @@ def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     """
     if not os.path.exists(file_name):
         raise SpliceMachineException(f'Cannot find file {file_name}')
+    # Check file size without reading file
+    if os.path.getsize(file_name) > 2.5e8:
+        raise SpliceMachineException(f'File {file_name} is too large. Max file size is 250MB')
+
     file_ext = path.splitext(file_name)[1].lstrip('.')
 
     run_id = run_uuid or mlflow.active_run().info.run_uuid
