@@ -561,9 +561,9 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     run_id = mlflow.active_run().info.run_uuid
     buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
-
+    model_data = buffer.read()
     with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
-        f.write(buffer.read())
+        f.write(model_data)
         host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
         insert_artifact(host, f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
 
