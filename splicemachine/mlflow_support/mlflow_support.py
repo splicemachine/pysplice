@@ -149,7 +149,7 @@ def _get_current_run_data():
 
     :return: active run data object
     """
-    return _CLIENT.get_run(mlflow.active_run().info.run_id).data
+    return mlflow.client.get_run(mlflow.active_run().info.run_id).data
 
 def __get_active_user():
     if hasattr(mlflow, '_username'):
@@ -168,10 +168,10 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
     :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]
     :return: (List[str]) List of run ids
     """
-    exps = [_CLIENT.get_experiment(experiment_id)] if experiment_id else _CLIENT.list_experiments()
+    exps = [mlflow.client.get_experiment(experiment_id)] if experiment_id else mlflow.client.list_experiments()
     run_ids = []
     for exp in exps:
-        for run in _CLIENT.search_runs(exp.experiment_id):
+        for run in mlflow.client.search_runs(exp.experiment_id):
             if run_name == run.data.tags.get('mlflow.runName'):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
@@ -353,7 +353,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
         --
         Active run: None
     """
-    if mlflow._notebook_history and hasattr(mlflow, '_splice_context') and mlflow.active_run():
+    if mlflow._notebook_history and mlflow.active_run():
         with NamedTemporaryFile() as temp_file:
             nb = nbf.v4.new_notebook()
             nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
@@ -529,7 +529,7 @@ def _get_model_name(run_id):
     :param run_id: (str) the run_id that the model is stored under
     :return: (str or None) The model name if it exists
     """
-    return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
+    return mlflow.client.get_run(run_id).data.tags.get('splice.model_name')
 
 @_mlflow_patch('log_model')
 def _log_model(model, name='model', model_lib=None, **flavor_options):
@@ -562,8 +562,12 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
     model_data = buffer.read()
+    import sys
+    print("TESITING SIZE")
+    print(sys.getsizeof(model_data))
     with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
         f.write(model_data)
+        f.seek(0)
         host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
         insert_artifact(host, f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
 
@@ -1072,9 +1076,10 @@ def _set_mlflow_uri(uri):
     :param uri: (str) the URL of your mlflow UI.
     :return: None
     """
+    global _CLIENT
+    mlflow.set_tracking_uri(uri)
     _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=uri)
     mlflow.client = _CLIENT
-    mlflow.set_tracking_uri(uri)
 
 
 def main():

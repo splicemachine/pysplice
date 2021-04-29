@@ -269,6 +269,7 @@ def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact
         artifact_path=artifact_path
     )
     print('Uploading file... ', end='')
+    print(os.path.getsize(filepath))
     with open(filepath, 'rb') as file:
         r = requests.post(
             host + '/api/rest/upload-artifact',
