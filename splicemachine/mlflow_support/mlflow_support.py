@@ -562,9 +562,7 @@ def _log_model(model, name='model', model_lib=None, **flavor_options):
     buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
     buffer.seek(0)
     model_data = buffer.read()
-    import sys
-    print("TESITING SIZE")
-    print(sys.getsizeof(model_data))
+
     with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
         f.write(model_data)
         f.seek(0)

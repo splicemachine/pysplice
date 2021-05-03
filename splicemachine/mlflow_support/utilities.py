@@ -16,13 +16,6 @@ class SpliceMachineException(Exception):
     pass
 
 
-class SQL:
-    MLMANAGER_SCHEMA = 'MLMANAGER'
-    ARTIFACT_INSERT_SQL = f'INSERT INTO {MLMANAGER_SCHEMA}.ARTIFACTS (run_uuid, name, "size", "binary", file_extension) VALUES (?, ?, ?, ?, ?)'
-    ARTIFACT_RETRIEVAL_SQL = 'SELECT "binary", file_extension FROM ' + f'{MLMANAGER_SCHEMA}.' + 'ARTIFACTS WHERE name=\'{name}\' ' \
-                                                                                                'AND run_uuid=\'{runid}\''
-
-
 class SparkUtils:
     @staticmethod
     def get_stages(pipeline: PipelineModel):
@@ -127,24 +120,6 @@ class SparkUtils:
         return parameters
 
     @staticmethod
-    def retrieve_artifact_stream(splice_context: PySpliceContext, run_id: str, name: str):
-        """
-        Retrieve the binary stream for a given artifact with the specified name and run id
-
-        :param splice_context: (PySpliceContext) the PySpliceContext
-        :param run_id: (str) the run id for the run that the artifact belongs to
-        :param name: (str) the name of the artifact
-        :return: (bytearray(byte)) byte array from BLOB
-        """
-
-        try:
-            return splice_context.df(
-                SQL.ARTIFACT_RETRIEVAL_SQL.format(name=name, runid=run_id)
-            ).collect()[0]
-        except IndexError as e:
-            raise Exception(f"Unable to find the artifact with the given run id {run_id} and name {name}")
-
-    @staticmethod
     def find_spark_transformer_inputs_by_output(dictionary, value):
         """
         Find the input columns for a given output column
@@ -183,34 +158,6 @@ def get_user():
     """
     uname = env_vars.get('JUPYTERHUB_USER') or env_vars.get('USER')
     return uname
-
-# def insert_artifact(splice_context: PySpliceContext,
-#                     name: str,
-#                     byte_array: bytearray,
-#                     run_uuid: str,
-#                     file_ext: str = None):
-#     """
-#     Insert a serialized object into the Mlmanager artifacts table
-#
-#     :param splice_context: (PySpliceContext) the PySpliceContext
-#     :param name: (str) the path to store the binary under (with respect to the current run)
-#     :param byte_array: (bytearray) Java byte array
-#     :param run_uuid: (str) run uuid for the run
-#     :param file_ext: (str) the file extension of the model (used for downloading)
-#     """
-#     db_connection = splice_context.getConnection()
-#     file_size = getsizeof(byte_array)
-#     print(f"Saving artifact of size: {file_size / 1000.0} KB to Splice Machine DB")
-#     binary_input_stream = splice_context.jvm.java.io.ByteArrayInputStream(byte_array)
-#     prepared_statement = db_connection.prepareStatement(SQL.ARTIFACT_INSERT_SQL)
-#     prepared_statement.setString(1, run_uuid)
-#     prepared_statement.setString(2, name)
-#     prepared_statement.setInt(3, file_size)
-#     prepared_statement.setBinaryStream(4, binary_input_stream)
-#     prepared_statement.setString(5, file_ext)
-#
-#     prepared_statement.execute()
-#     prepared_statement.close()
 
 
 def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
@@ -269,7 +216,6 @@ def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact
         artifact_path=artifact_path
     )
     print('Uploading file... ', end='')
-    print(os.path.getsize(filepath))
     with open(filepath, 'rb') as file:
         r = requests.post(
             host + '/api/rest/upload-artifact',
