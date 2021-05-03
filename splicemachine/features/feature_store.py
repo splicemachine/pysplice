@@ -641,10 +641,9 @@ class FeatureStore:
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
                          params={'schema':schema_name, 'table':table_name})
-        descs = r
-        if not descs: raise SpliceMachineException(
+        desc = r
+        if not desc: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
-        desc = descs[0]
         features = [Feature(**feature) for feature in desc.pop("features")]
         fset = FeatureSet(**desc)
         self._feature_set_describe(fset, features)
@@ -680,9 +679,9 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth, {'name': training_view})
-        descs = r
-        if not descs: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
-        desc = descs[0]
+        desc = r
+        if not desc: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
+
         feats = [Feature(**f) for f in desc.pop('features')]
         tcx = TrainingView(**desc)
         self._training_view_describe(tcx, feats)
