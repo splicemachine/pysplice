@@ -610,6 +610,20 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth, { "schema": schema_name, "table": table_name })
         print('Done.')
 
+    def get_features_from_feature_set(self, schema_name: str, table_name: str) -> List[Feature]:
+        """
+        Returns either a pandas DF of feature details or a List of features for a specified feature set
+
+        :param schema_name: Feature Set schema name
+        :param table_name: Feature Set table name
+        :param as_list: Whehter to return a list of Features or a Pandas DF of the Features
+        :return: Either a PandasDF of feature information or a List of Features
+        """
+        r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
+                         params={'schema':schema_name, 'table':table_name})
+        features = [Feature(**feature) for feature in r.pop("features")]
+        return features
+
     def describe_feature_sets(self) -> None:
         """
         Prints out a description of a all feature sets, with all features in the feature sets and whether the feature
