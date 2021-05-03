@@ -606,7 +606,17 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
             mlflow_module = 'pyfunc'
         else:
             with open(f'{tempdir}/MLmodel', 'r') as mlmodel_file:
-                loader_module = yaml.safe_load(mlmodel_file.read())['flavors']['python_function']['loader_module']
+                mlmodel = yaml.safe_load(mlmodel_file.read())
+                try:
+                    loader_module = mlmodel['flavors']['python_function']['loader_module']
+                except KeyError: # If the python_function isn't available, fallback and try the raw model flavor
+                    # We will look through the other flavors in the MLModel yaml
+                    for flavor in mlmodel['flavors'].keys():
+                        if hasattr(mlflow, flavor):
+                            loader_module = f'mlflow.{flavor}'
+                            break
+                    raise SpliceMachineException(f"Unable to load the mlflow loader. Ensure this ML model has "
+                                                 f"been saved using an mlflow module")
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
