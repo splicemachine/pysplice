@@ -1082,6 +1082,14 @@ class FeatureStore:
         model_table_df = self.splice_ctx.df(sql)
         build_model_drift_plot(model_table_df, time_intervals)
 
+    def display_feature_search(self):
+        """
+        Returns an interactive feature search that enables users to search for features and profiles the selected Feature.
+        Two forms of this search exist. 1 for use inside of the managed Splice Machine notebook environment, and one
+        for standard Jupyter. This is because the managed Splice Jupyter environment has extra functionality that would
+        not be present outside of it. The search will be automatically rendered depending on the environment.
+        """
+
 
     def __get_pipeline(self, df, features, label, model_type):
         """
