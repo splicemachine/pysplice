@@ -21,10 +21,16 @@ REQUIREMENTS_FILE = "requirements.txt"
 with open(REQUIREMENTS_FILE, "r") as dependencies_file:
     DEPENDENCIES = dependencies_file.readlines()
 
+with open('feature_store_extras.txt', 'r') as fs_deps:
+    FS_EXTRA_DEPS = fs_deps.readlines()
+
 setup(
     name="splicemachine",
     version="2.7.0dev0",
     install_requires=DEPENDENCIES,
+    extras_require={
+      'featurestore-notebook': FS_EXTRA_DEPS
+    },
     packages=find_packages(),
     license='Apache License, Version 2.0',
     long_description=open('README.md').read(),
