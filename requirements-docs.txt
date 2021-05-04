@@ -12,3 +12,4 @@ pyspark
 h2o-pysparkling-3.0==3.32.0.4-1
 sphinx-tabs
 IPython
+sklearn
