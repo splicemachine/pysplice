@@ -69,15 +69,15 @@ class FeatureStore:
     def get_summary(self) -> TrainingView:
         """
         This function returns a summary of the feature store including:
-            * Number of feature sets
-            * Number of deployed feature sets
-            * Number of features
-            * Number of deployed features
-            * Number of training sets
-            * Number of training views
-            * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
-            * Number of active (deployed) models (that have used the feature store for training)
-            * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
+        * Number of feature sets
+        * Number of deployed feature sets
+        * Number of features
+        * Number of deployed features
+        * Number of training sets
+        * Number of training views
+        * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
+        * Number of active (deployed) models (that have used the feature store for training)
+        * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
         """
 
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._auth)
@@ -915,9 +915,9 @@ class FeatureStore:
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
             The Feature Set will have 15 features:
-                * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
-                * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
-                * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
+            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
+            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
 
             A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
@@ -1094,7 +1094,8 @@ class FeatureStore:
         :param pandas_profile: Whether to use pandas / spark to profile the feature. If pandas is selected
         but the dataset is too large, it will fall back to Spark. Default Pandas.
         """
-        if not hasattr(self, 'splice_ctx'):
+        # It may have the attr but be None
+        if not (hasattr(self, 'splice_ctx') and isinstance(self.splice_ctx, PySpliceContext)):
             raise SpliceMachineException('You must register a Splice Machine Context (PySpliceContext) in order to use '
                                          'this function currently')
         if _in_splice_compatible_env():

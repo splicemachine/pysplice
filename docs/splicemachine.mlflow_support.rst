@@ -1,30 +1,30 @@
-splicemachine.mlflow\_support package
+splicemachine.mlflow_support package
 =====================================
 
 Submodules
 ----------
 
-.. splicemachine.mlflow\_support.constants module
+.. splicemachine.mlflow_support.constants module
 
 ..
-  .. automodule:: splicemachine.mlflow\_support.constants
+  .. automodule:: splicemachine.mlflow_support.constants
      :members:
      :undoc-members:
      :show-inheritance:
 
-splicemachine.mlflow\_support module
+splicemachine.mlflow_support module
 ----------------------------------------------------
 
-.. automodule:: splicemachine.mlflow\_support.mlflow\_support
+.. automodule:: splicemachine.mlflow_support.mlflow_support
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. splicemachine.mlflow\_support.utilities module
+.. splicemachine.mlflow_support.utilities module
 
 
 ..
-  .. automodule:: splicemachine.mlflow\_support.utilities
+  .. automodule:: splicemachine.mlflow_support.utilities
      :members:
      :undoc-members:
      :show-inheritance:
@@ -33,7 +33,7 @@ splicemachine.mlflow\_support module
 Module contents
 ---------------
 
-.. automodule:: splicemachine.mlflow\_support
+.. automodule:: splicemachine.mlflow_support
    :members:
    :undoc-members:
    :show-inheritance:
