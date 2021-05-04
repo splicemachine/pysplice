@@ -7,7 +7,7 @@ Submodules
 .. splicemachine.mlflow\_support.constants module
 
 ..
-  .. automodule:: splicemachine.mlflow_support.constants
+  .. automodule:: splicemachine.mlflow\_support.constants
      :members:
      :undoc-members:
      :show-inheritance:
@@ -15,7 +15,7 @@ Submodules
 splicemachine.mlflow\_support module
 ----------------------------------------------------
 
-.. automodule:: splicemachine.mlflow_support.mlflow_support
+.. automodule:: splicemachine.mlflow\_support.mlflow\_support
    :members:
    :undoc-members:
    :show-inheritance:
@@ -24,7 +24,7 @@ splicemachine.mlflow\_support module
 
 
 ..
-  .. automodule:: splicemachine.mlflow_support.utilities
+  .. automodule:: splicemachine.mlflow\_support.utilities
      :members:
      :undoc-members:
      :show-inheritance:
@@ -33,7 +33,7 @@ splicemachine.mlflow\_support module
 Module contents
 ---------------
 
-.. automodule:: splicemachine.mlflow_support
+.. automodule:: splicemachine.mlflow\_support
    :members:
    :undoc-members:
    :show-inheritance:
