@@ -1,5 +1,5 @@
 py4j
-mlflow>=1.13.1
+mlflow>=1.13.1,<=1.16.0
 pyyaml
 mleap==0.16.0
 graphviz
