@@ -21,6 +21,9 @@ def __filter_df(pdf, search_input) -> pd.DataFrame:
     :param search_input: The filters and operations on them
     :return: The resulting dataframe
     """
+    if not search_input:
+        return pdf
+
     res_df = pdf
 
     # Add an & at the beginning because the first word is exclusize
@@ -33,9 +36,11 @@ def __filter_df(pdf, search_input) -> pd.DataFrame:
                           pdf['tags'].astype('str').str.contains(word, case=False, regex=False) |
                           pdf['attributes'].astype('str').str.contains(word, case=False, regex=False) |
                           pdf['feature_set_name'].str.contains(word, case=False, regex=False)]
+            res_df = pd.concat([res_df, temp_df]) if op=='|' else res_df[res_df.name.isin(temp_df.name)]
         except: # The user used invalid regex, set result to None
             temp_df = pd.DataFrame([])
-        res_df = pd.concat([res_df, temp_df]) if op=='|' else res_df[res_df.name.isin(temp_df.name)]
+            res_df = pd.concat([res_df, temp_df])
+
 
     res_df.reset_index(drop=True, inplace=True)
     return res_df
@@ -50,13 +55,14 @@ def feature_search_internal(fs, pandas_profile=True):
     beakerx.pandas_display_table()
 
     pdf = fs.get_features_by_name()
-    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags','attributes','last_update_ts','last_update_username','compliance_level']]
+    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags',
+               'attributes','last_update_ts','last_update_username','compliance_level']]
 
     ############################################################################################
     searchText = widgets.Text(layout=Layout(width='80%'), description='Search:')
 
     def handle_submit(sender):
-        res_df = __filter_df(pdf)
+        res_df = __filter_df(pdf, searchText.value)
         table = TableDisplay(res_df)
         redisplay(table)
 
@@ -82,7 +88,8 @@ def feature_search_internal(fs, pandas_profile=True):
 
     def redisplay(td):
         clear_output(wait=True)
-        print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values with "&" and "|" Enter a single Feature name for a detailed report. ')
+        print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values '
+              'with "&" and "|" Enter a single Feature name for a detailed report. ')
         display(searchText)
         td.setDoubleClickAction(on_feature_select)
 #         td.setColumnFrozen('name',True)
@@ -103,11 +110,13 @@ def feature_search_external(fs, pandas_profile=True):
     """
 
     pdf = fs.get_features_by_name()
-    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags','attributes','last_update_ts','last_update_username','compliance_level']]
+    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags',
+               'attributes','last_update_ts','last_update_username','compliance_level']]
 
     @interact
     def column_search(Filter=''):
-        print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values with "&" and "|" Enter a single Feature name for a detailed report. ')
+        print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values '
+              'with "&" and "|" Enter a single Feature name for a detailed report. ')
 
         res_df = __filter_df(pdf, Filter)
 
