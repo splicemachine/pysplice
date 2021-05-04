@@ -4,7 +4,18 @@
 This package contains all of the classes and functions you need to interact with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains several machine learning utilities for use with Apache Spark.
 
 ## Installation Instructions: with Pip
-`(sudo) pip install git+https://github.com/splicemachine/pysplice`
+`(sudo) pip install splicemachine`
+
+### To include notebook utilities
+`(sudo) pip install splicemachine[notebook]`
+
+### To include statistics utilities
+`(sudo) pip install splicemachine[stats]`
+
+### To include all extras (recommended)
+`(sudo) pip install splicemachine[all]`
+
+<b>NOTE:</b> If you are installing extras in zsh, you must escape the extra (ie `pip install splicemachine\\[all\\]
 
 ## Modules
 This package contains 4 main external modules. First, `splicemachine.spark.context`, which houses our Python wrapped Native Spark Datasource, as well as our External Native Spark Datasource, for use outside of the Kubernetes Cluster. Second, `splicemachine.mlflow_support` which houses our Python interface to MLManager. Lastly, `splicemachine.stats` which houses functions/classes which simplify machine learning (by providing functions like Decision Tree Visualizers, Model Evaluators etc.) and `splicemachine.notebook` which provides Jupyter Notebook specific functionality like an embedded MLFlow UI and Spark Jobs UI.
@@ -12,7 +23,7 @@ This package contains 4 main external modules. First, `splicemachine.spark.conte
 1) `splicemachine.spark.context`: Native Spark Datasource for interacting with Splice Machine from Spark
 ```
 class PySpliceContext(builtins.object)
- |  PySpliceContext(sparkSession, JDBC_URL=None, _unit_testing=False)
+ | PySpliceContext(sparkSession, JDBC_URL=None, _unit_testing=False)
  |  
  |  This class implements a SpliceMachineContext object (similar to the SparkContext object)
  |  
@@ -283,7 +294,7 @@ class PySpliceContext(builtins.object)
  |      PySpliceContext
  |      builtins.object
  ```
- 2) `splicemachine.mlflow_support`: MLFlow wrapped MLManager interface from Python. The majority of documentation is identical to [MLflow](https://www.mlflow.org/docs/1.6.0/index.html). Additional functions and functionality are below
+ 2\) `splicemachine.mlflow_support`: MLFlow wrapped MLManager interface from Python. The majority of documentation is identical to [MLflow](https://www.mlflow.org/docs/1.6.0/index.html). Additional functions and functionality are below
   ```
   USAGE
      from splicemachine.mlflow_support import *

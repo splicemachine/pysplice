@@ -39,10 +39,12 @@ setup(
     packages=find_packages(),
     license='Apache License, Version 2.0',
     long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     author="Splice Machine, Inc.",
     author_email="abaveja@splicemachine.com",
     description="This package contains all of the classes and functions you need to interact "
                 "with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains"
-                " several machine learning utilities for use with Apache Spark.",
+                " several machine learning utilities for use with Apache Spark, a managed MLFlow client and a "
+                "Managed Feature Store client.",
     url="https://github.com/splicemachine/pysplice/"
 )
