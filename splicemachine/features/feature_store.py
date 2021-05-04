@@ -14,6 +14,8 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
 from splicemachine.features.utils.feature_utils import sql_to_datatype
+from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
+from splicemachine.notebook import _in_splice_compatible_env
 from splicemachine.spark import PySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
@@ -1082,13 +1084,24 @@ class FeatureStore:
         model_table_df = self.splice_ctx.df(sql)
         build_model_drift_plot(model_table_df, time_intervals)
 
-    def display_feature_search(self):
+    def display_feature_search(self, pandas_profile=True):
         """
         Returns an interactive feature search that enables users to search for features and profiles the selected Feature.
         Two forms of this search exist. 1 for use inside of the managed Splice Machine notebook environment, and one
         for standard Jupyter. This is because the managed Splice Jupyter environment has extra functionality that would
         not be present outside of it. The search will be automatically rendered depending on the environment.
+
+        :param pandas_profile: Whether to use pandas / spark to profile the feature. If pandas is selected
+        but the dataset is too large, it will fall back to Spark. Default Pandas.
         """
+        if not hasattr(self, 'splice_ctx'):
+            raise SpliceMachineException('You must register a Splice Machine Context (PySpliceContext) in order to use '
+                                         'this function currently')
+        if _in_splice_compatible_env():
+            feature_search_internal(self, pandas_profile)
+        else:
+            feature_search_external(self, pandas_profile)
+
 
 
     def __get_pipeline(self, df, features, label, model_type):
