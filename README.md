@@ -27,11 +27,11 @@ This package contains 4 main external modules. First, `splicemachine.spark.conte
  
 2) [`splicemachine.mlflow_support`](https://pysplice.readthedocs.io/en/latest/splicemachine.mlflow_support.html): MLFlow wrapped MLManager interface from Python. The majority of documentation is identical to [MLflow](https://www.mlflow.org/docs/1.15.0/index.html). Additional functions and functionality are available in the docs
 
-3) `splicemachine.features`: The Python SDK entrypoint to the [Splice Machine Feature Store](https://splicemachine.com/product/feature-store/)
+3) [`splicemachine.features`](https://pysplice.readthedocs.io/en/latest/splicemachine.features.html): The Python SDK entrypoint to the [Splice Machine Feature Store](https://splicemachine.com/product/feature-store/)
 
 4) Extensions
  
-    4.1) `splicemachine.stats`: houses utilities for machine learning
+    4.1) [`splicemachine.stats`](https://pysplice.readthedocs.io/en/latest/splicemachine.stats.html): houses utilities for machine learning
     
-    4.2) `splicemachine.notebooks`: houses utilities for use in Jupyter Notebooks running in the Kubernetes cloud environment
+    4.2) [`splicemachine.notebooks`](https://pysplice.readthedocs.io/en/latest/splicemachine.notebook.html): houses utilities for use in Jupyter Notebooks running in the Kubernetes cloud environment
 
