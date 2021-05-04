@@ -3,9 +3,6 @@ splicemachine.mlflow_support package
 
 Submodules
 ----------
-
-.. splicemachine.mlflow_support.constants module
-
 ..
   .. automodule:: splicemachine.mlflow_support.constants
      :members:
@@ -14,6 +11,8 @@ Submodules
 
 splicemachine.mlflow_support module
 ----------------------------------------------------
+
+This module contains the entrypoint to the Splice Machine managed mlflow environment
 
 .. automodule:: splicemachine.mlflow_support.mlflow_support
    :members:

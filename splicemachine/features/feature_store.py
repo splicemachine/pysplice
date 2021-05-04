@@ -294,20 +294,8 @@ class FeatureStore:
         start_time = r['metadata']['training_set_start_ts']
         end_time = r['metadata']['training_set_end_ts']
         sql = r['sql']
-        tvw = TrainingView(**r['training_view'])
+        tvw = TrainingView(**r['training_view']) if r.get('training_view') else None
         features = [Feature(**f) for f in r['features']]
-        # Here we create a null training view and pass it into the training set. We do this because this special kind
-        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
-        # or a timestamp column . This is simply a joined set of features from different feature sets.
-        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
-        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
-        # for (non time based) clustering use cases.
-        # null_tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
-        #                         description=None)
-        # ts = TrainingSet(training_view=null_tvw, features=features, start_time=start_time, end_time=end_time)
-
-        # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
-        # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and not return_sql:
             # These will only exist if the user called "save_as" otherwise they will be None
@@ -1248,6 +1236,14 @@ class FeatureStore:
                                     end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False,
                                     training_set_id: Optional[int] = None, training_set_version: Optional[int] = None,
                                     training_set_name: Optional[str] = None):
+
+        # Here we create a null training view and pass it into the training set. We do this because this special kind
+        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
+        # or a timestamp column . This is simply a joined set of features from different feature sets.
+        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
+        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
+        # for (non time based) clustering use cases.
+
         if not tvw:
             tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
                                 description=None)
@@ -1255,7 +1251,8 @@ class FeatureStore:
                         start_time=start_time, end_time=end_time, training_set_id=training_set_id,
                          training_set_version=training_set_version, training_set_name=training_set_name)
 
-        # For metadata purposes
+        # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
+        # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
         if current_values_only:
             ts.start_time = ts.end_time
 
