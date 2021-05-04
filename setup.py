@@ -33,7 +33,8 @@ setup(
     install_requires=DEPENDENCIES,
     extras_require={
         'notebook': NOTEBOOK_DEPS,
-        'stats': STATS_DEPS
+        'stats': STATS_DEPS,
+        'all': NOTEBOOK_DEPS + STATS_DEPS
     },
     packages=find_packages(),
     license='Apache License, Version 2.0',
