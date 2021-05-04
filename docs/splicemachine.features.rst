@@ -24,8 +24,8 @@ Submodules
      :undoc-members:
      :show-inheritance:
 
-splicemachine.features.feature_store
-----------------------------------
+splicemachine.features.feature_store module
+-------------------------------------------
 
 This Module contains the classes and APIs for interacting with the Splice Machine Feature Store.
 
