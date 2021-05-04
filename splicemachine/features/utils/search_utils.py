@@ -2,9 +2,15 @@ from splicemachine.spark.utils import spark_df_size
 import pandas as pd
 from ipywidgets import widgets, Layout, interact
 from IPython.display import display, clear_output
-import pandas_profiling, spark_df_profiling
 import re
 
+import warnings
+
+try:
+    import pandas_profiling, spark_df_profiling
+except:
+    warnings.warn('You do not have the necessary extensions for these functions (pandas_profiling, spark_df_profiling). '
+                  'Please run `pip install splicemachine[notebook]` to use these functions.')
 
 def feature_search_internal(fs, pandas_profile=True):
     """
@@ -13,13 +19,14 @@ def feature_search_internal(fs, pandas_profile=True):
     from beakerx import TableDisplay
     from beakerx.object import beakerx
     beakerx.pandas_display_table()
-    print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values with "&" and "|" Enter a single Feature name for a detailed report. ')
+
     pdf = fs.get_features_by_name()
     pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags','attributes','last_update_ts','last_update_username','compliance_level']]
 
     ############################################################################################
     searchText = widgets.Text(layout=Layout(width='80%'), description='Search:')
     display(searchText)
+    print('Filter on Feature name, tags, attributes, or feature set name. Search multiple values with "&" and "|" Enter a single Feature name for a detailed report. ')
 
     def handle_submit(sender):
         res_df = pdf
