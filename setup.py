@@ -26,10 +26,10 @@ with open('feature_store_extras.txt', 'r') as fs_deps:
 
 setup(
     name="splicemachine",
-    version="2.7.0dev0",
+    version="2.7.0.dev0",
     install_requires=DEPENDENCIES,
     extras_require={
-      'featurestore-notebook': FS_EXTRA_DEPS
+      'featurestore-notebook': FS_EXTRA_DEPS,
     },
     packages=find_packages(),
     license='Apache License, Version 2.0',
