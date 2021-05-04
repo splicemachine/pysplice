@@ -14,3 +14,4 @@ sphinx-tabs
 IPython
 sklearn
 ipywidgets
+sphinx-book-theme
