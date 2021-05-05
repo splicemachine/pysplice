@@ -7,6 +7,32 @@ from splicemachine.features.training_view import TrainingView
 A set of utility functions for creating Training Set SQL 
 """
 
+class ReturnType:
+    """
+    An enum class for available Training Set return types
+    """
+    SQL = 'sql'
+    SPARK = 'spark'
+    PANDAS = 'pandas'
+    JSON = 'json'
+
+    @staticmethod
+    def get_valid():
+        return (ReturnType.SQL, ReturnType.PANDAS, ReturnType.SPARK, ReturnType.JSON)
+    @staticmethod
+    def map_to_request(rt: str) -> str:
+        """
+        Maps a users requested type to the proper type for the REST api request
+        :param rt: The return type (sql, json, pandas, spark)
+        :return: The proper return type for the REST api
+        """
+        if rt in (ReturnType.PANDAS, ReturnType.JSON):
+            return ReturnType.JSON
+        elif rt not in ReturnType.get_valid():
+            return ''
+        return rt
+
+
 def clean_df(df, cols):
     for old, new in zip(df.columns, cols):
         df = df.withColumnRenamed(old, new)
