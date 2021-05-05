@@ -46,7 +46,7 @@ autodoc_default_options = {
     'private-members':True,
     'inherited-members':True,
     'undoc-members': False, 
-    'exclude-members': '_retrieve_model_data_sets,_retrieve_training_set_metadata_from_deployement,_validate_feature_vector_keys,_process_features,__prune_features_for_elimination,_register_metadata,_register_metadata,__update_deployment_status,__log_mlflow_results,__get_feature_importance,__get_pipeline,_validate_training_view,_validate_feature_set,_validate_feature,__validate_feature_data_type,_check_for_splice_ctx,_dropTableIfExists, _generateDBSchema,_getCreateTableSchema,_jstructtype,_spliceSparkPackagesName,_splicemachineContext,apply_patches, main'
+    'exclude-members': '__initiate_job,__get_serialized_mlmodel,__get_logs,__get_active_user,SpliceActiveRun,_training_view_describe,_feature_set_describe,__try_auto_login,_retrieve_model_data_sets,_retrieve_training_set_metadata_from_deployement,_validate_feature_vector_keys,_process_features,__prune_features_for_elimination,_register_metadata,_register_metadata,__update_deployment_status,__log_mlflow_results,__get_feature_importance,__get_pipeline,_validate_training_view,_validate_feature_set,_validate_feature,__validate_feature_data_type,_check_for_splice_ctx,_dropTableIfExists, _generateDBSchema,_getCreateTableSchema,_jstructtype,_spliceSparkPackagesName,_splicemachineContext,apply_patches, main'
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,7 +69,7 @@ exclude_patterns = ['**mlflow_support.utilities.*','_build', 'Thumbs.db', '.DS_S
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

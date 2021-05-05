@@ -821,6 +821,7 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     :param expose_external: (default False) whether or not to create Ingress resource to deploy outside of the cluster.
         :NOTE:
             .. code-block:: text
+
                 It is not recommended to create an Ingress resource using this parameter, as your model will be
                 deployed with no authorization (and public access). Instead, it is better to deploy your model
                 as an internal service, and deploy an authentication proxy (such as https://github.com/oauth2-proxy/oauth2-proxy)

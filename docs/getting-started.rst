@@ -8,7 +8,7 @@ If you are running inside of the Splice Machine Cloud Service in a Jupyter Noteb
 
 .. code-block:: sh
 
-    pip install [--upgrade] git+https://www.github.com/splicemachine/pysplice@<RELEASE>
+    [sudo] pip install [--upgrade] splicemachine
 
 External Installation
 ---------------------
@@ -17,13 +17,25 @@ If you would like to install outside of the K8s cluster (and use the ExtPySplice
 
 .. code-block:: sh
 
-    sudo pip install git+http://www.github.com/splicemachine/pysplice@2.3.0-k8
+    [sudo] pip install [--upgrade] splicemachine
 
-Or latest with
+Package Extras
+---------------------
+
+The splicemachine pypi package has 2 extra installs, `stats` and `notebook`. These include extra dependencies for usage
+with build-in ML/Statistics functionality and extra jupyter specific functionality (like Feature Store Feature search)
+
+To install them, you can install with the standard extra syntax for Pypi. If you'd like both (recommended), you can run
 
 .. code-block:: sh
 
-    sudo pip install git+http://www.github.com/splicemachine/pysplice
+    [sudo] pip install [--upgrade] splicemachine[all]
+
+If you are using `zsh` you must escape the package extra with
+
+.. code-block:: sh
+
+    [sudo] pip install [--upgrade] splicemachine\[all\]
 
 Usage 
 -----
