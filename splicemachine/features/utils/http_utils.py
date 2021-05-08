@@ -57,7 +57,8 @@ class Endpoints:
 
 def make_request(url: str, endpoint: str, method: str, auth: str,
                  params: Optional[Dict[str, Any]] = None,
-                 body: Union[Dict[str,Any], List[Any]] = None) -> Union[dict,List[dict]]:
+                 body: Union[Dict[str,Any], List[Any]] = None,
+                 headers: Dict[str,str] = None) -> Union[dict,List[dict]]:
     if not auth:
         raise Exception(
             "You have not logged into Feature Store."
@@ -69,9 +70,11 @@ def make_request(url: str, endpoint: str, method: str, auth: str,
     url = f'{url}/{endpoint}'
     try:
         if isinstance(auth, HTTPBasicAuth):
-            r = RequestType.method_map[method](url, params=params, json=body, auth=auth)
+            r = RequestType.method_map[method](url, params=params, json=body, auth=auth, headers=headers)
         elif isinstance(auth, str):
-            r = RequestType.method_map[method](url, params=params, json=body, headers={'Authorization': f'Bearer {auth}'})
+            headers = headers or {}
+            headers['Authorization'] = f'Bearer {auth}'
+            r = RequestType.method_map[method](url, params=params, json=body, headers=headers)
         else:
             raise Exception(
                 "Authorization credentials are not valid."
