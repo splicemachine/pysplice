@@ -74,7 +74,7 @@ from sklearn.base import BaseEstimator as ScikitModel
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
 from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
-                                                    insert_artifact)
+                                                    insert_artifact, download_artifact, get_jobs_uri)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
@@ -149,7 +149,7 @@ def _get_current_run_data():
 
     :return: active run data object
     """
-    return _CLIENT.get_run(mlflow.active_run().info.run_id).data
+    return mlflow.client.get_run(mlflow.active_run().info.run_id).data
 
 def __get_active_user():
     if hasattr(mlflow, '_username'):
@@ -168,10 +168,10 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
     :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]
     :return: (List[str]) List of run ids
     """
-    exps = [_CLIENT.get_experiment(experiment_id)] if experiment_id else _CLIENT.list_experiments()
+    exps = [mlflow.client.get_experiment(experiment_id)] if experiment_id else mlflow.client.list_experiments()
     run_ids = []
     for exp in exps:
-        for run in _CLIENT.search_runs(exp.experiment_id):
+        for run in mlflow.client.search_runs(exp.experiment_id):
             if run_name == run.data.tags.get('mlflow.runName'):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
@@ -322,44 +322,6 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
         return buffer, file_ext
 
 
-@_mlflow_patch('log_model')
-def _log_model(model, name='model', model_lib=None, **flavor_options):
-    """
-    Log a trained machine learning model
-
-    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
-        with the current run
-    :param name: (str) the run relative name to store the model under. [Deault 'model']
-    :param model_lib: An optional param specifying the model type of the model to log
-        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
-    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,
-        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
-        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
-        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
-    """
-    _check_for_splice_ctx()
-
-    # Make sure no models have been logged to this run
-    if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
-        raise SpliceMachineException("Only one model is permitted per run.")
-    if flavor_options and not model_lib:
-        raise SpliceMachineException("You cannot set mlflow-flavor specific options without setting the model library. "
-                                     "Either set model_lib, or use the native mlflow.<flavor>.log_model function")
-
-    model_class = str(model.__class__)
-
-    run_id = mlflow.active_run().info.run_uuid
-    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
-    buffer.seek(0)
-    insert_artifact(splice_context=mlflow._splice_context, byte_array=bytearray(buffer.read()), name=name,
-                    run_uuid=run_id, file_ext=file_ext)
-
-    # Set the model metadata as tags after successful logging
-    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
-    mlflow.set_tag('splice.model_type', model_class)
-    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
-
-
 @_mlflow_patch('end_run')
 def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
     """End an active MLflow run (if there is one).
@@ -391,7 +353,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
         --
         Active run: None
     """
-    if mlflow._notebook_history and hasattr(mlflow, '_splice_context') and mlflow.active_run():
+    if mlflow._notebook_history and mlflow.active_run():
         with NamedTemporaryFile() as temp_file:
             nb = nbf.v4.new_notebook()
             nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
@@ -559,30 +521,6 @@ def _timer(timer_name, param=False):
         )
 
 
-@_mlflow_patch('download_artifact')
-def _download_artifact(name, local_path, run_id=None):
-    """
-    Download the artifact at the given run id (active default) + name to the local path
-
-    :param name: (str) artifact name to load (with respect to the run)
-    :param local_path: (str) local path to download the model to. This path MUST include the file extension
-    :param run_id: (str) the run id to download the artifact from. Defaults to active run
-    :return: None
-    """
-    _check_for_splice_ctx()
-    file_ext = path.splitext(local_path)[1]
-
-    run_id = run_id or mlflow.active_run().info.run_uuid
-    blob_data, f_ext = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
-    if f_ext in FileExtensions.get_valid():
-        f_ext = 'zip'  # we zip up these models, even though we use the file ext to identify model type
-    if not file_ext:  # If the user didn't provide the file (ie entered . as the local_path), fill it in for them
-        local_path += f'/{name}.{f_ext}'
-
-    with open(local_path, 'wb') as artifact_file:
-        artifact_file.write(blob_data)
-
-
 @_mlflow_patch('get_model_name')
 def _get_model_name(run_id):
     """
@@ -591,7 +529,50 @@ def _get_model_name(run_id):
     :param run_id: (str) the run_id that the model is stored under
     :return: (str or None) The model name if it exists
     """
-    return _CLIENT.get_run(run_id).data.tags.get('splice.model_name')
+    return mlflow.client.get_run(run_id).data.tags.get('splice.model_name')
+
+@_mlflow_patch('log_model')
+def _log_model(model, name='model', model_lib=None, **flavor_options):
+    """
+    Log a trained machine learning model
+
+    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model
+        with the current run
+    :param name: (str) the run relative name to store the model under. [Deault 'model']
+    :param model_lib: An optional param specifying the model type of the model to log
+        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors
+    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,
+        model_class must also be provided and the keys of this dictionary must match the params of that functions signature
+        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.
+        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model
+    """
+    # Make sure no models have been logged to this run
+    if _get_current_run_data().tags.get('splice.model_name'):  # this function has already run
+        raise SpliceMachineException("Only one model is permitted per run.")
+    if flavor_options and not model_lib:
+        raise SpliceMachineException("You cannot set mlflow-flavor specific options without setting the model library. "
+                                     "Either set model_lib, or use the native mlflow.<flavor>.log_model function")
+
+    model_class = str(model.__class__)
+
+    if not mlflow.active_run():
+        raise SpliceMachineException("You must have an active run to log a model")
+
+    run_id = mlflow.active_run().info.run_uuid
+    buffer, file_ext = __get_serialized_mlmodel(model, model_lib=model_lib, **flavor_options)
+    buffer.seek(0)
+    model_data = buffer.read()
+
+    with NamedTemporaryFile(mode='wb', suffix='.zip') as f:
+        f.write(model_data)
+        f.seek(0)
+        host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+        insert_artifact(host, f.name, name, run_id, file_ext, mlflow._basic_auth, artifact_path=name)
+
+    # Set the model metadata as tags after successful logging
+    mlflow.set_tag('splice.model_name', name)  # read in backend for deployment
+    mlflow.set_tag('splice.model_type', model_class)
+    mlflow.set_tag('splice.model_py_version', _PYTHON_VERSION)
 
 
 def _load_model(run_id=None, name=None, as_pyfunc=False):
@@ -612,10 +593,12 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
     if not name:
         raise SpliceMachineException(f"Uh Oh! Looks like there isn't a model logged with this run ({run_id})!"
                                      "If there is, pass in the name= parameter to this function")
-    model_blob, _ = SparkUtils.retrieve_artifact_stream(mlflow._splice_context, run_id, name)
+
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    r = download_artifact(host, name, run_id, mlflow._basic_auth)
     buffer = BytesIO()
     buffer.seek(0)
-    buffer.write(model_blob)
+    buffer.write(r.content)
 
     with TemporaryDirectory() as tempdir:
         ZipFile(buffer).extractall(path=tempdir)
@@ -623,14 +606,26 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
             mlflow_module = 'pyfunc'
         else:
             with open(f'{tempdir}/MLmodel', 'r') as mlmodel_file:
-                loader_module = yaml.safe_load(mlmodel_file.read())['flavors']['python_function']['loader_module']
+                mlmodel = yaml.safe_load(mlmodel_file.read())
+                try:
+                    loader_module = mlmodel['flavors']['python_function']['loader_module']
+                except KeyError: # If the python_function isn't available, fallback and try the raw model flavor
+                    # We will look through the other flavors in the MLModel yaml
+                    loader_module = None
+                    for flavor in mlmodel['flavors'].keys():
+                        if hasattr(mlflow, flavor):
+                            loader_module = f'mlflow.{flavor}'
+                            break
+                    if not loader_module:
+                        raise SpliceMachineException(f"Unable to load the mlflow loader. Ensure this ML model has "
+                                                 f"been saved using an mlflow module")
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
 
 
 @_mlflow_patch('log_artifact')
-def _log_artifact(file_name, name=None, run_uuid=None):
+def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     """
     Log an artifact for the active run
 
@@ -644,21 +639,45 @@ def _log_artifact(file_name, name=None, run_uuid=None):
     :param name: (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file
         extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).
     :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run
+    :param artifact_path: If you would like the artifact logged as a subdirectory of an particular folder,
+        you can set this value. If the directory doesn't exist, it will be created for this run's artifact path.
     :return: None
     
     :NOTE: 
         We do not currently support logging directories. If you would like to log a directory, please zip it first and log the zip file
     """
-    _check_for_splice_ctx()
+    if not os.path.exists(file_name):
+        raise SpliceMachineException(f'Cannot find file {file_name}')
+    # Check file size without reading file
+    if os.path.getsize(file_name) > 5e7:
+        raise SpliceMachineException(f'File {file_name} is too large. Max file size is 50MB')
+
     file_ext = path.splitext(file_name)[1].lstrip('.')
 
-    with open(file_name, 'rb') as artifact:
-        byte_stream = bytearray(bytes(artifact.read()))
-
     run_id = run_uuid or mlflow.active_run().info.run_uuid
-    name = name or file_name
-    insert_artifact(mlflow._splice_context, name, byte_stream, run_id, file_ext=file_ext)
+    name = name or os.path.split(file_name)[-1]
 
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    insert_artifact(host, file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
+    print(f'Saved artifact as {name} in mlflow')
+
+@_mlflow_patch('download_artifact')
+def _download_artifact(name, local_path=None, run_id=None):
+    """
+    Download the artifact at the given run id (active default) + name to the local path
+
+    :param name: (str) artifact name to load (with respect to the run)
+    :param local_path: (str) local path to download the model to. If set, this path MUST include the file extension.
+        Will default to the current directory and the name of the saved artifact
+    :param run_id: (str) the run id to download the artifact from. Defaults to active run
+    """
+    run_id = run_id or mlflow.active_run().info.run_uuid
+    host = get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING))
+    r = download_artifact(host, name, run_id, mlflow._basic_auth)
+    file_name = local_path or r.headers['Content-Disposition'].split('filename=')[1]
+    with open(file_name, 'wb') as file:
+        file.write(r.content)
+    print(f'Done. File has been written to {file_name}')
 
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):
@@ -697,7 +716,7 @@ def __initiate_job(payload, endpoint):
             " Please run mlflow.login_director(username, password)"
         )
     request = requests.post(
-        get_pod_uri('mlflow', 5003, _testing=_TESTING) + endpoint,
+        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + endpoint,
         auth=mlflow._basic_auth,
         json=payload
     )
@@ -971,7 +990,7 @@ def __get_logs(job_id: int):
     Retrieve the logs associated with the specified job id
     """
     request = requests.post(
-        get_pod_uri("mlflow", 5003, _testing=_TESTING) + "/api/rest/logs",
+        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/logs",
         json={"task_id": job_id}, auth=mlflow._basic_auth
     )
     if not request.ok:
@@ -1065,9 +1084,10 @@ def _set_mlflow_uri(uri):
     :param uri: (str) the URL of your mlflow UI.
     :return: None
     """
+    global _CLIENT
+    mlflow.set_tracking_uri(uri)
     _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=uri)
     mlflow.client = _CLIENT
-    mlflow.set_tracking_uri(uri)
 
 
 def main():
