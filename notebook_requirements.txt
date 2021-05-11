@@ -1,0 +1,3 @@
+pandas-profiling[notebook]
+spark-df-profiling @ git+https://github.com/julioasotodv/spark-df-profiling.git@e5108e0891e209c1dc8864ec7fee7f0c5145032f
+tqdm>=4.48.2

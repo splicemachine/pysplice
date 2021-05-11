@@ -821,6 +821,7 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     :param expose_external: (default False) whether or not to create Ingress resource to deploy outside of the cluster.
         :NOTE:
             .. code-block:: text
+
                 It is not recommended to create an Ingress resource using this parameter, as your model will be
                 deployed with no authorization (and public access). Instead, it is better to deploy your model
                 as an internal service, and deploy an authentication proxy (such as https://github.com/oauth2-proxy/oauth2-proxy)
@@ -901,9 +902,10 @@ def _deploy_db(db_schema_name: str,
             * Keras
                 * pred_threshold: prediction threshold for Keras binary classification models. Note: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, you will NOT receive a class prediction, only the output of the final layer (like model.predict()). If you want a class prediction for your binary classification problem, you MUST pass in a threshold.
     If the model does not support these parameters, they will be ignored.
+
     :param max_batch_size: (int) the max size for the database to batch groups of rows for prediction. Default 10,000.
     :param replace: (bool) whether or not to replace a currently existing model. This param is not yet implemented
-    :return: None\n
+    :return: None
 
     This function creates the following IF you are creating a table from the dataframe \n
         * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n
@@ -922,11 +924,7 @@ def _deploy_db(db_schema_name: str,
             They are automatically taken care of.\n
             Set verbose=True in the function call for more information
 
-    The following will also be created for all deployments: \n
-        * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \
-            calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n
-        * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \
-            parsing the prediction probabilities and filling in proper column values
+    A trigger is also created on the deployment table that runs the model after every insert into that table.
     """
     print("Deploying model to database...")
 

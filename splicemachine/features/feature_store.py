@@ -15,6 +15,8 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
 from splicemachine.features.utils.feature_utils import sql_to_datatype
+from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
+from splicemachine.notebook import _in_splice_compatible_env
 from splicemachine.spark import PySpliceContext, ExtPySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
@@ -72,15 +74,15 @@ class FeatureStore:
     def get_summary(self) -> TrainingView:
         """
         This function returns a summary of the feature store including:
-            * Number of feature sets
-            * Number of deployed feature sets
-            * Number of features
-            * Number of deployed features
-            * Number of training sets
-            * Number of training views
-            * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
-            * Number of active (deployed) models (that have used the feature store for training)
-            * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
+        * Number of feature sets
+        * Number of deployed feature sets
+        * Number of features
+        * Number of deployed features
+        * Number of training sets
+        * Number of training views
+        * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
+        * Number of active (deployed) models (that have used the feature store for training)
+        * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
         """
 
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._auth)
@@ -310,20 +312,8 @@ class FeatureStore:
         start_time = r['metadata']['training_set_start_ts']
         end_time = r['metadata']['training_set_end_ts']
         sql = r['sql']
-        tvw = TrainingView(**r['training_view'])
+        tvw = TrainingView(**r['training_view']) if r.get('training_view') else None
         features = [Feature(**f) for f in r['features']]
-        # Here we create a null training view and pass it into the training set. We do this because this special kind
-        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
-        # or a timestamp column . This is simply a joined set of features from different feature sets.
-        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
-        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
-        # for (non time based) clustering use cases.
-        # null_tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
-        #                         description=None)
-        # ts = TrainingSet(training_view=null_tvw, features=features, start_time=start_time, end_time=end_time)
-
-        # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
-        # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
         if self.mlflow_ctx and return_type != 'sql':
             # These will only exist if the user called "save_as" otherwise they will be None
@@ -980,9 +970,9 @@ class FeatureStore:
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
             The Feature Set will have 15 features:
-                * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
-                * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
-                * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
+            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
+            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
 
             A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
@@ -1149,6 +1139,26 @@ class FeatureStore:
         model_table_df = self.splice_ctx.df(sql)
         build_model_drift_plot(model_table_df, time_intervals)
 
+    def display_feature_search(self, pandas_profile=True):
+        """
+        Returns an interactive feature search that enables users to search for features and profiles the selected Feature.
+        Two forms of this search exist. 1 for use inside of the managed Splice Machine notebook environment, and one
+        for standard Jupyter. This is because the managed Splice Jupyter environment has extra functionality that would
+        not be present outside of it. The search will be automatically rendered depending on the environment.
+
+        :param pandas_profile: Whether to use pandas / spark to profile the feature. If pandas is selected
+        but the dataset is too large, it will fall back to Spark. Default Pandas.
+        """
+        # It may have the attr but be None
+        if not (hasattr(self, 'splice_ctx') and isinstance(self.splice_ctx, PySpliceContext)):
+            raise SpliceMachineException('You must register a Splice Machine Context (PySpliceContext) in order to use '
+                                         'this function currently')
+        if _in_splice_compatible_env():
+            feature_search_internal(self, pandas_profile)
+        else:
+            feature_search_external(self, pandas_profile)
+
+
 
     def __get_pipeline(self, df, features, label, model_type):
         """
@@ -1293,6 +1303,14 @@ class FeatureStore:
                                     end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False,
                                     training_set_id: Optional[int] = None, training_set_version: Optional[int] = None,
                                     training_set_name: Optional[str] = None):
+
+        # Here we create a null training view and pass it into the training set. We do this because this special kind
+        # of training set isn't standard. It's not based on a training view, on primary key columns, a label column,
+        # or a timestamp column . This is simply a joined set of features from different feature sets.
+        # But we still want to track this in mlflow as a user may build and deploy a model based on this. So we pass in
+        # a null training view that can be tracked with a "name" (although the name is None). This is a likely case
+        # for (non time based) clustering use cases.
+
         if not tvw:
             tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
                                 description=None)
@@ -1300,7 +1318,8 @@ class FeatureStore:
                         start_time=start_time, end_time=end_time, training_set_id=training_set_id,
                          training_set_version=training_set_version, training_set_name=training_set_name)
 
-        # For metadata purposes
+        # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
+        # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
         if current_values_only:
             ts.start_time = ts.end_time
 

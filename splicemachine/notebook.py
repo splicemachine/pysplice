@@ -5,6 +5,19 @@ from IPython.display import HTML, IFrame, display
 from pyspark import SparkContext
 from splicemachine import SpliceMachineException
 
+def _in_splice_compatible_env():
+    """
+    Determines if a user is using the Splice Machine managed notebooks or not
+
+    :return: Boolean if the user is using the Splice Environment
+    """
+    try:
+        from beakerx import TableDisplay
+        import ipywidgets
+    except ImportError:
+        return False
+    return get_ipython()
+
 def run_sql(sql):
     """
     Runs a SQL statement over JDBC from the Splice Machine managed Jupyter notebook environment. If you are running
