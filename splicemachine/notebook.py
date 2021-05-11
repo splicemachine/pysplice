@@ -1,9 +1,34 @@
 import random
 from os import environ as env_vars
-
+from IPython import get_ipython
 from IPython.display import HTML, IFrame, display
 from pyspark import SparkContext
+from splicemachine import SpliceMachineException
 
+def _in_splice_compatible_env():
+    """
+    Determines if a user is using the Splice Machine managed notebooks or not
+
+    :return: Boolean if the user is using the Splice Environment
+    """
+    try:
+        from beakerx import TableDisplay
+        import ipywidgets
+    except ImportError:
+        return False
+    return get_ipython()
+
+def run_sql(sql):
+    """
+    Runs a SQL statement over JDBC from the Splice Machine managed Jupyter notebook environment. If you are running
+    outside of the Splice Jupyter environment, you must have a sql kernel and magic set up and configured.
+    :param sql: The SQL to execute
+    """
+    if not get_ipython():
+        raise SpliceMachineException("You don't seem to have IPython available. This function is only available"
+                                     "in an IPython envrionment with a configured %%sql magic kernel. Consider using"
+                                     "the managed Splice Machine notebook environment")
+    get_ipython().run_cell_magic('sql', '', sql)
 
 def hide_toggle(toggle_next=False):
     """
