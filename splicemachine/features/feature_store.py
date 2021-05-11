@@ -1,6 +1,7 @@
+from sys import stderr
 from typing import List, Dict, Optional, Union
 from datetime import datetime
-import re
+import json
 
 from IPython.display import display
 import pandas as pd
@@ -14,10 +15,11 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
 from splicemachine.features.utils.feature_utils import sql_to_datatype
-from splicemachine.spark import PySpliceContext
+from splicemachine.spark import PySpliceContext, ExtPySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
 from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
+from .utils.training_utils import ReturnType, _format_training_set_output
 from .pipelines import FeatureAggregation
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
 
@@ -38,6 +40,9 @@ class FeatureStore:
         self.__try_auto_login()
 
     def register_splice_context(self, splice_ctx: PySpliceContext) -> None:
+        if not (isinstance(splice_ctx, PySpliceContext) or isinstance(splice_ctx, ExtPySpliceContext)):
+            raise SpliceMachineException(f'Splice Context must be of type PySpliceContext or ExtPySpliceContext but is'
+                                         f'of type {type(splice_ctx)}')
         self.splice_ctx = splice_ctx
 
     def get_feature_sets(self, feature_set_names: List[str] = None) -> List[FeatureSet]:
@@ -235,7 +240,8 @@ class FeatureStore:
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
                          start_time: datetime = None, end_time: datetime = None, label: str = None, return_pk_cols: bool = False, 
-                         return_ts_col: bool = False, return_sql: bool = False, save_as: str = None) -> SparkDF or str:
+                         return_ts_col: bool = False, return_type: str = 'spark',
+                         return_sql: bool = False, save_as: str = None) -> SparkDF or str:
         """
         Gets a set of feature values across feature sets that is not time dependent (ie for non time series clustering).
         This feature dataset will be treated and tracked implicitly the same way a training_dataset is tracked from
@@ -274,6 +280,9 @@ class FeatureStore:
             (but not others in the future, unless this label is again specified).
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
+        :param return_type: How the data should be returned. If not specified, a Spark DF will be returned.
+            Available arguments are: 'spark', 'pandas', 'json', 'sql'
+            sql will return the SQL necessary to generate the dataframe
         :param save_as: Whether or not to save this Training Set (metadata) in the feature store for reproducibility. This
             enables you to version and persist the metadata for a training set of a specific model development. If you are
             using the Splice Machine managed MLFlow Service, this will be fully automated and managed for you upon model deployment,
@@ -283,10 +292,19 @@ class FeatureStore:
             to reproduce the identical training set.
         :return: Spark DF or SQL statement necessary to generate the Training Set
         """
+
+        # ~ Backwards Compatability ~
+        if return_sql:
+            print("Deprecated Parameter 'return_sql'. Use return_type='sql' ", file=stderr)
+            return_type = 'sql'
+
+        if return_type not in ReturnType.get_valid():
+            raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
+
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
         r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._auth, 
                         params={ "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col,
-                          'save_as':save_as },
+                          'save_as':save_as, 'return_type': ReturnType.map_to_request(return_type)},
                         body={ "features": features, "start_time": start_time, "end_time": end_time})
         create_time = r['metadata']['training_set_create_ts']
         start_time = r['metadata']['training_set_start_ts']
@@ -307,17 +325,19 @@ class FeatureStore:
         # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
         # wants the most up to date values of each feature. So we set start_time to end_time (which is datetime.today)
 
-        if self.mlflow_ctx and not return_sql:
+        if self.mlflow_ctx and return_type != 'sql':
             # These will only exist if the user called "save_as" otherwise they will be None
             training_set_id = r['metadata'].get('training_set_id')
             training_set_version = r['metadata'].get('training_set_version')
             self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
                                              training_set_id=training_set_id,
                                              training_set_version=training_set_version,training_set_name=save_as)
-        return sql if return_sql else self.splice_ctx.df(sql)
+
+
+        return _format_training_set_output(response=r, return_type=return_type, splice_ctx=self.splice_ctx)
 
     def get_training_set_by_name(self, name, version: int = None, return_pk_cols: bool = False,
-                                 return_ts_col: bool = False, return_sql = False):
+                                 return_ts_col: bool = False, return_sql = False, return_type: str = 'spark'):
         """
         Returns a Spark DF (or SQL) of an EXISTING Training Set (one that was saved with the save_as parameter in
         :py:meth:`~fs.get_training_set` or :py:meth:`~fs.get_training_set_from_view`. This is useful if you've deployed
@@ -327,12 +347,24 @@ class FeatureStore:
         :param version: The version of this training set. If not set, it will grab the newest version
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
-        :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :param return_sql: [DEPRECATED] (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :param return_type: How the data should be returned. If not specified, a Spark DF will be returned.
+            Available arguments are: 'spark', 'pandas', 'json', 'sql'
+            sql will return the SQL necessary to generate the dataframe
         :return: Spark DF or SQL
         """
 
+        # ~ Backwards Compatability ~
+        if return_sql:
+            print("Deprecated Parameter 'return_sql'. Use return_type='sql' ", file=stderr)
+            return_type = 'sql'
+
+        if return_type not in ReturnType.get_valid():
+            raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
+
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_BY_NAME, RequestType.GET, self._auth,
-                        params={ "name": name, "version": version, "pks": return_pk_cols, "ts": return_ts_col})
+                        params={ "name": name, "version": version, "pks": return_pk_cols, "ts": return_ts_col,
+                                 'return_type': ReturnType.map_to_request(return_type)})
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
         features = [Feature(**f) for f in r["features"]]
@@ -347,12 +379,12 @@ class FeatureStore:
                                              training_set_id=training_set_id,
                                              training_set_version=version, training_set_name=name)
 
-        return sql if return_sql else self.splice_ctx.df(sql)
+        return _format_training_set_output(response=r, return_type=return_type, splice_ctx=self.splice_ctx)
 
     def get_training_set_from_view(self, training_view: str, features: Union[List[Feature], List[str]] = None,
                                    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
                                    return_pk_cols: bool = False, return_ts_col: bool = False, return_sql: bool = False,
-                                   save_as: str = None) -> SparkDF or str:
+                                   return_type: str = 'spark', save_as: str = None) -> SparkDF or str:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
@@ -391,7 +423,10 @@ class FeatureStore:
 
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
-        :param return_sql: (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :param return_sql: [DEPRECATED] (Optional[bool]) Return the SQL statement (str) instead of the Spark DF. Defaults False
+        :param return_type: How the data should be returned. If not specified, a Spark DF will be returned.
+            Available arguments are: 'spark', 'pandas', 'json', 'sql'
+            sql will return the SQL necessary to generate the dataframe
         :param save_as: Whether or not to save this Training Set (metadata) in the feature store for reproducibility. This
             enables you to version and persist the metadata for a training set of a specific model development. If you are
             using the Splice Machine managed MLFlow Service, this will be fully automated and managed for you upon model deployment,
@@ -402,11 +437,21 @@ class FeatureStore:
         :return: Optional[SparkDF, str] The Spark dataframe of the training set or the SQL that is used to generate it (for debugging)
         """
 
+        # ~ Backwards Compatability ~
+        if return_sql:
+            print("Deprecated Parameter 'return_sql'. Use return_type='sql' ", file=stderr)
+            return_type = 'sql'
+
+        if return_type not in ReturnType.get_valid():
+            raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
+
         # Generate the SQL needed to create the dataset
         features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._auth, 
-                        { "view": training_view, "pks": return_pk_cols, "ts": return_ts_col, 'save_as': save_as },
-                        { "features": features, "start_time": start_time, "end_time": end_time })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._auth,
+                         params={ "view": training_view, "pks": return_pk_cols, "ts": return_ts_col,
+                                 'save_as': save_as, 'return_type': ReturnType.map_to_request(return_type) },
+                         body={"features": features, "start_time": start_time, "end_time": end_time },
+                         headers={"Accept-Encoding": "gzip"})
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
         features = [Feature(**f) for f in r["features"]]
@@ -422,7 +467,7 @@ class FeatureStore:
                                              training_set_id=training_set_id,
                                              training_set_version=training_set_version, training_set_name=save_as)
 
-        return sql if return_sql else self.splice_ctx.df(sql)
+        return _format_training_set_output(response=r, return_type=return_type, splice_ctx=self.splice_ctx)
 
     def list_training_sets(self) -> Dict[str, Optional[str]]:
         """
@@ -712,8 +757,9 @@ class FeatureStore:
     def set_feature_description(self):
         raise NotImplementedError
 
-    def get_training_set_from_deployment(self, schema_name: str, table_name: str, label: str = None, 
-                                        return_pk_cols: bool = False, return_ts_col: bool = False):
+    def get_training_set_from_deployment(self, schema_name: str, table_name: str, label: str = None,
+                                         return_pk_cols: bool = False, return_ts_col: bool = False,
+                                         return_type: str = 'spark'):
         """
         Reads Feature Store metadata to rebuild orginal training data set used for the given deployed model.
 
@@ -725,17 +771,24 @@ class FeatureStore:
             (but not others in the future, unless this label is again specified).
         :param return_pk_cols: bool Whether or not the returned sql should include the primary key column(s)
         :param return_ts_cols: bool Whether or not the returned sql should include the timestamp column
+        :param return_type: How the data should be returned. If not specified, a Spark DF will be returned.
+            Available arguments are: 'spark', 'pandas', 'json', 'sql'
+            sql will return the SQL necessary to generate the dataframe
         :return: SparkDF the Training Frame
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
+
+        if return_type not in ReturnType.get_valid():
+            raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
+
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._auth, 
-            { "schema": schema_name, "table": table_name, "label": label, "pks": return_pk_cols, "ts": return_ts_col})
+            { "schema": schema_name, "table": table_name, "label": label,
+              "pks": return_pk_cols, "ts": return_ts_col, 'return_type': ReturnType.map_to_request(return_type)})
         
         metadata = r['metadata']
-        sql = r['sql']
 
         tv_name = metadata['name']
         start_time = metadata['training_set_start_ts']
@@ -747,7 +800,8 @@ class FeatureStore:
 
         if self.mlflow_ctx:
             self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tv)
-        return self.splice_ctx.df(sql)
+
+        return _format_training_set_output(response=r, return_type=return_type, splice_ctx=self.splice_ctx)
 
     def remove_feature(self, name: str):
         """
