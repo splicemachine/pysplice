@@ -667,9 +667,9 @@ class FeatureStore:
         :return: None
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth)
-        
+
         print('Available feature sets')
-        for desc in r:
+        for desc in r if type(r) == list else [r]:
             features = [Feature(**feature) for feature in desc.pop('features')]
             fset = FeatureSet(**desc)
             print('-' * 23)
@@ -713,7 +713,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth)
 
         print('Available training views')
-        for desc in r:
+        for desc in r if type(r) == list else [r]:
             features = [Feature(**f) for f in desc.pop('features')]
             tcx = TrainingView(**desc)
             print('-' * 23)
