@@ -1055,11 +1055,13 @@ def _get_deployed_models() -> PandasDF:
     :return: Pandas df
     """
 
-    return mlflow._splice_context.df(
-        """
-        SELECT * FROM MLMANAGER.LIVE_MODEL_STATUS
-        """
-    ).toPandas()
+    request = requests.get(
+        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
+        auth=mlflow._basic_auth
+    )
+    if not request.ok:
+        raise SpliceMachineException(request.text)
+    return PandasDF(dict(request.json()))
 
 
 def apply_patches():
