@@ -656,6 +656,13 @@ class FeatureStore:
 
                 features = fs.get_features_from_feature_set('foo','bar1') + fs.get_features_from_feature_set('foo2','bar4')
 
+        If you want a list of just the Feature NAMES (ie a List[str]) you can simply run:
+
+        .. code-block:: python
+
+                features = fs.get_features_from_feature_set('foo','bar1') + fs.get_features_from_feature_set('foo2','bar4')
+                feature_names = [f.name for f in features]
+
         :param schema_name: Feature Set schema name
         :param table_name: Feature Set table name
         :return: List of Features

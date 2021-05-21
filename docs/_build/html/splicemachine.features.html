@@ -800,6 +800,11 @@ For example, to get features from 2 feature sets, <cite>foo.bar1</cite> and <cit
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">get_features_from_feature_set</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span><span class="s1">&#39;bar1&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">fs</span><span class="o">.</span><span class="n">get_features_from_feature_set</span><span class="p">(</span><span class="s1">&#39;foo2&#39;</span><span class="p">,</span><span class="s1">&#39;bar4&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>If you want a list of just the Feature NAMES (ie a List[str]) you can simply run:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">get_features_from_feature_set</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span><span class="s1">&#39;bar1&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">fs</span><span class="o">.</span><span class="n">get_features_from_feature_set</span><span class="p">(</span><span class="s1">&#39;foo2&#39;</span><span class="p">,</span><span class="s1">&#39;bar4&#39;</span><span class="p">)</span>
+<span class="n">feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">]</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

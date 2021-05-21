@@ -832,6 +832,13 @@
 
 <span class="sd">                features = fs.get_features_from_feature_set(&#39;foo&#39;,&#39;bar1&#39;) + fs.get_features_from_feature_set(&#39;foo2&#39;,&#39;bar4&#39;)</span>
 
+<span class="sd">        If you want a list of just the Feature NAMES (ie a List[str]) you can simply run:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">                features = fs.get_features_from_feature_set(&#39;foo&#39;,&#39;bar1&#39;) + fs.get_features_from_feature_set(&#39;foo2&#39;,&#39;bar4&#39;)</span>
+<span class="sd">                feature_names = [f.name for f in features]</span>
+
 <span class="sd">        :param schema_name: Feature Set schema name</span>
 <span class="sd">        :param table_name: Feature Set table name</span>
 <span class="sd">        :return: List of Features</span>
