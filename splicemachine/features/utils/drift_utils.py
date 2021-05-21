@@ -77,7 +77,8 @@ def build_feature_drift_plot(features, training_set_df, model_table_df):
     :param model_table_df: the dataframe with the content of the model table containing all input features
     :return: None
     """
-    final_features = [f for f in features if f in model_table_df.columns]
+    upper_features = [f.upper() for f in features]
+    final_features = [f for f in upper_features if f in model_table_df.columns]
     # prep plot area
     n_bins = 15
     num_features = len(final_features)
