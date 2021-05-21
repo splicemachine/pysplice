@@ -35,3 +35,11 @@ This package contains 4 main external modules. First, `splicemachine.spark.conte
     
     4.2) [`splicemachine.notebooks`](https://pysplice.readthedocs.io/en/latest/splicemachine.notebook.html): houses utilities for use in Jupyter Notebooks running in the Kubernetes cloud environment
 
+## Docs
+The docs are managed py readthedocs and Sphinx. See latest docs [here](https://pysplice.readthedocs.io/en/latest/)
+
+### Building the docs
+```
+cd docs
+make html
+```
