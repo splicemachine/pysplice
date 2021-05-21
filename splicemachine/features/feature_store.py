@@ -647,12 +647,17 @@ class FeatureStore:
 
     def get_features_from_feature_set(self, schema_name: str, table_name: str) -> List[Feature]:
         """
-        Returns either a pandas DF of feature details or a List of features for a specified feature set
+        Returns either a pandas DF of feature details or a List of features for a specified feature set.
+        You can get features from multiple feature sets by concatenating the results of this call.
+        For example, to get features from 2 feature sets, `foo.bar1` and `foo2.bar4`:
+
+        .. code-block:: python
+
+                features = fs.get_features_from_feature_set('foo','bar1') + fs.get_features_from_feature_set('foo2','bar4')
 
         :param schema_name: Feature Set schema name
         :param table_name: Feature Set table name
-        :param as_list: Whehter to return a list of Features or a Pandas DF of the Features
-        :return: Either a PandasDF of feature information or a List of Features
+        :return: List of Features
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
                          params={'schema':schema_name, 'table':table_name})
