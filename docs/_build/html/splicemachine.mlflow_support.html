@@ -384,13 +384,20 @@ IN THAT ORDER. The columns passed here must exist in the table.</p></li>
 </ul>
 </dd>
 </dl>
-<p>If the model does not support these parameters, they will be ignored.
-:param max_batch_size: (int) the max size for the database to batch groups of rows for prediction. Default 10,000.
-:param replace: (bool) whether or not to replace a currently existing model. This param is not yet implemented
-:return: None</p>
+<p>If the model does not support these parameters, they will be ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_batch_size</strong> – (int) the max size for the database to batch groups of rows for prediction. Default 10,000.</p></li>
+<li><p><strong>replace</strong> – (bool) whether or not to replace a currently existing model. This param is not yet implemented</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
 <p>This function creates the following IF you are creating a table from the dataframe</p>
-<blockquote>
-<div><ul>
+<ul>
 <li><p>The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:</p>
 <blockquote>
 <div><ul class="simple">
@@ -403,7 +410,6 @@ IN THAT ORDER. The columns passed here must exist in the table.</p></li>
 </div></blockquote>
 </li>
 </ul>
-</div></blockquote>
 <p>IF you are deploying to an existing table, the table will be altered to include the columns above.</p>
 <dl class="field-list">
 <dt class="field-odd">NOTE</dt>
@@ -420,13 +426,7 @@ Set verbose=True in the function call for more information
 </div>
 </dd>
 </dl>
-<p>The following will also be created for all deployments:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table,             calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run</p></li>
-<li><p>A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted,             parsing the prediction probabilities and filling in proper column values</p></li>
-</ul>
-</div></blockquote>
+<p>A trigger is also created on the deployment table that runs the model after every insert into that table.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -462,16 +462,17 @@ new pods on</p></li>
 <li><p><strong>cpu_limit</strong> – (default 1) [USED IF RESOURCE LIMITS ENABLED] number of CPU to cap at</p></li>
 <li><p><strong>memory_request</strong> – (default 512Mi) [USED IF RESOURCE REQUESTS ENABLED] amount of RAM to request</p></li>
 <li><p><strong>memory_limit</strong> – (default 2048Mi) [USED IF RESOURCE LIMITS ENABLED] amount of RAM to limit at</p></li>
-<li><p><strong>expose_external</strong> – <p>(default False) whether or not to create Ingress resource to deploy outside of the cluster.
-:NOTE:</p>
-<blockquote>
-<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>It is not recommended to create an Ingress resource using this parameter, as your model will be
+<li><p><strong>expose_external</strong> – <p>(default False) whether or not to create Ingress resource to deploy outside of the cluster.</p>
+<dl class="field-list">
+<dt class="field-odd">NOTE</dt>
+<dd class="field-odd"><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>It is not recommended to create an Ingress resource using this parameter, as your model will be
 deployed with no authorization (and public access). Instead, it is better to deploy your model
 as an internal service, and deploy an authentication proxy (such as https://github.com/oauth2-proxy/oauth2-proxy)
 to proxy traffic to your internal service after authenticating.
 </pre></div>
 </div>
-</div></blockquote>
+</dd>
+</dl>
 </p></li>
 </ul>
 </dd>
@@ -480,18 +481,16 @@ to proxy traffic to your internal service after authenticating.
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._download_artifact">
-<code class="sig-name descname">_download_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">local_path</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_download_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._download_artifact" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_download_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">local_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_download_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._download_artifact" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download the artifact at the given run id (active default) + name to the local path</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> – (str) artifact name to load (with respect to the run)</p></li>
-<li><p><strong>local_path</strong> – (str) local path to download the model to. This path MUST include the file extension</p></li>
+<li><p><strong>local_path</strong> – (str) local path to download the model to. If set, this path MUST include the file extension.
+Will default to the current directory and the name of the saved artifact</p></li>
 <li><p><strong>run_id</strong> – (str) the run id to download the artifact from. Defaults to active run</p></li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -623,7 +622,7 @@ to be retrieved via the tracking client.</p>
 
 <dl class="py function">
 <dt id="splicemachine.mlflow_support.mlflow_support._log_artifact">
-<code class="sig-name descname">_log_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_artifact" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_log_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_uuid</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_log_artifact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._log_artifact" title="Permalink to this definition">¶</a></dt>
 <dd><p>Log an artifact for the active run</p>
 <dl class="field-list">
 <dt class="field-odd">Example</dt>
@@ -639,6 +638,8 @@ to be retrieved via the tracking client.</p>
 <li><p><strong>name</strong> – (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file
 extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).</p></li>
 <li><p><strong>run_uuid</strong> – (str) the run uuid of a previous run, if none, defaults to current run</p></li>
+<li><p><strong>artifact_path</strong> – If you would like the artifact logged as a subdirectory of an particular folder,
+you can set this value. If the directory doesn’t exist, it will be created for this run’s artifact path.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns</dt>
@@ -856,9 +857,6 @@ an active training set, call fs.get_training_set or fs.get_training_set_from_vie
 <li><p><strong>param</strong> – (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.</p></li>
 </ul>
 </dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>None</p>
-</dd>
 </dl>
 </dd></dl>
 
@@ -877,9 +875,15 @@ an active training set, call fs.get_training_set or fs.get_training_set_from_vie
 <dt id="splicemachine.mlflow_support.mlflow_support._watch_job">
 <code class="sig-name descname">_watch_job</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">job_id</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/splicemachine/mlflow_support/mlflow_support.html#_watch_job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#splicemachine.mlflow_support.mlflow_support._watch_job" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stream the logs in real time to standard out
-of a Job
-:param job_id: the job id to watch (returned after executing an operation)
-NOTE: If the job being watched fails, this function will throw a SpliceMachineException</p>
+of a Job</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>job_id</strong> – the job id to watch (returned after executing an operation)</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>SpliceMachineException</strong> – If the job being watched fails</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

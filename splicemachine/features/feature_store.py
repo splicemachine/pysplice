@@ -71,18 +71,18 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._auth, { "name": name })
         print('Done.')
 
-    def get_summary(self) -> Dict[Any]:
+    def get_summary(self) -> Dict[str, str]:
         """
         This function returns a summary of the feature store including:\n
-            * Number of feature sets
-            * Number of deployed feature sets
-            * Number of features
-            * Number of deployed features
-            * Number of training sets
-            * Number of training views
-            * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
-            * Number of active (deployed) models (that have used the feature store for training)
-            * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
+        * Number of feature sets
+        * Number of deployed feature sets
+        * Number of features
+        * Number of deployed features
+        * Number of training sets
+        * Number of training views
+        * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
+        * Number of active (deployed) models (that have used the feature store for training)
+        * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
         """
 
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._auth)
@@ -378,12 +378,13 @@ class FeatureStore:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
-        the training dataset's metadata will be tracked in mlflow automatically. The following will be tracked:
-        including:
-            * Training View
-            * Selected features
-            * Start time
-            * End time
+        the training dataset's metadata will be tracked in mlflow automatically.\n
+        The following will be tracked:\n
+        * Training View
+        * Selected features
+        * Start time
+        * End time
+
         This tracking will occur in the current run (if there is an active run)
         or in the next run that is started after calling this function (if no run is currently active).
 
@@ -591,7 +592,7 @@ class FeatureStore:
         Registers a training view for use in generating training SQL
 
         :param name: The training set name. This must be unique to other existing training sets unless replace is True
-        :param sql: (str) a SELECT statement that includes:
+        :param sql: (str) a SELECT statement that includes:\n
             * the primary key column(s) - uniquely identifying a training row/case
             * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
             * join key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
@@ -975,9 +976,9 @@ class FeatureStore:
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
             The Feature Set will have 15 features:\n
-                * 6 for the `AR_CLOTHING_QTY` prefix (sum & max over provided agg windows)
-                * 3 for the `AR_DELICATESSEN_QTY` prefix (avg over provided agg windows)
-                * 6 for the `AR_GARDEN_QTY` prefix (count & avg over provided agg windows)
+            * 6 for the `AR_CLOTHING_QTY` prefix (sum & max over provided agg windows)
+            * 3 for the `AR_DELICATESSEN_QTY` prefix (avg over provided agg windows)
+            * 6 for the `AR_GARDEN_QTY` prefix (count & avg over provided agg windows)
 
             A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source `CUSTOMER_RFM`
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
@@ -1117,17 +1118,16 @@ class FeatureStore:
     def display_model_drift(self, schema_name: str, table_name: str, time_intervals: int,
                             start_time: datetime = None, end_time: datetime = None):
         """
-        Displays as many as 'time_intervals' plots showing the distribution of the model prediction within each time
+        Displays as many as `time_intervals` plots showing the distribution of the model prediction within each time
         period. Time periods are equal periods of time where predictions are present in the model table
-        'schema_name'.'table_name'. Model predictions are first filtered to only those occurring after 'start_time' if
-        specified and before 'end_time' if specified.
+        `schema_name.table_name`. Model predictions are first filtered to only those occurring after `start_time` if
+        specified and before `end_time` if specified.
 
         :param schema_name: schema where the model table resides
         :param table_name: name of the model table
         :param time_intervals: number of time intervals to plot
         :param start_time: if specified, filters to only show predictions occurring after this date/time
         :param end_time: if specified, filters to only show predictions occurring before this date/time
-        :return: None
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
@@ -1333,12 +1333,35 @@ class FeatureStore:
 
     
     def set_feature_store_url(self, url: str):
+        """
+        Sets the Feature Store URL. You must call this before calling any feature store functions, or set the FS_URL
+        environment variable before creating your Feature Store object
+
+        :param url: The Feature Store URL
+        """
         self._FS_URL = url
 
     def login_fs(self, username, password):
+        """
+        Function to login to the Feature Store using basic auth. These correspond to your Splice Machine database user
+        and password. If you are running outside of the managed Splice Machine Cloud Service, you must call either
+        this or set_token in order to call any functions in the feature store, or by setting the SPLICE_JUPYTER_USER and
+        SPLICE_JUPYTER_PASSWORD environments variable before creating your FeatureStore object.
+
+        :param username: Username
+        :param password: Password
+        """
         self._auth = HTTPBasicAuth(username, password)
 
     def set_token(self, token):
+        """
+        Function to login to the Feature Store using JWT. This corresponds to your Splice Machine database user's JWT
+        token. If you are running outside of the managed Splice Machine Cloud Service, you must call either
+        this or login_fs in order to call any functions in the feature store, or by setting the SPLICE_JUPYTER_TOKEN
+        environment variable before creating your FeatureStore object.
+
+        :param token: JWT Token
+        """
         self._auth = token
 
     def __try_auto_login(self):

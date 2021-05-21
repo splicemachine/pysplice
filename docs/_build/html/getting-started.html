@@ -200,6 +200,11 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#package-extras">
+   Package Extras
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#usage">
    Usage
   </a>
@@ -220,18 +225,27 @@
 <div class="section" id="k8s-install">
 <h2>K8s Install<a class="headerlink" href="#k8s-install" title="Permalink to this headline">¶</a></h2>
 <p>If you are running inside of the Splice Machine Cloud Service in a Jupyter Notebook, MLManager will already be installed for you. If you’d like to install it (or upgrade it), you can install from git with</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install <span class="o">[</span>--upgrade<span class="o">]</span> git+https://www.github.com/splicemachine/pysplice@&lt;RELEASE&gt;
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>sudo<span class="o">]</span> pip install <span class="o">[</span>--upgrade<span class="o">]</span> splicemachine
 </pre></div>
 </div>
 </div>
 <div class="section" id="external-installation">
 <h2>External Installation<a class="headerlink" href="#external-installation" title="Permalink to this headline">¶</a></h2>
 <p>If you would like to install outside of the K8s cluster (and use the ExtPySpliceContext), you can install the stable build with</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo pip install git+http://www.github.com/splicemachine/pysplice@2.3.0-k8
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>sudo<span class="o">]</span> pip install <span class="o">[</span>--upgrade<span class="o">]</span> splicemachine
 </pre></div>
 </div>
-<p>Or latest with</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo pip install git+http://www.github.com/splicemachine/pysplice
+</div>
+<div class="section" id="package-extras">
+<h2>Package Extras<a class="headerlink" href="#package-extras" title="Permalink to this headline">¶</a></h2>
+<p>The splicemachine pypi package has 2 extra installs, <cite>stats</cite> and <cite>notebook</cite>. These include extra dependencies for usage
+with build-in ML/Statistics functionality and extra jupyter specific functionality (like Feature Store Feature search)</p>
+<p>To install them, you can install with the standard extra syntax for Pypi. If you’d like both (recommended), you can run</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>sudo<span class="o">]</span> pip install <span class="o">[</span>--upgrade<span class="o">]</span> splicemachine<span class="o">[</span>all<span class="o">]</span>
+</pre></div>
+</div>
+<p>If you are using <cite>zsh</cite> you must escape the package extra with</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>sudo<span class="o">]</span> pip install <span class="o">[</span>--upgrade<span class="o">]</span> splicemachine<span class="se">\[</span>all<span class="se">\]</span>
 </pre></div>
 </div>
 </div>

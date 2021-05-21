@@ -250,7 +250,7 @@
 <span class="kn">from</span> <span class="nn">splicemachine.features</span> <span class="kn">import</span> <span class="n">FeatureStore</span>
 <span class="kn">from</span> <span class="nn">splicemachine.mlflow_support.constants</span> <span class="kn">import</span> <span class="p">(</span><span class="n">FileExtensions</span><span class="p">,</span> <span class="n">DatabaseSupportedLibs</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">splicemachine.mlflow_support.utilities</span> <span class="kn">import</span> <span class="p">(</span><span class="n">SparkUtils</span><span class="p">,</span> <span class="n">get_pod_uri</span><span class="p">,</span> <span class="n">get_user</span><span class="p">,</span>
-                                                    <span class="n">insert_artifact</span><span class="p">)</span>
+                                                    <span class="n">insert_artifact</span><span class="p">,</span> <span class="n">download_artifact</span><span class="p">,</span> <span class="n">get_jobs_uri</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">splicemachine</span> <span class="kn">import</span> <span class="n">SpliceMachineException</span>
 <span class="kn">from</span> <span class="nn">splicemachine.spark.context</span> <span class="kn">import</span> <span class="n">PySpliceContext</span>
 
@@ -283,7 +283,7 @@
 <span class="n">_GORILLA_SETTINGS</span> <span class="o">=</span> <span class="n">gorilla</span><span class="o">.</span><span class="n">Settings</span><span class="p">(</span><span class="n">allow_hit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_hit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">_PYTHON_VERSION</span> <span class="o">=</span> <span class="n">py_version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
-<div class="viewcode-block" id="SpliceActiveRun"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.SpliceActiveRun">[docs]</a><span class="k">class</span> <span class="nc">SpliceActiveRun</span><span class="p">(</span><span class="n">ActiveRun</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">SpliceActiveRun</span><span class="p">(</span><span class="n">ActiveRun</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A wrapped active run for Splice Machine that calls our custom mlflow.end_run, so we can record the notebook</span>
 <span class="sd">    history</span>
@@ -291,7 +291,7 @@
     <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
         <span class="n">status</span> <span class="o">=</span> <span class="n">RunStatus</span><span class="o">.</span><span class="n">FINISHED</span> <span class="k">if</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">RunStatus</span><span class="o">.</span><span class="n">FAILED</span>
         <span class="n">mlflow</span><span class="o">.</span><span class="n">end_run</span><span class="p">(</span><span class="n">RunStatus</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">status</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="kc">None</span></div>
+        <span class="k">return</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="kc">None</span>
 
 <span class="k">def</span> <span class="nf">__try_auto_login</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -325,15 +325,15 @@
 
 <span class="sd">    :return: active run data object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span></div>
+    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span></div>
 
-<div class="viewcode-block" id="__get_active_user"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.__get_active_user">[docs]</a><span class="k">def</span> <span class="nf">__get_active_user</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">__get_active_user</span><span class="p">():</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="s1">&#39;_username&#39;</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_username</span>
     <span class="k">if</span> <span class="n">get_user</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">get_user</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;Could not detect active user. Please run mlflow.login_director() and pass in your Splice&quot;</span>
-                                  <span class="s2">&quot;username and password or JWT token.&quot;</span><span class="p">)</span></div>
+                                  <span class="s2">&quot;username and password or JWT token.&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="_get_run_ids_by_name"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_run_ids_by_name">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;get_run_ids_by_name&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">_get_run_ids_by_name</span><span class="p">(</span><span class="n">run_name</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -344,10 +344,10 @@
 <span class="sd">    :param experiment_id: (int) The experiment to search in. If None, all experiments are searched. [Default None]</span>
 <span class="sd">    :return: (List[str]) List of run ids</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">exps</span> <span class="o">=</span> <span class="p">[</span><span class="n">_CLIENT</span><span class="o">.</span><span class="n">get_experiment</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)]</span> <span class="k">if</span> <span class="n">experiment_id</span> <span class="k">else</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">list_experiments</span><span class="p">()</span>
+    <span class="n">exps</span> <span class="o">=</span> <span class="p">[</span><span class="n">mlflow</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_experiment</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)]</span> <span class="k">if</span> <span class="n">experiment_id</span> <span class="k">else</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_experiments</span><span class="p">()</span>
     <span class="n">run_ids</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="n">exps</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">run_name</span> <span class="o">==</span> <span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mlflow.runName&#39;</span><span class="p">):</span>
                 <span class="n">run_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;Run ID&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">run_ids</span></div>
@@ -438,7 +438,7 @@
     <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="__get_serialized_mlmodel"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.__get_serialized_mlmodel">[docs]</a><span class="k">def</span> <span class="nf">__get_serialized_mlmodel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">__get_serialized_mlmodel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Populate the Zip buffer with the serialized MLModel</span>
 <span class="sd">    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model</span>
@@ -495,45 +495,7 @@
         <span class="k">for</span> <span class="n">model_file</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">mlmodel_dir</span> <span class="o">+</span> <span class="s2">&quot;/**/*&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
             <span class="n">zip_buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">model_file</span><span class="p">,</span> <span class="n">arcname</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">model_file</span><span class="p">,</span> <span class="n">mlmodel_dir</span><span class="p">))</span>
 
-        <span class="k">return</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">file_ext</span></div>
-
-
-<div class="viewcode-block" id="_log_model"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_model">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_model&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_log_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Log a trained machine learning model</span>
-
-<span class="sd">    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model</span>
-<span class="sd">        with the current run</span>
-<span class="sd">    :param name: (str) the run relative name to store the model under. [Deault &#39;model&#39;]</span>
-<span class="sd">    :param model_lib: An optional param specifying the model type of the model to log</span>
-<span class="sd">        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors</span>
-<span class="sd">    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,</span>
-<span class="sd">        model_class must also be provided and the keys of this dictionary must match the params of that functions signature</span>
-<span class="sd">        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.</span>
-<span class="sd">        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
-
-    <span class="c1"># Make sure no models have been logged to this run</span>
-    <span class="k">if</span> <span class="n">_get_current_run_data</span><span class="p">()</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">):</span>  <span class="c1"># this function has already run</span>
-        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;Only one model is permitted per run.&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">flavor_options</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">model_lib</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;You cannot set mlflow-flavor specific options without setting the model library. &quot;</span>
-                                     <span class="s2">&quot;Either set model_lib, or use the native mlflow.&lt;flavor&gt;.log_model function&quot;</span><span class="p">)</span>
-
-    <span class="n">model_class</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
-
-    <span class="n">run_id</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
-    <span class="n">buffer</span><span class="p">,</span> <span class="n">file_ext</span> <span class="o">=</span> <span class="n">__get_serialized_mlmodel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="n">model_lib</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">)</span>
-    <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">insert_artifact</span><span class="p">(</span><span class="n">splice_context</span><span class="o">=</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">byte_array</span><span class="o">=</span><span class="nb">bytearray</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">()),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-                    <span class="n">run_uuid</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="o">=</span><span class="n">file_ext</span><span class="p">)</span>
-
-    <span class="c1"># Set the model metadata as tags after successful logging</span>
-    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># read in backend for deployment</span>
-    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_type&#39;</span><span class="p">,</span> <span class="n">model_class</span><span class="p">)</span>
-    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_py_version&#39;</span><span class="p">,</span> <span class="n">_PYTHON_VERSION</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">file_ext</span>
 
 
 <div class="viewcode-block" id="_end_run"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._end_run">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;end_run&#39;</span><span class="p">)</span>
@@ -567,7 +529,7 @@
 <span class="sd">        --</span>
 <span class="sd">        Active run: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_notebook_history</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="s1">&#39;_splice_context&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_notebook_history</span> <span class="ow">and</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
         <span class="k">with</span> <span class="n">NamedTemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">temp_file</span><span class="p">:</span>
             <span class="n">nb</span> <span class="o">=</span> <span class="n">nbf</span><span class="o">.</span><span class="n">v4</span><span class="o">.</span><span class="n">new_notebook</span><span class="p">()</span>
             <span class="n">nb</span><span class="p">[</span><span class="s1">&#39;cells&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">nbf</span><span class="o">.</span><span class="n">v4</span><span class="o">.</span><span class="n">new_code_cell</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">ipython</span><span class="o">.</span><span class="n">history_manager</span><span class="o">.</span><span class="n">input_hist_raw</span><span class="p">]</span>
@@ -719,7 +681,6 @@
 
 <span class="sd">    :param timer_name: (str) the name of the timer</span>
 <span class="sd">    :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.</span>
-<span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
@@ -735,30 +696,6 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="_download_artifact"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._download_artifact">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;download_artifact&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_download_artifact</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">local_path</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Download the artifact at the given run id (active default) + name to the local path</span>
-
-<span class="sd">    :param name: (str) artifact name to load (with respect to the run)</span>
-<span class="sd">    :param local_path: (str) local path to download the model to. This path MUST include the file extension</span>
-<span class="sd">    :param run_id: (str) the run id to download the artifact from. Defaults to active run</span>
-<span class="sd">    :return: None</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
-    <span class="n">file_ext</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">local_path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-
-    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
-    <span class="n">blob_data</span><span class="p">,</span> <span class="n">f_ext</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">retrieve_artifact_stream</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">f_ext</span> <span class="ow">in</span> <span class="n">FileExtensions</span><span class="o">.</span><span class="n">get_valid</span><span class="p">():</span>
-        <span class="n">f_ext</span> <span class="o">=</span> <span class="s1">&#39;zip&#39;</span>  <span class="c1"># we zip up these models, even though we use the file ext to identify model type</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">file_ext</span><span class="p">:</span>  <span class="c1"># If the user didn&#39;t provide the file (ie entered . as the local_path), fill it in for them</span>
-        <span class="n">local_path</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">f_ext</span><span class="si">}</span><span class="s1">&#39;</span>
-
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">artifact_file</span><span class="p">:</span>
-        <span class="n">artifact_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">blob_data</span><span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="_get_model_name"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._get_model_name">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;get_model_name&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">_get_model_name</span><span class="p">(</span><span class="n">run_id</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -767,7 +704,50 @@
 <span class="sd">    :param run_id: (str) the run_id that the model is stored under</span>
 <span class="sd">    :return: (str or None) The model name if it exists</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_CLIENT</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_log_model"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_model">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_model&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_log_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log a trained machine learning model</span>
+
+<span class="sd">    :param model: (Model) is the trained Spark/SKlearn/H2O/Keras model</span>
+<span class="sd">        with the current run</span>
+<span class="sd">    :param name: (str) the run relative name to store the model under. [Deault &#39;model&#39;]</span>
+<span class="sd">    :param model_lib: An optional param specifying the model type of the model to log</span>
+<span class="sd">        Available options match the mlflow built-in model flavors https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors</span>
+<span class="sd">    :param flavor_options: (**kwargs) The full set of save options to pass into the save_model function. If this is passed,</span>
+<span class="sd">        model_class must also be provided and the keys of this dictionary must match the params of that functions signature</span>
+<span class="sd">        (ie mlflow.pyfunc.save_model). An example of pyfuncs signature is here, although each flavor has its own.</span>
+<span class="sd">        https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.save_model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make sure no models have been logged to this run</span>
+    <span class="k">if</span> <span class="n">_get_current_run_data</span><span class="p">()</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">):</span>  <span class="c1"># this function has already run</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;Only one model is permitted per run.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">flavor_options</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">model_lib</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;You cannot set mlflow-flavor specific options without setting the model library. &quot;</span>
+                                     <span class="s2">&quot;Either set model_lib, or use the native mlflow.&lt;flavor&gt;.log_model function&quot;</span><span class="p">)</span>
+
+    <span class="n">model_class</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="s2">&quot;You must have an active run to log a model&quot;</span><span class="p">)</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">buffer</span><span class="p">,</span> <span class="n">file_ext</span> <span class="o">=</span> <span class="n">__get_serialized_mlmodel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model_lib</span><span class="o">=</span><span class="n">model_lib</span><span class="p">,</span> <span class="o">**</span><span class="n">flavor_options</span><span class="p">)</span>
+    <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">model_data</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;.zip&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">model_data</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span>
+        <span class="n">insert_artifact</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="p">,</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">,</span> <span class="n">artifact_path</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="c1"># Set the model metadata as tags after successful logging</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># read in backend for deployment</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_type&#39;</span><span class="p">,</span> <span class="n">model_class</span><span class="p">)</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s1">&#39;splice.model_py_version&#39;</span><span class="p">,</span> <span class="n">_PYTHON_VERSION</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="_load_model"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._load_model">[docs]</a><span class="k">def</span> <span class="nf">_load_model</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_pyfunc</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -788,10 +768,12 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Uh Oh! Looks like there isn&#39;t a model logged with this run (</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">)!&quot;</span>
                                      <span class="s2">&quot;If there is, pass in the name= parameter to this function&quot;</span><span class="p">)</span>
-    <span class="n">model_blob</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">SparkUtils</span><span class="o">.</span><span class="n">retrieve_artifact_stream</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="n">host</span> <span class="o">=</span> <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">download_artifact</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">)</span>
     <span class="n">buffer</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
     <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">model_blob</span><span class="p">)</span>
+    <span class="n">buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">tempdir</span><span class="p">:</span>
         <span class="n">ZipFile</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">tempdir</span><span class="p">)</span>
@@ -799,14 +781,26 @@
             <span class="n">mlflow_module</span> <span class="o">=</span> <span class="s1">&#39;pyfunc&#39;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">tempdir</span><span class="si">}</span><span class="s1">/MLmodel&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mlmodel_file</span><span class="p">:</span>
-                <span class="n">loader_module</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">mlmodel_file</span><span class="o">.</span><span class="n">read</span><span class="p">())[</span><span class="s1">&#39;flavors&#39;</span><span class="p">][</span><span class="s1">&#39;python_function&#39;</span><span class="p">][</span><span class="s1">&#39;loader_module&#39;</span><span class="p">]</span>
+                <span class="n">mlmodel</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">mlmodel_file</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">loader_module</span> <span class="o">=</span> <span class="n">mlmodel</span><span class="p">[</span><span class="s1">&#39;flavors&#39;</span><span class="p">][</span><span class="s1">&#39;python_function&#39;</span><span class="p">][</span><span class="s1">&#39;loader_module&#39;</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="c1"># If the python_function isn&#39;t available, fallback and try the raw model flavor</span>
+                    <span class="c1"># We will look through the other flavors in the MLModel yaml</span>
+                    <span class="n">loader_module</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">mlmodel</span><span class="p">[</span><span class="s1">&#39;flavors&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="n">flavor</span><span class="p">):</span>
+                            <span class="n">loader_module</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;mlflow.</span><span class="si">{</span><span class="n">flavor</span><span class="si">}</span><span class="s1">&#39;</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">loader_module</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to load the mlflow loader. Ensure this ML model has &quot;</span>
+                                                 <span class="sa">f</span><span class="s2">&quot;been saved using an mlflow module&quot;</span><span class="p">)</span>
             <span class="n">mlflow_module</span> <span class="o">=</span> <span class="n">loader_module</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># get the mlflow.(MODULE)</span>
             <span class="n">import_module</span><span class="p">(</span><span class="n">loader_module</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mlflow</span><span class="p">,</span> <span class="n">mlflow_module</span><span class="p">)</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="_log_artifact"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._log_artifact">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;log_artifact&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_log_artifact</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_log_artifact</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">artifact_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Log an artifact for the active run</span>
 
@@ -820,21 +814,45 @@
 <span class="sd">    :param name: (str) the name to store the artifact as. Defaults to the file name. If the name param includes the file</span>
 <span class="sd">        extension (or is not passed in) you will be able to preview it in the mlflow UI (image, text, html, geojson files).</span>
 <span class="sd">    :param run_uuid: (str) the run uuid of a previous run, if none, defaults to current run</span>
+<span class="sd">    :param artifact_path: If you would like the artifact logged as a subdirectory of an particular folder,</span>
+<span class="sd">        you can set this value. If the directory doesn&#39;t exist, it will be created for this run&#39;s artifact path.</span>
 <span class="sd">    :return: None</span>
 <span class="sd">    </span>
 <span class="sd">    :NOTE: </span>
 <span class="sd">        We do not currently support logging directories. If you would like to log a directory, please zip it first and log the zip file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_check_for_splice_ctx</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot find file </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="c1"># Check file size without reading file</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">5e7</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;File </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s1"> is too large. Max file size is 50MB&#39;</span><span class="p">)</span>
+
     <span class="n">file_ext</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
 
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">artifact</span><span class="p">:</span>
-        <span class="n">byte_stream</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
-
     <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_uuid</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">file_name</span>
-    <span class="n">insert_artifact</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">byte_stream</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="o">=</span><span class="n">file_ext</span><span class="p">)</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">file_name</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
+    <span class="n">host</span> <span class="o">=</span> <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span>
+    <span class="n">insert_artifact</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="p">,</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">,</span> <span class="n">artifact_path</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Saved artifact as </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> in mlflow&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_download_artifact"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._download_artifact">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;download_artifact&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_download_artifact</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">local_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Download the artifact at the given run id (active default) + name to the local path</span>
+
+<span class="sd">    :param name: (str) artifact name to load (with respect to the run)</span>
+<span class="sd">    :param local_path: (str) local path to download the model to. If set, this path MUST include the file extension.</span>
+<span class="sd">        Will default to the current directory and the name of the saved artifact</span>
+<span class="sd">    :param run_id: (str) the run id to download the artifact from. Defaults to active run</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span> <span class="ow">or</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_uuid</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">download_artifact</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">)</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">local_path</span> <span class="ow">or</span> <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;Content-Disposition&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;filename=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Done. File has been written to </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="_login_director"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._login_director">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;login_director&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">_login_director</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">jwt_token</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -859,7 +877,7 @@
         <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MLFLOW_TRACKING_TOKEN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jwt_token</span></div>
 
 
-<div class="viewcode-block" id="__initiate_job"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.__initiate_job">[docs]</a><span class="k">def</span> <span class="nf">__initiate_job</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">__initiate_job</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Send a job to the initiation endpoint</span>
 
@@ -873,7 +891,7 @@
             <span class="s2">&quot; Please run mlflow.login_director(username, password)&quot;</span>
         <span class="p">)</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">)</span> <span class="o">+</span> <span class="n">endpoint</span><span class="p">,</span>
+        <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span> <span class="o">+</span> <span class="n">endpoint</span><span class="p">,</span>
         <span class="n">auth</span><span class="o">=</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span><span class="p">,</span>
         <span class="n">json</span><span class="o">=</span><span class="n">payload</span>
     <span class="p">)</span>
@@ -886,7 +904,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error! An error occurred while submitting your job&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">text</span></div>
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">text</span>
 
 
 <div class="viewcode-block" id="_deploy_aws"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._deploy_aws">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;deploy_aws&#39;</span><span class="p">)</span>
@@ -995,6 +1013,7 @@
 <span class="sd">    :param memory_request: (default 512Mi) [USED IF RESOURCE REQUESTS ENABLED] amount of RAM to request</span>
 <span class="sd">    :param memory_limit: (default 2048Mi) [USED IF RESOURCE LIMITS ENABLED] amount of RAM to limit at</span>
 <span class="sd">    :param expose_external: (default False) whether or not to create Ingress resource to deploy outside of the cluster.</span>
+
 <span class="sd">        :NOTE:</span>
 <span class="sd">            .. code-block:: text</span>
 
@@ -1078,17 +1097,18 @@
 <span class="sd">            * Keras</span>
 <span class="sd">                * pred_threshold: prediction threshold for Keras binary classification models. Note: If the model type is Keras, the output layer has 1 node, and pred_threshold is None, you will NOT receive a class prediction, only the output of the final layer (like model.predict()). If you want a class prediction for your binary classification problem, you MUST pass in a threshold.</span>
 <span class="sd">    If the model does not support these parameters, they will be ignored.</span>
+
 <span class="sd">    :param max_batch_size: (int) the max size for the database to batch groups of rows for prediction. Default 10,000.</span>
 <span class="sd">    :param replace: (bool) whether or not to replace a currently existing model. This param is not yet implemented</span>
-<span class="sd">    :return: None\n</span>
+<span class="sd">    :return: None</span>
 
-<span class="sd">    This function creates the following IF you are creating a table from the dataframe \n</span>
-<span class="sd">        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n</span>
-<span class="sd">            * USER which is the current user who made the request</span>
-<span class="sd">            * EVAL_TIME which is the CURRENT_TIMESTAMP</span>
-<span class="sd">            * the PRIMARY KEY column(s) passed in</span>
-<span class="sd">            * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models</span>
-<span class="sd">            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n</span>
+<span class="sd">    This function creates the following IF you are creating a table from the dataframe\n</span>
+<span class="sd">    * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n</span>
+<span class="sd">        * USER which is the current user who made the request</span>
+<span class="sd">        * EVAL_TIME which is the CURRENT_TIMESTAMP</span>
+<span class="sd">        * the PRIMARY KEY column(s) passed in</span>
+<span class="sd">        * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models</span>
+<span class="sd">        * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n</span>
 <span class="sd">    IF you are deploying to an existing table, the table will be altered to include the columns above. \n</span>
 <span class="sd">    :NOTE:</span>
 <span class="sd">        .. code-block:: text</span>
@@ -1099,11 +1119,7 @@
 <span class="sd">            They are automatically taken care of.\n</span>
 <span class="sd">            Set verbose=True in the function call for more information</span>
 
-<span class="sd">    The following will also be created for all deployments: \n</span>
-<span class="sd">        * A trigger that runs on (after) insertion to the data table that runs an INSERT into the prediction table, \</span>
-<span class="sd">            calling the PREDICT function, passing in the row of data as well as the schema of the dataset, and the run_id of the model to run \n</span>
-<span class="sd">        * A trigger that runs on (after) insertion to the prediction table that calls an UPDATE to the row inserted, \</span>
-<span class="sd">            parsing the prediction probabilities and filling in proper column values</span>
+<span class="sd">    A trigger is also created on the deployment table that runs the model after every insert into that table.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Deploying model to database...&quot;</span><span class="p">)</span>
 
@@ -1145,25 +1161,26 @@
     <span class="k">return</span> <span class="n">__initiate_job</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s1">&#39;/api/rest/initiate&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="__get_logs"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support.__get_logs">[docs]</a><span class="k">def</span> <span class="nf">__get_logs</span><span class="p">(</span><span class="n">job_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">__get_logs</span><span class="p">(</span><span class="n">job_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieve the logs associated with the specified job id</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="n">get_pod_uri</span><span class="p">(</span><span class="s2">&quot;mlflow&quot;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/api/rest/logs&quot;</span><span class="p">,</span>
+        <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;/api/rest/logs&quot;</span><span class="p">,</span>
         <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;task_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">},</span> <span class="n">auth</span><span class="o">=</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not retrieve the logs for job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;logs&#39;</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;logs&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="_watch_job"><a class="viewcode-back" href="../../../splicemachine.mlflow_support.html#splicemachine.mlflow_support.mlflow_support._watch_job">[docs]</a><span class="nd">@_mlflow_patch</span><span class="p">(</span><span class="s1">&#39;watch_job&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">_watch_job</span><span class="p">(</span><span class="n">job_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Stream the logs in real time to standard out</span>
 <span class="sd">    of a Job</span>
+
 <span class="sd">    :param job_id: the job id to watch (returned after executing an operation)</span>
-<span class="sd">    NOTE: If the job being watched fails, this function will throw a SpliceMachineException</span>
+<span class="sd">    :raise SpliceMachineException: If the job being watched fails</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">previous_lines</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">warn</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># If there were any warnings from the log, we want to notify the user explicitly</span>
@@ -1215,11 +1232,13 @@
 <span class="sd">    :return: Pandas df</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">_splice_context</span><span class="o">.</span><span class="n">df</span><span class="p">(</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        SELECT * FROM MLMANAGER.LIVE_MODEL_STATUS</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">toPandas</span><span class="p">()</span></div>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">get_jobs_uri</span><span class="p">(</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span> <span class="ow">or</span> <span class="n">get_pod_uri</span><span class="p">(</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="mi">5003</span><span class="p">,</span> <span class="n">_testing</span><span class="o">=</span><span class="n">_TESTING</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;/api/rest/deployments&quot;</span><span class="p">,</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">mlflow</span><span class="o">.</span><span class="n">_basic_auth</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SpliceMachineException</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">PandasDF</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()))</span></div>
 
 
 <span class="k">def</span> <span class="nf">apply_patches</span><span class="p">():</span>
@@ -1244,9 +1263,10 @@
 <span class="sd">    :param uri: (str) the URL of your mlflow UI.</span>
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_CLIENT</span>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
     <span class="n">_CLIENT</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">tracking</span><span class="o">.</span><span class="n">MlflowClient</span><span class="p">(</span><span class="n">tracking_uri</span><span class="o">=</span><span class="n">uri</span><span class="p">)</span>
-    <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span>
-    <span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span></div>
+    <span class="n">mlflow</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">_CLIENT</span></div>
 
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>

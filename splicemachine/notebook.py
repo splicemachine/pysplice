@@ -22,6 +22,7 @@ def run_sql(sql):
     """
     Runs a SQL statement over JDBC from the Splice Machine managed Jupyter notebook environment. If you are running
     outside of the Splice Jupyter environment, you must have a sql kernel and magic set up and configured.
+
     :param sql: The SQL to execute
     """
     if not get_ipython():
