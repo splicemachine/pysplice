@@ -75,7 +75,6 @@ def build_feature_drift_plot(features, training_set_df, model_table_df):
     :param features: list of features to analyze
     :param training_set_df: the dataframe used for training the model that contains all the features to analyze
     :param model_table_df: the dataframe with the content of the model table containing all input features
-    :return: None
     """
     final_features = [f for f in features if f in model_table_df.columns]
     # prep plot area

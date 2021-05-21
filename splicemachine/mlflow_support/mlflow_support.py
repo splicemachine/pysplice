@@ -505,7 +505,6 @@ def _timer(timer_name, param=False):
 
     :param timer_name: (str) the name of the timer
     :param param: (bool) whether or not to log the timer as a param (default=True). If false, logs as metric.
-    :return: None
     """
     t0 = time.time()
     try:
@@ -838,6 +837,7 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     :param memory_request: (default 512Mi) [USED IF RESOURCE REQUESTS ENABLED] amount of RAM to request
     :param memory_limit: (default 2048Mi) [USED IF RESOURCE LIMITS ENABLED] amount of RAM to limit at
     :param expose_external: (default False) whether or not to create Ingress resource to deploy outside of the cluster.
+
         :NOTE:
             .. code-block:: text
 
@@ -926,13 +926,13 @@ def _deploy_db(db_schema_name: str,
     :param replace: (bool) whether or not to replace a currently existing model. This param is not yet implemented
     :return: None
 
-    This function creates the following IF you are creating a table from the dataframe \n
-        * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n
-            * USER which is the current user who made the request
-            * EVAL_TIME which is the CURRENT_TIMESTAMP
-            * the PRIMARY KEY column(s) passed in
-            * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
-            * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n
+    This function creates the following IF you are creating a table from the dataframe\n
+    * The model table where run_id is the run_id passed in. This table will have a column for each feature in the feature vector. It will also contain:\n
+        * USER which is the current user who made the request
+        * EVAL_TIME which is the CURRENT_TIMESTAMP
+        * the PRIMARY KEY column(s) passed in
+        * PREDICTION. The prediction of the model. If the :classes: param is not filled in, this will be default values for classification models
+        * A column for each class of the predictor with the value being the probability/confidence of the model if applicable\n
     IF you are deploying to an existing table, the table will be altered to include the columns above. \n
     :NOTE:
         .. code-block:: text
@@ -1002,8 +1002,9 @@ def _watch_job(job_id: int):
     """
     Stream the logs in real time to standard out
     of a Job
+
     :param job_id: the job id to watch (returned after executing an operation)
-    NOTE: If the job being watched fails, this function will throw a SpliceMachineException
+    :raise SpliceMachineException: If the job being watched fails
     """
     previous_lines = []
     warn = False # If there were any warnings from the log, we want to notify the user explicitly

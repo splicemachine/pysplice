@@ -1,0 +1,3 @@
+include requirements.txt
+include stats_requirements.txt
+include notebook_requirements.txt

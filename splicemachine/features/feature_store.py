@@ -1,5 +1,5 @@
 from sys import stderr
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from datetime import datetime
 import json
 
@@ -71,9 +71,9 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._auth, { "name": name })
         print('Done.')
 
-    def get_summary(self) -> TrainingView:
+    def get_summary(self) -> Dict[str, str]:
         """
-        This function returns a summary of the feature store including:
+        This function returns a summary of the feature store including:\n
         * Number of feature sets
         * Number of deployed feature sets
         * Number of features
@@ -122,7 +122,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._auth, { "name": name })
         return int(r)
 
-    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
+    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], PandasDF]:
         """
         Returns a dataframe or list of features whose names are provided
 
@@ -378,12 +378,13 @@ class FeatureStore:
         """
         Returns the training set as a Spark Dataframe from a Training View. When a user calls this function (assuming they have registered
         the feature store with mlflow using :py:meth:`~mlflow.register_feature_store` )
-        the training dataset's metadata will be tracked in mlflow automatically. The following will be tracked:
-        including:
-            * Training View
-            * Selected features
-            * Start time
-            * End time
+        the training dataset's metadata will be tracked in mlflow automatically.\n
+        The following will be tracked:\n
+        * Training View
+        * Selected features
+        * Start time
+        * End time
+
         This tracking will occur in the current run (if there is an active run)
         or in the next run that is started after calling this function (if no run is currently active).
 
@@ -591,7 +592,7 @@ class FeatureStore:
         Registers a training view for use in generating training SQL
 
         :param name: The training set name. This must be unique to other existing training sets unless replace is True
-        :param sql: (str) a SELECT statement that includes:
+        :param sql: (str) a SELECT statement that includes:\n
             * the primary key column(s) - uniquely identifying a training row/case
             * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
             * join key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
@@ -647,12 +648,24 @@ class FeatureStore:
 
     def get_features_from_feature_set(self, schema_name: str, table_name: str) -> List[Feature]:
         """
-        Returns either a pandas DF of feature details or a List of features for a specified feature set
+        Returns either a pandas DF of feature details or a List of features for a specified feature set.
+        You can get features from multiple feature sets by concatenating the results of this call.
+        For example, to get features from 2 feature sets, `foo.bar1` and `foo2.bar4`:
+
+        .. code-block:: python
+
+                features = fs.get_features_from_feature_set('foo','bar1') + fs.get_features_from_feature_set('foo2','bar4')
+
+        If you want a list of just the Feature NAMES (ie a List[str]) you can simply run:
+
+        .. code-block:: python
+
+                features = fs.get_features_from_feature_set('foo','bar1') + fs.get_features_from_feature_set('foo2','bar4')
+                feature_names = [f.name for f in features]
 
         :param schema_name: Feature Set schema name
         :param table_name: Feature Set table name
-        :param as_list: Whehter to return a list of Features or a Pandas DF of the Features
-        :return: Either a PandasDF of feature information or a List of Features
+        :return: List of Features
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
                          params={'schema':schema_name, 'table':table_name})
@@ -969,12 +982,12 @@ class FeatureStore:
                 )
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
-            The Feature Set will have 15 features:
-            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
-            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
-            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+            The Feature Set will have 15 features:\n
+            * 6 for the `AR_CLOTHING_QTY` prefix (sum & max over provided agg windows)
+            * 3 for the `AR_DELICATESSEN_QTY` prefix (avg over provided agg windows)
+            * 6 for the `AR_GARDEN_QTY` prefix (count & avg over provided agg windows)
 
-            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
+            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source `CUSTOMER_RFM`
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
         """
         schema_name, table_name, source_name = schema_name.upper(), table_name.upper(), source_name.upper()
@@ -1105,24 +1118,23 @@ class FeatureStore:
                                 self._auth, params={ "schema": schema_name, "table": table_name})['metadata']
 
         training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
-        features = metadata['features'].split(',')
+        features = [f.upper() for f in metadata['features'].split(',')]
         build_feature_drift_plot(features, training_set_df, model_table_df)
 
 
     def display_model_drift(self, schema_name: str, table_name: str, time_intervals: int,
                             start_time: datetime = None, end_time: datetime = None):
         """
-        Displays as many as 'time_intervals' plots showing the distribution of the model prediction within each time
+        Displays as many as `time_intervals` plots showing the distribution of the model prediction within each time
         period. Time periods are equal periods of time where predictions are present in the model table
-        'schema_name'.'table_name'. Model predictions are first filtered to only those occurring after 'start_time' if
-        specified and before 'end_time' if specified.
+        `schema_name.table_name`. Model predictions are first filtered to only those occurring after `start_time` if
+        specified and before `end_time` if specified.
 
         :param schema_name: schema where the model table resides
         :param table_name: name of the model table
         :param time_intervals: number of time intervals to plot
         :param start_time: if specified, filters to only show predictions occurring after this date/time
         :param end_time: if specified, filters to only show predictions occurring before this date/time
-        :return: None
         """
         # database stores object names in upper case
         schema_name = schema_name.upper()
@@ -1328,12 +1340,35 @@ class FeatureStore:
 
     
     def set_feature_store_url(self, url: str):
+        """
+        Sets the Feature Store URL. You must call this before calling any feature store functions, or set the FS_URL
+        environment variable before creating your Feature Store object
+
+        :param url: The Feature Store URL
+        """
         self._FS_URL = url
 
     def login_fs(self, username, password):
+        """
+        Function to login to the Feature Store using basic auth. These correspond to your Splice Machine database user
+        and password. If you are running outside of the managed Splice Machine Cloud Service, you must call either
+        this or set_token in order to call any functions in the feature store, or by setting the SPLICE_JUPYTER_USER and
+        SPLICE_JUPYTER_PASSWORD environments variable before creating your FeatureStore object.
+
+        :param username: Username
+        :param password: Password
+        """
         self._auth = HTTPBasicAuth(username, password)
 
     def set_token(self, token):
+        """
+        Function to login to the Feature Store using JWT. This corresponds to your Splice Machine database user's JWT
+        token. If you are running outside of the managed Splice Machine Cloud Service, you must call either
+        this or login_fs in order to call any functions in the feature store, or by setting the SPLICE_JUPYTER_TOKEN
+        environment variable before creating your FeatureStore object.
+
+        :param token: JWT Token
+        """
         self._auth = token
 
     def __try_auto_login(self):
