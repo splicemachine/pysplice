@@ -1,5 +1,5 @@
 from sys import stderr
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from datetime import datetime
 import json
 
@@ -71,18 +71,18 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._auth, { "name": name })
         print('Done.')
 
-    def get_summary(self) -> TrainingView:
+    def get_summary(self) -> Dict[Any]:
         """
-        This function returns a summary of the feature store including:
-        * Number of feature sets
-        * Number of deployed feature sets
-        * Number of features
-        * Number of deployed features
-        * Number of training sets
-        * Number of training views
-        * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
-        * Number of active (deployed) models (that have used the feature store for training)
-        * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
+        This function returns a summary of the feature store including:\n
+            * Number of feature sets
+            * Number of deployed feature sets
+            * Number of features
+            * Number of deployed features
+            * Number of training sets
+            * Number of training views
+            * Number of associated models - this is a count of the MLManager.RUNS table where the `splice.model_name` tag is set and the `splice.feature_store.training_set` parameter is set
+            * Number of active (deployed) models (that have used the feature store for training)
+            * Number of pending feature sets - this will will require a new table `featurestore.pending_feature_set_deployments` and it will be a count of that
         """
 
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._auth)
@@ -122,7 +122,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._auth, { "name": name })
         return int(r)
 
-    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], SparkDF]:
+    def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], PandasDF]:
         """
         Returns a dataframe or list of features whose names are provided
 
@@ -974,12 +974,12 @@ class FeatureStore:
                 )
 
             This will create, deploy and return a FeatureSet called 'RETAIL_FS.AUTO_RFM'.
-            The Feature Set will have 15 features:
-            * 6 for the 'AR_CLOTHING_QTY' prefix (sum & max over provided agg windows)
-            * 3 for the 'AR_DELICATESSEN_QTY' prefix (avg over provided agg windows)
-            * 6 for the 'AR_GARDEN_QTY' prefix (count & avg over provided agg windows)
+            The Feature Set will have 15 features:\n
+                * 6 for the `AR_CLOTHING_QTY` prefix (sum & max over provided agg windows)
+                * 3 for the `AR_DELICATESSEN_QTY` prefix (avg over provided agg windows)
+                * 6 for the `AR_GARDEN_QTY` prefix (count & avg over provided agg windows)
 
-            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source 'CUSTOMER_RFM'
+            A Pipeline is also created and scheduled in Airflow that feeds it every 5 days from the Source `CUSTOMER_RFM`
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
         """
         schema_name, table_name, source_name = schema_name.upper(), table_name.upper(), source_name.upper()
