@@ -27,7 +27,7 @@ def run_sql(sql):
     """
     if not get_ipython():
         raise SpliceMachineException("You don't seem to have IPython available. This function is only available"
-                                     "in an IPython envrionment with a configured %%sql magic kernel. Consider using"
+                                     "in an IPython environment with a configured %%sql magic kernel. Consider using"
                                      "the managed Splice Machine notebook environment")
     get_ipython().run_cell_magic('sql', '', sql)
 
