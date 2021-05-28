@@ -29,7 +29,7 @@ with open('stats_requirements.txt', 'r') as fs_deps:
 
 setup(
     name="splicemachine",
-    version="2.8.0",
+    version="2.8.0.dev0",
     install_requires=DEPENDENCIES,
     extras_require={
         'notebook': NOTEBOOK_DEPS,
