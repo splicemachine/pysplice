@@ -22,7 +22,7 @@ from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
 from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
 from .utils.training_utils import ReturnType, _format_training_set_output
-from .pipelines import FeatureAggregation
+from .pipelines import FeatureAggregation, AggWindow
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
 
 from .constants import SQL, FeatureType
@@ -991,6 +991,16 @@ class FeatureStore:
             Backfill will also occur, reading data from the source as of '2002-01-01 00:00:00' with a 5 day window
         """
         schema_name, table_name, source_name = schema_name.upper(), table_name.upper(), source_name.upper()
+        if (schedule_interval and not start_time) or (start_time and not schedule_interval):
+            raise SpliceMachineException("You cannot set one of [start_time, schedule_interval]. You must set both "
+                                         "or neither")
+        elif schedule_interval and start_time:
+            if not AggWindow.is_valid(schedule_interval):
+                raise SpliceMachineException(f'Schedule interval {schedule_interval} is not valid. '
+                                             f'Interval must be a positive whole number '
+                                             f'followed by a valid AggWindow (one of {AggWindow.get_valid()}). '
+                                             f"Examples: '5w', '2mn', '53s'")
+
         agg_feature_set = {
             'source_name': source_name,
             'schema_name': schema_name,
@@ -1008,6 +1018,15 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._auth,
                      params={'run_backfill': run_backfill}, body=agg_feature_set)
         print('Done.')
+        msg = f'Your feature set {schema_name}.{table_name} has been registered in the feature store. '
+        if run_backfill:
+            msg += '\nYour feature set is currently being backfilled which may take some time to complete. ' \
+                   'To see the status and logs of your backfill job, navigate to the Workflows tab in Cloud Manager ' \
+                   'or head directly to your Airflow URL. '
+        if start_time and schedule_interval:
+            msg += f'\nYour Pipeline has been scheduled for {str(start_time)} and will run every {schedule_interval}. ' \
+                   f'You can view it in the Workflows tab in Cloud Manager or head directly to your Airflow URL'
+        print(msg)
         return FeatureSet(**r)
 
     def get_backfill_sql(self, schema_name: str, table_name: str):
