@@ -984,6 +984,29 @@ def _deploy_db(db_schema_name: str,
 
     return __initiate_job(payload, '/api/rest/initiate')
 
+@_mlflow_patch('undeploy_db')
+def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, drop_table: bool = False):
+    """
+    Undeploys an mlflow model from a DB table. If schema_name and table_name are not provided, ALL tables that this
+    model is deployed to will be undeployed.
+
+    :param run_id: The run_id of the model
+    :param schema_name: The schema name of the deployment table to remove. If not set, all tables deployed with this
+    model will be removed
+    :param table_name: The table name of the deployment table to remove. If not set, all tables deployed with this model
+    will be removed
+    :param drop_table: Whether to drop the table or not. If False, the table will exist, but the trigger invoking the
+    model will be removed only. Default False
+    :return: Job ID to track job progress with the mlflow.watch_job function
+    """
+    payload = {
+        'run_id': run_id,
+        'db_schema': schema_name.upper() if schema_name else None,
+        'db_table': table_name.upper() if table_name else None,
+        'drop_table': drop_table,
+        'handler_name': 'UNDEPLOY_DATABASE'
+    }
+    return __initiate_job(payload, '/api/rest/initiate')
 
 def __get_logs(job_id: int):
     """
@@ -1074,7 +1097,7 @@ def apply_patches():
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes, _fetch_logs,
-               _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set]
+               _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set, _undeploy_db]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
