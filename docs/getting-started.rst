@@ -74,8 +74,9 @@ This section covers importing and instantiating the Native Spark DataSource
          from splicemachine.mlflow_support import * # Connects your MLflow session automatically
          from splicemachine.features import FeatureStore # Splice Machine Feature Store
 
-         spark = SparkSession.builder.config('spark.jars', '/path/to/splice_spark2-3.0.0.1962-SNAPSHOT-shaded.jar').config('spark.driver.extraClassPath', 'path/to/Splice/jars/dir/*').getOrCreate()
-         JDBC_URL = '' #Set your JDBC URL here. You can get this from the Cloud Manager UI. Make sure to append ';user=<USERNAME>;password=<PASSWORD>' after ';ssl=basic' so you can authenticate in
+         # NOTE: The jar in spark.jars is for Spark3 ONLY. For Spark2 support, reach out to Splice Machine directly
+         spark = SparkSession.builder.config('spark.jars', 'https://splice-releases.s3.amazonaws.com/3.1.0.2009/cluster/nsds/splice_spark2-3.1.0.2009-shaded-dbaas3.0.jar').getOrCreate()
+         JDBC_URL = '' # Set your JDBC URL here. You can get this from the Cloud Manager UI. Make sure to append ';user=<USERNAME>;password=<PASSWORD>' after ';ssl=basic' so you can authenticate in
          # The ExtPySpliceContext communicates with the database via Kafka
          kafka_server = 'kafka-broker-0-' + JDBC_URL.split('jdbc:splice://jdbc-')[1].split(':1527')[0] + ':19092' # Formatting kafka URL from JDBC
          splice = ExtPySpliceContext(spark, JDBC_URL=JDBC_URL, kafkaServers=kafka_server)
