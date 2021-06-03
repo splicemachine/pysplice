@@ -1078,7 +1078,8 @@ def _get_deployed_models() -> PandasDF:
     Get the currently deployed models in the database
     :return: Pandas df
     """
-
+    print('Rows without a Schema or Table name indicate that the deployment table no longer exists '
+          '(based on the TableID). This could be because the table was dropped, or the deployment was DELETED')
     request = requests.get(
         get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
         auth=mlflow._basic_auth
