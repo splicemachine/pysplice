@@ -29,7 +29,7 @@ with open('stats_requirements.txt', 'r') as fs_deps:
 
 setup(
     name="splicemachine",
-    version="2.8.0.dev0",
+    version="2.8.0.dev2",
     install_requires=DEPENDENCIES,
     extras_require={
         'notebook': NOTEBOOK_DEPS,
@@ -43,8 +43,8 @@ setup(
     author="Splice Machine, Inc.",
     author_email="abaveja@splicemachine.com",
     description="This package contains all of the classes and functions you need to interact "
-                "with Splice Machine's scale out, Hadoop on SQL RDBMS from Python. It also contains"
-                " several machine learning utilities for use with Apache Spark, a managed MLFlow client and a "
+                "with Splice Machine's scale out, real-time, ACID compliant ML Engine. It contains "
+                "several machine learning utilities for use with Apache Spark, a managed MLFlow client and a "
                 "Managed Feature Store client.",
     url="https://github.com/splicemachine/pysplice/"
 )
