@@ -59,16 +59,20 @@ class FeatureStore:
                          { "name": feature_set_names } if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
-    def remove_training_view(self, name: str):
+    def remove_training_view(self, name: str, version: Union[str, int] = 'latest'):
         """
         This removes a training view if it is not being used by any currently deployed models.
         NOTE: Once this training view is removed, you will not be able to deploy any models that were trained using this
         view
 
         :param name: The view name
+        :param version: The view version
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
+
         print(f"Removing Training View {name}...", end=' ')
-        make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.DELETE, self._auth, { "name": name })
+        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.DELETE, self._auth, params={'version': version})
         print('Done.')
 
     def get_summary(self) -> Dict[str, str]:
@@ -88,15 +92,18 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.SUMMARY, RequestType.GET, self._auth)
         return r
 
-    def get_training_view(self, training_view: str) -> TrainingView:
+    def get_training_view(self, training_view: str, version: Union[int, str] = 'latest') -> TrainingView:
         """
         Gets a training view by name
 
         :param training_view: Training view name
+        :param version: Training view version
         :return: TrainingView
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.GET, self._auth, { "name": training_view })
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{training_view}', RequestType.GET, self._auth, params={'version': version})
         return TrainingView(**r[0])
 
     def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
@@ -224,16 +231,19 @@ class FeatureStore:
         """
         pass
 
-    def get_training_view_features(self, training_view: str) -> List[Feature]:
+    def get_training_view_features(self, training_view: str, version: Union[int, str] = 'latest') -> List[Feature]:
         """
         Returns the available features for the given a training view name
 
         :param training_view: The name of the training view
+        :param version: The version of the training view
         :return: A list of available Feature objects
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET,
-                         self._auth, { "view": training_view })
+                         self._auth, { "view": training_view, 'version': version })
         return [Feature(**f) for f in r]
 
     def get_feature_description(self):
@@ -352,8 +362,8 @@ class FeatureStore:
         if return_type not in ReturnType.get_valid():
             raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_BY_NAME, RequestType.GET, self._auth,
-                        params={ "name": name, "version": version, "pks": return_pk_cols, "ts": return_ts_col,
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_SETS}/{name}', RequestType.GET, self._auth,
+                        params={ "version": version, "pks": return_pk_cols, "ts": return_ts_col,
                                  'return_type': ReturnType.map_to_request(return_type)})
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
@@ -528,6 +538,84 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.POST, self._auth, body=fset_dict)
         return FeatureSet(**r)
 
+    def update_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
+                           desc: Optional[str] = None, features: Optional[List[Feature]] = None) -> FeatureSet:
+        """
+        Creates and returns a new version of an existing feature set
+
+        :param schema_name: The schema under which to create the feature set table
+        :param table_name: The table name for this feature set
+        :param primary_keys: The primary key column(s) of this feature set
+        :param desc: The (optional) description
+        :param features: An optional list of features. If provided, any non-existant Features will be created with the Feature Set
+        :Example:
+            .. code-block:: python
+
+                from splicemachine.features import FeatureType, Feature
+                f1 = Feature(
+                    name='my_first_feature',
+                    description='the first feature',
+                    feature_data_type='INT',
+                    feature_type=FeatureType.ordinal,
+                    tags=['good_feature','a new tag', 'ordinal'],
+                    attributes={'quality':'awesome'}
+                )
+                f2 = Feature(
+                    name='my_second_feature',
+                    description='the second feature',
+                    feature_data_type='FLOAT',
+                    feature_type=FeatureType.continuous,
+                    tags=['not_as_good_feature','a new tag'],
+                    attributes={'quality':'not as awesome'}
+                )
+                feats = [f1, f2]
+                feature_set = fs.version_feature_set(
+                    schema_name='splice',
+                    table_name='foo',
+                    primary_keys={'MOMENT_KEY':"INT"},
+                    desc='test fset',
+                    features=feats
+                )
+
+        :return: FeatureSet
+        """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
+        features = [f.__dict__ for f in features] if features else None
+        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
+                      "description": desc,
+                      "features": features}
+
+        print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
+        if features:
+            print(f'Registering {len(features)} features for {schema_name}.{table_name} in the Feature Store')
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PUT, self._auth, body=fset_dict)
+        return FeatureSet(**r)
+
+    def alter_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
+                           desc: Optional[str] = None) -> FeatureSet:
+        """
+        Alters the latest version of a feature set, if that version is not yet deployed
+
+        :param schema_name: The schema under which to create the feature set table
+        :param table_name: The table name for this feature set
+        :param primary_keys: The primary key column(s) of this feature set
+        :param desc: The (optional) description
+        :return: FeatureSet
+        """
+        # database stores object names in upper case
+        schema_name = schema_name.upper()
+        table_name = table_name.upper()
+
+        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
+                      "description": desc}
+
+        print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PATCH, self._auth, body=fset_dict)
+        return FeatureSet(**r)
+
     def update_feature_metadata(self, name: str, desc: Optional[str] = None, tags: Optional[List[str]] = None,
                                 attributes: Optional[Dict[str,str]] = None):
         """
@@ -541,8 +629,8 @@ class FeatureStore:
         """
         f_dict = { "description": desc, 'tags': tags, "attributes": attributes }
         print(f'Registering feature {name} in Feature Store')
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.PUT, self._auth,
-                         params={"name": name}, body=f_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURES}/{name}', RequestType.PUT, self._auth,
+                         body=f_dict)
         f = Feature(**r)
         return f
 
@@ -614,6 +702,63 @@ class FeatureStore:
         print(f'Registering Training View {name} in the Feature Store')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._auth, body=tv_dict)
 
+    def update_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
+                             ts_col: str, label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
+        """
+        Creates and returns a new version of a training view for use in generating training SQL
+
+        :param name: The training set name. This must be unique to other existing training sets unless replace is True
+        :param sql: (str) a SELECT statement that includes:\n
+            * the primary key column(s) - uniquely identifying a training row/case
+            * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
+            * join key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
+            * (optionally) the label expression - defining what the training set is trying to predict
+        :param primary_keys: (List[str]) The list of columns from the training SQL that identify the training row
+        :param ts_col: The timestamp column of the training SQL that identifies the inference timestamp
+        :param label_col: (Optional[str]) The optional label column from the training SQL.
+        :param replace: (Optional[bool]) Whether to replace an existing training view
+        :param join_keys: (List[str]) A list of join keys in the sql that are used to get the desired features in
+            get_training_set
+        :param desc: (Optional[str]) An optional description of the training set
+        :param verbose: Whether or not to print the SQL before execution (default False)
+        :return:
+        """
+        assert name != "None", "Name of training view cannot be None!"
+
+        tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
+                    "join_columns": join_keys, "sql_text": sql}
+        print(f'Registering Training View {name} in the Feature Store')
+        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PUT, self._auth, body=tv_dict)
+
+    def alters_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None, 
+                             join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None, 
+                             label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
+        """
+        Alters an existing version of a training view
+
+        :param name: The training set name. This must be unique to other existing training sets unless replace is True
+        :param sql: (str) a SELECT statement that includes:\n
+            * the primary key column(s) - uniquely identifying a training row/case
+            * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
+            * join key(s) - the references to the other feature tables' primary keys (ie customer_id, location_id)
+            * (optionally) the label expression - defining what the training set is trying to predict
+        :param primary_keys: (List[str]) The list of columns from the training SQL that identify the training row
+        :param ts_col: The timestamp column of the training SQL that identifies the inference timestamp
+        :param label_col: (Optional[str]) The optional label column from the training SQL.
+        :param replace: (Optional[bool]) Whether to replace an existing training view
+        :param join_keys: (List[str]) A list of join keys in the sql that are used to get the desired features in
+            get_training_set
+        :param desc: (Optional[str]) An optional description of the training set
+        :param verbose: Whether or not to print the SQL before execution (default False)
+        :return:
+        """
+        assert name != "None", "Name of training view cannot be None!"
+
+        tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
+                    "join_columns": join_keys, "sql_text": sql}
+        print(f'Registering Training View {name} in the Feature Store')
+        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, body=tv_dict)
+
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
         Process a list of Features parameter. If the list is strings, it converts them to Features, else returns itself
@@ -629,7 +774,7 @@ class FeatureStore:
                                                              " a feature name (string) or a Feature object"
         return all_features
 
-    def deploy_feature_set(self, schema_name: str, table_name: str):
+    def deploy_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = 'latest', migrate: bool = False):
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
@@ -637,13 +782,16 @@ class FeatureStore:
 
         :param schema_name: The schema of the created feature set
         :param table_name: The table of the created feature set
+        :param version: The version of the feature set to deploy
+        :param migrate: Whether or not to migrate data from a past version of this feature set
         """
-
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
         print(f'Deploying Feature Set {schema_name}.{table_name}...',end=' ')
-        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth, { "schema": schema_name, "table": table_name })
+        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth, { "schema": schema_name, "table": table_name, "version": version, "migrate": migrate })
         print('Done.')
 
     def get_features_from_feature_set(self, schema_name: str, table_name: str) -> List[Feature]:
@@ -732,15 +880,18 @@ class FeatureStore:
             print('-' * 23)
             self._training_view_describe(tcx, features)
 
-    def describe_training_view(self, training_view: str) -> None:
+    def describe_training_view(self, training_view: str, version: Union[int, str] = 'latest') -> None:
         """
         Prints out a description of a given training view, the ID, name, description and optional label
 
         :param training_view: The training view name
+        :param version: The training view version
         :return: None
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth, {'name': training_view})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth, {'name': training_view, 'version': version})
         desc = r
         if not desc: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
 
@@ -818,11 +969,11 @@ class FeatureStore:
             :return:
         """
         print(f"Removing feature {name}...",end=' ')
-        make_request(self._FS_URL, Endpoints.FEATURES, RequestType.DELETE, self._auth, { "name": name })
+        make_request(self._FS_URL, f'{Endpoints.FEATURES}/{name}', RequestType.DELETE, self._auth)
         print('Done.')
 
     def get_deployments(self, schema_name: str = None, table_name: str = None, training_set: str = None,
-                        feature: str = None, feature_set: str = None):
+                        feature: str = None, feature_set: str = None, version: Union[str, int] = None):
         """
         Returns a list of all (or specified) available deployments
 
@@ -831,10 +982,14 @@ class FeatureStore:
         :param training_set: training set name
         :param feature: passing this in will return all deployments that used this feature
         :param feature_set: passing this in will return all deployments that used this feature set
+        :param version: the version of the feature set parameter, if used
         :return: List[Deployment] the list of Deployments as dicts
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
+
         return make_request(self._FS_URL, Endpoints.DEPLOYMENTS, RequestType.GET, self._auth, 
-            { 'schema': schema_name, 'table': table_name, 'name': training_set, 'feat': feature, 'fset': feature_set})
+            { 'schema': schema_name, 'table': table_name, 'name': training_set, 'feat': feature, 'fset': feature_set, 'version': version})
       
     def get_training_set_features(self, training_set: str = None):
         """
@@ -848,7 +1003,7 @@ class FeatureStore:
         r['features'] = [Feature(**f) for f in r['features']]
         return r
 
-    def remove_feature_set(self, schema_name: str, table_name: str, purge: bool = False) -> None:
+    def remove_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = None, purge: bool = False) -> None:
         """
         Deletes a feature set if appropriate. You can currently delete a feature set in two scenarios:
         1. The feature set has not been deployed
@@ -862,14 +1017,18 @@ class FeatureStore:
 
         :param schema_name: The Feature Set Schema
         :param table_name: The Feature Set Table
+        :param version: The Feature Set Version
         :param purge: Whether to force delete training sets that use the feature set (that are not used in deployments)
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
+
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
         print(f'Removing Feature Set {schema_name}.{table_name}...',end=' ')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
-                     RequestType.DELETE, self._auth, { "schema": schema_name, "table":table_name, "purge": purge })
+                     RequestType.DELETE, self._auth, { "schema": schema_name, "table":table_name, "version": version, "purge": purge })
         print('Done.')
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
