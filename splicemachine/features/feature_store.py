@@ -541,7 +541,8 @@ class FeatureStore:
     def update_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
                            desc: Optional[str] = None, features: Optional[List[Feature]] = None) -> FeatureSet:
         """
-        Creates and returns a new version of an existing feature set
+        Creates and returns a new version of an existing feature set. Use this method when you want to make changes
+        to a deployed feature set.
 
         :param schema_name: The schema under which to create the feature set table
         :param table_name: The table name for this feature set
@@ -569,7 +570,7 @@ class FeatureStore:
                     attributes={'quality':'not as awesome'}
                 )
                 feats = [f1, f2]
-                feature_set = fs.version_feature_set(
+                feature_set = fs.update_feature_set(
                     schema_name='splice',
                     table_name='foo',
                     primary_keys={'MOMENT_KEY':"INT"},
@@ -594,10 +595,11 @@ class FeatureStore:
         r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PUT, self._auth, body=fset_dict)
         return FeatureSet(**r)
 
-    def alter_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
-                           desc: Optional[str] = None) -> FeatureSet:
+    def alter_feature_set(self, schema_name: str, table_name: str, primary_keys: Optional[Dict[str, str]] = None,
+                           desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> FeatureSet:
         """
-        Alters the latest version of a feature set, if that version is not yet deployed
+        Alters the latest version of a feature set, if that version is not yet deployed. Use this method when you want to make changes to
+        an undeployed version of a feature set, or when you want to change version-independant metadata, such as description.
 
         :param schema_name: The schema under which to create the feature set table
         :param table_name: The table name for this feature set
@@ -605,15 +607,20 @@ class FeatureStore:
         :param desc: The (optional) description
         :return: FeatureSet
         """
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
+
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
+        params = { 'version': version }
+        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys} if primary_keys else None,
                       "description": desc}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PATCH, self._auth, body=fset_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PATCH, self._auth, 
+            params=params, body=fset_dict)
         return FeatureSet(**r)
 
     def update_feature_metadata(self, name: str, desc: Optional[str] = None, tags: Optional[List[str]] = None,
@@ -674,12 +681,11 @@ class FeatureStore:
         # TODO: Backfill the feature
 
     def create_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
-                             ts_col: str, label_col: Optional[str] = None, replace: Optional[bool] = False,
-                             desc: Optional[str] = None, verbose=False) -> None:
+                             ts_col: str, label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
         """
         Registers a training view for use in generating training SQL
 
-        :param name: The training set name. This must be unique to other existing training sets unless replace is True
+        :param name: The training set name. This must be unique to other existing training sets
         :param sql: (str) a SELECT statement that includes:\n
             * the primary key column(s) - uniquely identifying a training row/case
             * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
@@ -705,9 +711,10 @@ class FeatureStore:
     def update_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
                              ts_col: str, label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
         """
-        Creates and returns a new version of a training view for use in generating training SQL
+        Creates and returns a new version of a training view for use in generating training SQL. Use this function when you want to
+        make changes to a training view without affecting its dependencies
 
-        :param name: The training set name. This must be unique to other existing training sets unless replace is True
+        :param name: The training set name.
         :param sql: (str) a SELECT statement that includes:\n
             * the primary key column(s) - uniquely identifying a training row/case
             * the inference timestamp column - timestamp column with which to join features (temporal join timestamp)
@@ -730,11 +737,12 @@ class FeatureStore:
         print(f'Registering Training View {name} in the Feature Store')
         make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PUT, self._auth, body=tv_dict)
 
-    def alters_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None, 
-                             join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None, 
-                             label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
+    def alter_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None, 
+                             join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None, label_col: Optional[str] = None, 
+                             desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> None:
         """
-        Alters an existing version of a training view
+        Alters an existing version of a training view. Use this method when you want to make changes to a version of a training view
+        that has no dependencies, or when you want to change version-independent metadata, such as description.
 
         :param name: The training set name. This must be unique to other existing training sets unless replace is True
         :param sql: (str) a SELECT statement that includes:\n
@@ -754,10 +762,14 @@ class FeatureStore:
         """
         assert name != "None", "Name of training view cannot be None!"
 
+        if isinstance(version, str) and version != 'latest':
+            raise SpliceMachineException("Version parameter must be a number or 'latest'")
+
+        params = { 'version': version }
         tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
-        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, body=tv_dict)
+        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, params=params, body=tv_dict)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
