@@ -598,7 +598,7 @@ class FeatureStore:
     def alter_feature_set(self, schema_name: str, table_name: str, primary_keys: Optional[Dict[str, str]] = None,
                            desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> FeatureSet:
         """
-        Alters the latest version of a feature set, if that version is not yet deployed. Use this method when you want to make changes to
+        Alters the specified (or default latest) version of a feature set, if that version is not yet deployed. Use this method when you want to make changes to
         an undeployed version of a feature set, or when you want to change version-independant metadata, such as description.
 
         :param schema_name: The schema under which to create the feature set table
