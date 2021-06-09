@@ -605,6 +605,7 @@ class FeatureStore:
         :param table_name: The table name for this feature set
         :param primary_keys: The primary key column(s) of this feature set
         :param desc: The (optional) description
+        :param version: The version you wish to alter (number or 'latest'). If None, will default to the latest undeployed version
         :return: FeatureSet
         """
         if isinstance(version, str) and version != 'latest':
@@ -753,11 +754,10 @@ class FeatureStore:
         :param primary_keys: (List[str]) The list of columns from the training SQL that identify the training row
         :param ts_col: The timestamp column of the training SQL that identifies the inference timestamp
         :param label_col: (Optional[str]) The optional label column from the training SQL.
-        :param replace: (Optional[bool]) Whether to replace an existing training view
         :param join_keys: (List[str]) A list of join keys in the sql that are used to get the desired features in
             get_training_set
         :param desc: (Optional[str]) An optional description of the training set
-        :param verbose: Whether or not to print the SQL before execution (default False)
+        :param version: The version you wish to alter (number or 'latest'). If None, will default to the latest version
         :return:
         """
         assert name != "None", "Name of training view cannot be None!"
