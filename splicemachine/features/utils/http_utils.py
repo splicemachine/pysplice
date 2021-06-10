@@ -11,18 +11,20 @@ class RequestType:
     GET: str = "GET"
     POST: str = "POST"
     PUT: str = "PUT"
+    PATCH: str = "PATCH"
     DELETE: str = "DELETE"
 
     method_map = { 
         GET: requests.get,
         POST: requests.post,
         PUT: requests.put,
+        PATCH: requests.patch,
         DELETE: requests.delete
     }
 
     @staticmethod
     def get_valid() -> Tuple[str]:
-        return (RequestType.GET, RequestType.POST, RequestType.PUT, RequestType.DELETE)
+        return (RequestType.GET, RequestType.POST, RequestType.PUT, RequestType.PATCH, RequestType.DELETE)
 
 class Endpoints:
     """
