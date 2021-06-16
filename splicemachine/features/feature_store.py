@@ -1,11 +1,14 @@
 from sys import stderr
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Optional, Union, Any, Callable
 from datetime import datetime
 import json
 
 from IPython.display import display
 import pandas as pd
 from pandas import DataFrame as PandasDF
+import cloudpickle
+import base64
+from inspect import getsource
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from pyspark.ml import Pipeline
@@ -24,8 +27,9 @@ from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
 from .utils.training_utils import ReturnType, _format_training_set_output
 from .pipelines import FeatureAggregation, AggWindow
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
+from .pipe import Pipe
 
-from .constants import SQL, FeatureType
+from .constants import SQL, FeatureType, PipeType
 from .training_view import TrainingView
 import warnings
 from requests.auth import HTTPBasicAuth
@@ -710,7 +714,7 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._auth, body=tv_dict)
 
     def update_training_view(self, name: str, sql: str, primary_keys: List[str], join_keys: List[str],
-                             ts_col: str, label_col: Optional[str] = None, desc: Optional[str] = None) -> None:
+                             ts_col: str, label_col: Optional[str] = None, desc: Optional[str] = None) -> TrainingView:
         """
         Creates and returns a new version of a training view for use in generating training SQL. Use this function when you want to
         make changes to a training view without affecting its dependencies
@@ -736,11 +740,12 @@ class FeatureStore:
         tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
-        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PUT, self._auth, body=tv_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PUT, self._auth, body=tv_dict)
+        return TrainingView(**r)
 
     def alter_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None, 
                              join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None, label_col: Optional[str] = None, 
-                             desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> None:
+                             desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> TrainingView:
         """
         Alters an existing version of a training view. Use this method when you want to make changes to a version of a training view
         that has no dependencies, or when you want to change version-independent metadata, such as description.
@@ -769,7 +774,8 @@ class FeatureStore:
         tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
                     "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
-        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, params=params, body=tv_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, params=params, body=tv_dict)
+        return TrainingView(**r)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
         """
@@ -1042,6 +1048,99 @@ class FeatureStore:
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
                      RequestType.DELETE, self._auth, { "schema": schema_name, "table":table_name, "version": version, "purge": purge })
         print('Done.')
+
+    def get_pipes(self, names: Optional[List[str]] = None) -> List[Pipe]:
+        """
+        Returns a list of pipes whose names are provided
+
+        :param names: The list of pipe names
+        :return: List[Pipe] The list of Pipe objects
+        """
+        r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.GET, self._auth, { "name": names })
+        return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
+
+    def create_pipe(self, name: str, type: str, language: str, function: Callable,
+                            description: Optional[str] = None) -> Pipe:
+        """
+        Creates and returns a new pipe
+
+        :param name: The pipe name. This must be unique to other pipes
+        :param type: splicemachine.features.PipeType of the pipe. The available types are from the PipeType class: PipeType.[source, batch, online, realtime].
+            You can see available feature types by running
+
+            .. code-block:: python
+
+                    from splicemachine.features import PipeType
+                    print(PipeType.get_valid())
+
+        :param language: str The language of the pipe's function. Currently supported types are 'python', 'pyspark', and 'sql'
+        :param function: The actual python function or sql query used in the transformation
+        :param description: (Optional[str]) An optional description of the pipe
+        :return:
+        """
+        assert type in PipeType.get_valid(), f"The pipe type {type} is not valid. Valid pipe " \
+                                                        f"types include {PipeType.get_valid()}. Use the PipeType" \
+                                                        f" class provided by splicemachine.features"
+
+        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
+        p_dict = { "name": name, "description": description, "type": type, "language": language, "function": f, "code": getsource(function) }
+
+        print(f'Registering Pipe {name} in the Feature Store')
+        r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
+        return Pipe(**r, splice_ctx=self.splice_ctx)
+
+    def update_pipe(self, name: str, function: Callable, description: Optional[str] = None) -> Pipe:
+        """
+        Creates and returns a new version of a pipe. Use this function when you want to
+        make changes to a pipe without affecting its dependencies
+
+        :param name: The training set name.
+        :param function: The actual python function or sql query used in the transformation
+        :param description: (Optional[str]) An optional description of the pipe
+        :return:
+        """
+        assert name != "None", "Name of pipe cannot be None!"
+
+        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
+        p_dict = { "description": description, "function": f, "code": getsource(function) }
+
+        print(f'Updating Pipe {name} in the Feature Store')
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
+        return Pipe(**r, splice_ctx=self.splice_ctx)
+
+    def alter_pipe(self, name: str, function: Optional[Union[str, Callable]] = None, description: Optional[str] = None) -> Pipe:
+        """
+        Alters an existing version of a pipe. Use this method when you want to make changes to a version of a pipe
+        that has no dependencies, or when you want to change version-independent metadata, such as description.
+
+        :param name: The training set name.
+        :param function: The actual python function or sql query used in the transformation
+        :param description: (Optional[str]) An optional description of the pipe
+        :return:
+        """
+        assert name != "None", "Name of pipe cannot be None!"
+
+        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip() if function else None
+        p_dict = { "description": description, "function": f, "code": getsource(function) if function else None }
+
+        print(f'Altering Pipe {name} in the Feature Store')
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PATCH, self._auth, body=p_dict)
+        return Pipe(**r, splice_ctx=self.splice_ctx)
+
+    def remove_pipe(self, name: str, version: Union[int, str] = None) -> None:
+        """
+        Removes an existing version of a pipe. If no versions remain, deletes pipe metadata.
+
+        :param name: The training set name.
+        :param version: The version to remove (either an int or 'latest'). If None, removes all versions
+        :return:
+        """
+        assert name != "None", "Name of pipe cannot be None!"
+
+        p_dict = { "version": version }
+
+        print(f'Removing Pipe {name} from the Feature Store')
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.DELETE, self._auth, params=p_dict)
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
                       update_ts_column: datetime, primary_keys: List[str]):

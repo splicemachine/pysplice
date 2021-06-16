@@ -17,6 +17,27 @@ class FeatureType:
             FeatureType.categorical, FeatureType.ordinal, FeatureType.continuous,
         )
 
+class PipeType:
+    """
+    Class containing names for
+    valid pipe types
+    """
+    source: str = "S"
+    batch: str = "B"
+    online: str = "O"
+    realtime: str = "R"
+    
+    @staticmethod
+    def get_valid() -> tuple:
+        """
+        Return a tuple of the valid pipe types
+        :return: (tuple) valid types
+        """
+        return (
+            PipeType.source, PipeType.batch, PipeType.online, PipeType.realtime
+        )
+
+
 class SQL:
     FEATURE_STORE_SCHEMA = 'FeatureStore'
 
