@@ -29,7 +29,7 @@ from .pipelines import FeatureAggregation, AggWindow
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
 from .pipe import Pipe
 
-from .constants import SQL, FeatureType, PipeType
+from .constants import PipeLanguage, SQL, FeatureType, PipeType
 from .training_view import TrainingView
 import warnings
 from requests.auth import HTTPBasicAuth
@@ -1059,6 +1059,17 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.GET, self._auth, { "name": names })
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
+    def get_pipe(self, name: str, version: Optional[Union[str, int]] = None) -> List[Pipe]:
+        """
+        Returns a pipe version or list of pipe versions for a provided pipe name
+
+        :param name: The pipe name
+        :param version: The version to return (either an int or 'latest'). If None, all versions are returned
+        :return: List[Pipe] The list of Pipe objects
+        """
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
+        return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
+
     def create_pipe(self, name: str, type: str, language: str, function: Callable,
                             description: Optional[str] = None) -> Pipe:
         """
@@ -1080,6 +1091,10 @@ class FeatureStore:
         """
         assert type in PipeType.get_valid(), f"The pipe type {type} is not valid. Valid pipe " \
                                                         f"types include {PipeType.get_valid()}. Use the PipeType" \
+                                                        f" class provided by splicemachine.features"
+
+        assert language in PipeLanguage.get_valid(), f"The pipe language {language} is not supported. Currently supported" \
+                                                        f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
                                                         f" class provided by splicemachine.features"
 
         f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
@@ -1108,7 +1123,8 @@ class FeatureStore:
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
-    def alter_pipe(self, name: str, function: Optional[Union[str, Callable]] = None, description: Optional[str] = None) -> Pipe:
+    def alter_pipe(self, name: str, function: Optional[Union[str, Callable]] = None, description: Optional[str] = None,
+                    version: Union[int, str] = 'latest') -> Pipe:
         """
         Alters an existing version of a pipe. Use this method when you want to make changes to a version of a pipe
         that has no dependencies, or when you want to change version-independent metadata, such as description.
@@ -1116,15 +1132,17 @@ class FeatureStore:
         :param name: The training set name.
         :param function: The actual python function or sql query used in the transformation
         :param description: (Optional[str]) An optional description of the pipe
+        :param version: The version to alter (either an int or 'latest'). Default 'latest'
         :return:
         """
         assert name != "None", "Name of pipe cannot be None!"
 
         f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip() if function else None
         p_dict = { "description": description, "function": f, "code": getsource(function) if function else None }
+        params = { "version" : version }
 
         print(f'Altering Pipe {name} in the Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PATCH, self._auth, body=p_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PATCH, self._auth, params=params, body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
     def remove_pipe(self, name: str, version: Union[int, str] = None) -> None:

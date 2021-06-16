@@ -37,6 +37,25 @@ class PipeType:
             PipeType.source, PipeType.batch, PipeType.online, PipeType.realtime
         )
 
+class PipeLanguage:
+    """
+    Class containing names for
+    valid pipe languages
+    """
+    pyspark: str = "pyspark"
+    python: str = "python"
+    sql: str = "sql"
+    
+    @staticmethod
+    def get_valid() -> tuple:
+        """
+        Return a tuple of the valid pipe languages
+        :return: (tuple) valid languages
+        """
+        return (
+            PipeLanguage.pyspark, PipeLanguage.python, PipeLanguage.sql
+        )
+
 
 class SQL:
     FEATURE_STORE_SCHEMA = 'FeatureStore'
