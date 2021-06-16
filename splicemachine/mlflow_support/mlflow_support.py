@@ -354,15 +354,22 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
         Active run: None
     """
     if mlflow._notebook_history and mlflow.active_run():
-        with NamedTemporaryFile() as temp_file:
-            nb = nbf.v4.new_notebook()
-            nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
-            nbf.write(nb, temp_file.name)
-            run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
-            mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
-            typ,ext = ('html','html') if save_html else ('script','py')
-            os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
-            mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
+        try:
+            with NamedTemporaryFile() as temp_file:
+                nb = nbf.v4.new_notebook()
+                nb['cells'] = [nbf.v4.new_code_cell(code) for code in ipython.history_manager.input_hist_raw]
+                nbf.write(nb, temp_file.name)
+                run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
+                mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
+                typ,ext = ('html','html') if save_html else ('script','py')
+                os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
+                mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
+                os.system(f'pip freeze > {temp_file.name}.txt')
+                mlflow.log_artifact(f'{temp_file.name}.txt', name='pip_env.txt')
+
+        except:
+            warnings.warn('There was an issue storing the run log history for this mlflow run. Your run will not have '
+                          'the run log.')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
     orig(status=status)
 
