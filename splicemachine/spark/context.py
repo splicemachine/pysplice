@@ -260,7 +260,7 @@ class PySpliceContext:
                 print('Done.')
         self.context.insert(dataframe._jdf, schema_table_name)
 
-    def insertWithStatus(self, dataframe, schema_table_name, statusDirectory, badRecordsAllowed):
+    def insertWithStatus(self, dataframe, schema_table_name, statusDirectory, badRecordsAllowed, to_upper=True):
         """
         Insert a dataframe into a table (schema.table) while tracking and limiting records that fail to insert.
         The status directory and number of badRecordsAllowed allow for duplicate primary keys to be
@@ -271,9 +271,11 @@ class PySpliceContext:
         :param schema_table_name: (str) The table in which you would like to insert the dataframe
         :param statusDirectory: (str) The status directory where bad records file will be created
         :param badRecordsAllowed: (int) The number of bad records are allowed. -1 for unlimited
+        :param to_upper: Whether to convert dataframe columns to uppercase before action. Default true
         :return: None
         """
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         self.context.insert(dataframe._jdf, schema_table_name, statusDirectory, badRecordsAllowed)
 
     def insertRdd(self, rdd, schema, schema_table_name):
@@ -311,17 +313,19 @@ class PySpliceContext:
             badRecordsAllowed
         )
 
-    def upsert(self, dataframe, schema_table_name):
+    def upsert(self, dataframe, schema_table_name, to_upper=True):
         """
         Upsert the data from a dataframe into a table (schema.table).
         If triggers fail when calling upsert, use the mergeInto function instead of upsert.
 
         :param dataframe: (Dataframe) The dataframe you would like to upsert
         :param schema_table_name: (str) The table in which you would like to upsert the RDD
+        :param to_upper: Whether to convert dataframe columns to uppercase before action. Default true
         :return: None
         """
         # make sure column names are in the correct case
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         self.context.upsert(dataframe._jdf, schema_table_name)
 
     def upsertWithRdd(self, rdd, schema, schema_table_name):
@@ -339,7 +343,7 @@ class PySpliceContext:
             schema_table_name
         )
 
-    def mergeInto(self, dataframe, schema_table_name):
+    def mergeInto(self, dataframe, schema_table_name, to_upper=True):
         """
         Rows in the dataframe whose primary key is not in schemaTableName will be inserted into the table;
         rows in the dataframe whose primary key is in schemaTableName will be used to update the table.
@@ -348,9 +352,11 @@ class PySpliceContext:
 
         :param dataframe: (Dataframe) The dataframe you would like to merge in
         :param schema_table_name: (str) The table in which you would like to merge in the dataframe
+        :param to_upper: Whether to convert dataframe columns to uppercase before action. Default true
         :return: None
         """
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         self.context.mergeInto(dataframe._jdf, schema_table_name)
 
     def mergeIntoWithRdd(self, rdd, schema, schema_table_name):
@@ -396,7 +402,7 @@ class PySpliceContext:
             schema_table_name
         )
 
-    def update(self, dataframe, schema_table_name):
+    def update(self, dataframe, schema_table_name, to_upper=True):
         """
         Update data from a dataframe for a specified schema_table_name (schema.table).
         The keys are required for the update and any other columns provided will be updated
@@ -404,10 +410,11 @@ class PySpliceContext:
 
         :param dataframe: (Dataframe) The dataframe you would like to update
         :param schema_table_name: (str) Splice Machine Table
-        :return: None
+        :param to_upper: Whether to convert dataframe columns to uppercase before action. Default true
         """
         # make sure column names are in the correct case
-        dataframe = self.replaceDataframeSchema(dataframe, schema_table_name)
+        if to_upper:
+            dataframe = self.toUpper(dataframe)
         self.context.update(dataframe._jdf, schema_table_name)
 
     def updateWithRdd(self, rdd, schema, schema_table_name):
