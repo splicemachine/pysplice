@@ -8,7 +8,6 @@ import pandas as pd
 from pandas import DataFrame as PandasDF
 import cloudpickle
 import base64
-from inspect import getsource
 
 from pyspark.sql.dataframe import DataFrame as SparkDF
 from pyspark.ml import Pipeline
@@ -1097,7 +1096,7 @@ class FeatureStore:
                                                         f" class provided by splicemachine.features"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f, "code": getsource(func) }
+        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f }
 
         print(f'Registering Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
@@ -1116,7 +1115,7 @@ class FeatureStore:
         assert name != "None", "Name of pipe cannot be None!"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "description": description, "func": f, "code": getsource(func) }
+        p_dict = { "description": description, "func": f }
 
         print(f'Updating Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
@@ -1135,9 +1134,10 @@ class FeatureStore:
         :return:
         """
         assert name != "None", "Name of pipe cannot be None!"
+        assert func or description, "Please enter either a function or description"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip() if func else None
-        p_dict = { "description": description, "func": f, "code": getsource(func) if func else None }
+        p_dict = { "description": description, "func": f }
         params = { "version" : version }
 
         print(f'Altering Pipe {name} in the Feature Store')
