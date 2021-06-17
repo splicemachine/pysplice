@@ -1058,15 +1058,26 @@ class FeatureStore:
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.GET, self._auth, { "name": names })
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
-    def get_pipe(self, name: str, version: Optional[Union[str, int]] = None) -> List[Pipe]:
+    def get_pipe(self, name: str, version: Optional[Union[str, int]] = 'latest') -> Pipe:
+        """
+        Returns a pipe version
+
+        :param name: The pipe name
+        :param version: The version to return (either an int or 'latest'). Default is 'latest'
+        :return: List[Pipe] The list of Pipe objects
+        """
+        assert version, "version cannot be none!"
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
+        return Pipe(**r[0], splice_ctx=self.splice_ctx)
+
+    def get_pipe_versions(self, name: str) -> List[Pipe]:
         """
         Returns a pipe version or list of pipe versions for a provided pipe name
 
         :param name: The pipe name
-        :param version: The version to return (either an int or 'latest'). If None, all versions are returned
         :return: List[Pipe] The list of Pipe objects
         """
-        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth)
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
     def create_pipe(self, name: str, ptype: str, lang: str, func: Callable, description: Optional[str] = None) -> Pipe:
