@@ -1070,8 +1070,7 @@ class FeatureStore:
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
-    def create_pipe(self, name: str, ptype: str, lang: str, func: Callable,
-                            description: Optional[str] = None) -> Pipe:
+    def create_pipe(self, name: str, ptype: str, lang: str, func: Callable, description: Optional[str] = None) -> Pipe:
         """
         Creates and returns a new pipe
 
@@ -1097,8 +1096,8 @@ class FeatureStore:
                                                         f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
                                                         f" class provided by splicemachine.features"
 
-        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
-        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f, "code": getsource(function) }
+        f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
+        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f, "code": getsource(func) }
 
         print(f'Registering Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
