@@ -1070,13 +1070,13 @@ class FeatureStore:
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
-    def create_pipe(self, name: str, type: str, language: str, function: Callable,
+    def create_pipe(self, name: str, ptype: str, lang: str, func: Callable,
                             description: Optional[str] = None) -> Pipe:
         """
         Creates and returns a new pipe
 
         :param name: The pipe name. This must be unique to other pipes
-        :param type: splicemachine.features.PipeType of the pipe. The available types are from the PipeType class: PipeType.[source, batch, online, realtime].
+        :param ptype: splicemachine.features.PipeType of the pipe. The available types are from the PipeType class: PipeType.[source, batch, online, realtime].
             You can see available feature types by running
 
             .. code-block:: python
@@ -1084,61 +1084,61 @@ class FeatureStore:
                     from splicemachine.features import PipeType
                     print(PipeType.get_valid())
 
-        :param language: str The language of the pipe's function. Currently supported types are 'python', 'pyspark', and 'sql'
-        :param function: The actual python function or sql query used in the transformation
+        :param lang: str The language of the pipe's function. Currently supported types are 'python', 'pyspark', and 'sql'
+        :param func: The actual python function or sql query used in the transformation
         :param description: (Optional[str]) An optional description of the pipe
         :return:
         """
-        assert type in PipeType.get_valid(), f"The pipe type {type} is not valid. Valid pipe " \
+        assert ptype in PipeType.get_valid(), f"The pipe type {ptype} is not valid. Valid pipe " \
                                                         f"types include {PipeType.get_valid()}. Use the PipeType" \
                                                         f" class provided by splicemachine.features"
 
-        assert language in PipeLanguage.get_valid(), f"The pipe language {language} is not supported. Currently supported" \
+        assert lang in PipeLanguage.get_valid(), f"The pipe language {lang} is not supported. Currently supported" \
                                                         f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
                                                         f" class provided by splicemachine.features"
 
         f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
-        p_dict = { "name": name, "description": description, "type": type, "language": language, "function": f, "code": getsource(function) }
+        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f, "code": getsource(function) }
 
         print(f'Registering Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
-    def update_pipe(self, name: str, function: Callable, description: Optional[str] = None) -> Pipe:
+    def update_pipe(self, name: str, func: Callable, description: Optional[str] = None) -> Pipe:
         """
         Creates and returns a new version of a pipe. Use this function when you want to
         make changes to a pipe without affecting its dependencies
 
         :param name: The training set name.
-        :param function: The actual python function or sql query used in the transformation
+        :param func: The actual python function or sql query used in the transformation
         :param description: (Optional[str]) An optional description of the pipe
         :return:
         """
         assert name != "None", "Name of pipe cannot be None!"
 
-        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip()
-        p_dict = { "description": description, "function": f, "code": getsource(function) }
+        f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
+        p_dict = { "description": description, "func": f, "code": getsource(func) }
 
         print(f'Updating Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
-    def alter_pipe(self, name: str, function: Optional[Union[str, Callable]] = None, description: Optional[str] = None,
+    def alter_pipe(self, name: str, func: Optional[Union[str, Callable]] = None, description: Optional[str] = None,
                     version: Union[int, str] = 'latest') -> Pipe:
         """
         Alters an existing version of a pipe. Use this method when you want to make changes to a version of a pipe
         that has no dependencies, or when you want to change version-independent metadata, such as description.
 
         :param name: The training set name.
-        :param function: The actual python function or sql query used in the transformation
+        :param func: The actual python function or sql query used in the transformation
         :param description: (Optional[str]) An optional description of the pipe
         :param version: The version to alter (either an int or 'latest'). Default 'latest'
         :return:
         """
         assert name != "None", "Name of pipe cannot be None!"
 
-        f = base64.encodebytes(cloudpickle.dumps(function)).decode('ascii').strip() if function else None
-        p_dict = { "description": description, "function": f, "code": getsource(function) if function else None }
+        f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip() if func else None
+        p_dict = { "description": description, "func": f, "code": getsource(func) if func else None }
         params = { "version" : version }
 
         print(f'Altering Pipe {name} in the Feature Store')
@@ -1158,7 +1158,7 @@ class FeatureStore:
         p_dict = { "version": version }
 
         print(f'Removing Pipe {name} from the Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.DELETE, self._auth, params=p_dict)
+        make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.DELETE, self._auth, params=p_dict)
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
                       update_ts_column: datetime, primary_keys: List[str]):
