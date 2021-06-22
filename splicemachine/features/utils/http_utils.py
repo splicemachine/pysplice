@@ -56,6 +56,7 @@ class Endpoints:
     BACKFILL_SQL: str = 'backfill-sql'
     BACKFILL_INTERVALS: str = 'backfill-intervals'
     PIPELINE_SQL: str = 'pipeline-sql'
+    PIPES: str = 'pipes'
 
 def make_request(url: str, endpoint: str, method: str, auth: str,
                  params: Optional[Dict[str, Any]] = None,
