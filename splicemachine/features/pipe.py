@@ -49,4 +49,15 @@ class Pipe:
         else: # 'python'
             return r
 
+    def _to_json(self):
+        return {
+            'name': self.name,
+            'description': self.description,
+            'ptype': self.ptype,
+            'lang': self.lang,
+            'func': base64.encodebytes(self.func).decode('ascii').strip(),
+            'code': self.code,
+            'pipe_id': self.pipe_id,
+            'pipe_version': self.pipe_version
+        }
 
