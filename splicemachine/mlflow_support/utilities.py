@@ -218,7 +218,7 @@ def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact
     print('Uploading file... ', end='')
     with open(filepath, 'rb') as file:
         r = requests.post(
-            host + '/api/rest/upload-artifact',
+            host + '/artifacts/upload-artifact',
             auth=auth,
             data=payload,
             files={'file': file}
@@ -243,7 +243,7 @@ def download_artifact(host, name: str, run_id: str, auth) -> requests.models.Res
     )
     print(f'Downloading file {name}')
     r = requests.get(
-        host + '/api/rest/download-artifact',
+        host + '/artifacts/download-artifact',
         params=payload,
         auth=auth
     )

@@ -78,17 +78,18 @@ from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
-try: # PySpark/H2O 3.X
+try:  # PySpark/H2O 3.X
     from h2o.model.model_base import ModelBase as H2OModel
-except: # PySpark/H2O 2.X
+except:  # PySpark/H2O 2.X
     from h2o.estimators.estimator_base import ModelBase as H2OModel
 
 # For recording notebook history
 try:
     from IPython import get_ipython
     import nbformat as nbf
+
     ipython = get_ipython()
-    mlflow._notebook_history = bool(ipython) # If running outside a notebook/ipython, this will be False
+    mlflow._notebook_history = bool(ipython)  # If running outside a notebook/ipython, this will be False
 except:
     mlflow._notebook_history = False
 
@@ -107,15 +108,18 @@ mlflow.client = _CLIENT
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
+
 class SpliceActiveRun(ActiveRun):
     """
     A wrapped active run for Splice Machine that calls our custom mlflow.end_run, so we can record the notebook
     history
     """
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         status = RunStatus.FINISHED if exc_type is None else RunStatus.FAILED
         mlflow.end_run(RunStatus.to_string(status))
         return exc_type is None
+
 
 def __try_auto_login():
     """
@@ -130,6 +134,7 @@ def __try_auto_login():
     user, password = os.environ.get('SPLICE_JUPYTER_USER'), os.environ.get('SPLICE_JUPYTER_PASSWORD')
     if user and password:
         mlflow.login_director(username=user, password=password)
+
 
 def _mlflow_patch(name):
     """
@@ -151,13 +156,16 @@ def _get_current_run_data():
     """
     return mlflow.client.get_run(mlflow.active_run().info.run_id).data
 
+
 def __get_active_user():
     if hasattr(mlflow, '_username'):
         return mlflow._username
     if get_user():
         return get_user()
-    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
-                                  "username and password or JWT token.")
+    return SpliceMachineException(
+        "Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
+        "username and password or JWT token.")
+
 
 @_mlflow_patch('get_run_ids_by_name')
 def _get_run_ids_by_name(run_name, experiment_id=None):
@@ -176,6 +184,7 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
 
+
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
@@ -187,6 +196,7 @@ def _register_splice_context(splice_context):
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
+
 @_mlflow_patch('register_feature_store')
 def _register_feature_store(fs: FeatureStore):
     """
@@ -197,6 +207,7 @@ def _register_feature_store(fs: FeatureStore):
     """
     mlflow._feature_store = fs
     mlflow._feature_store.mlflow_ctx = mlflow
+
 
 def _check_for_splice_ctx():
     """
@@ -361,7 +372,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
                 nbf.write(nb, temp_file.name)
                 run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
                 mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
-                typ,ext = ('html','html') if save_html else ('script','py')
+                typ, ext = ('html', 'html') if save_html else ('script', 'py')
                 os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
                 mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
                 os.system(f'pip freeze > {temp_file.name}.txt')
@@ -372,6 +383,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
                           'the run log.')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
     orig(status=status)
+
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -411,10 +423,11 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
         mlflow.set_tag('Run ID', mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
-    if hasattr(mlflow,'_active_training_set'):
+    if hasattr(mlflow, '_active_training_set'):
         mlflow._active_training_set._register_metadata(mlflow)
 
     return SpliceActiveRun(active_run)
+
 
 @_mlflow_patch('remove_active_training_set')
 def _remove_active_training_set():
@@ -423,7 +436,7 @@ def _remove_active_training_set():
     the feature store), which will in turn stop the automated logging of features to the active mlflow run. To recreate
     an active training set, call fs.get_training_set or fs.get_training_set_from_view in the Feature Store.
     """
-    if hasattr(mlflow,'_active_training_set'):
+    if hasattr(mlflow, '_active_training_set'):
         del mlflow._active_training_set
 
 
@@ -490,7 +503,7 @@ def _log_model_params(pipeline_or_model):
         raise Exception("Could not parse model type: " + str(model))
     for param in verbose_parameters:
         value = verbose_parameters[param]
-        if value: # Spark 3.0 leafCol returns an empty parameter, mlflow fails if you try to log an empty string
+        if value:  # Spark 3.0 leafCol returns an empty parameter, mlflow fails if you try to log an empty string
             try:
                 value = float(value)
                 mlflow.log_param(param.split('-')[0], value)
@@ -536,6 +549,7 @@ def _get_model_name(run_id):
     :return: (str or None) The model name if it exists
     """
     return mlflow.client.get_run(run_id).data.tags.get('splice.model_name')
+
 
 @_mlflow_patch('log_model')
 def _log_model(model, name='model', model_lib=None, **flavor_options):
@@ -615,7 +629,7 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
                 mlmodel = yaml.safe_load(mlmodel_file.read())
                 try:
                     loader_module = mlmodel['flavors']['python_function']['loader_module']
-                except KeyError: # If the python_function isn't available, fallback and try the raw model flavor
+                except KeyError:  # If the python_function isn't available, fallback and try the raw model flavor
                     # We will look through the other flavors in the MLModel yaml
                     loader_module = None
                     for flavor in mlmodel['flavors'].keys():
@@ -624,14 +638,14 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
                             break
                     if not loader_module:
                         raise SpliceMachineException(f"Unable to load the mlflow loader. Ensure this ML model has "
-                                                 f"been saved using an mlflow module")
+                                                     f"been saved using an mlflow module")
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
 
 
 @_mlflow_patch('log_artifact')
-def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
+def _log_artifact(file_name, name=None, run_uuid=None, artifact_path=None):
     """
     Log an artifact for the active run
 
@@ -667,6 +681,7 @@ def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     insert_artifact(host, file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
     print(f'Saved artifact as {name} in mlflow')
 
+
 @_mlflow_patch('download_artifact')
 def _download_artifact(name, local_path=None, run_id=None):
     """
@@ -685,6 +700,7 @@ def _download_artifact(name, local_path=None, run_id=None):
         file.write(r.content)
     print(f'Done. File has been written to {file_name}')
 
+
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):
     """
@@ -697,7 +713,8 @@ def _login_director(username=None, password=None, jwt_token=None):
     Either (username/password) for basic auth or jwt_token must be provided. Basic authentication takes precedence if set (mlflow default)
     """
     if (username and not password) or (password and not username):
-        raise SpliceMachineException("You must either set both username and password, or neither. You cannot set just one")
+        raise SpliceMachineException(
+            "You must either set both username and password, or neither. You cannot set just one")
 
     if username and password:
         mlflow._basic_auth = HTTPBasicAuth(username, password)
@@ -769,7 +786,7 @@ def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = '
         'deployment_mode': deployment_mode, 'app_name': app_name
     }
 
-    return __initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/jobs/initiate-job')
 
 
 @_mlflow_patch('deploy_azure')
@@ -806,7 +823,7 @@ def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_i
         'allocated_ram': allocated_ram,
         'model_name': model_name
     }
-    return __initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/jobs/initiate-job')
 
 
 @_mlflow_patch('deploy_kubernetes')
@@ -865,7 +882,8 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
         'memory_request': memory_request, 'expose_external': expose_external
     }
 
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 @_mlflow_patch('undeploy_kubernetes')
 def _undeploy_kubernetes(run_id: str):
@@ -955,9 +973,8 @@ def _deploy_db(db_schema_name: str,
     print("Deploying model to database...")
 
     # database converts all object names to upper case, so we need to as well in our metadata
-    db_schema_name=db_schema_name.upper()
-    db_table_name=db_table_name.upper()
-
+    db_schema_name = db_schema_name.upper()
+    db_table_name = db_table_name.upper()
 
     # ~ Backwards Compatability ~
     if verbose:
@@ -972,7 +989,7 @@ def _deploy_db(db_schema_name: str,
 
     if df is not None:
         if isinstance(df, PandasDF):
-            _check_for_splice_ctx() # We will need a splice context to convert to sparkDF
+            _check_for_splice_ctx()  # We will need a splice context to convert to sparkDF
             df_schema = mlflow._splice_context.pandasToSpark(df).schema.json()
         elif isinstance(df, SparkDF):
             df_schema = df.schema.json()
@@ -985,11 +1002,12 @@ def _deploy_db(db_schema_name: str,
         'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
         'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
         'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema, 
+        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema,
         'max_batch_size': max_batch_size
     }
 
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 @_mlflow_patch('undeploy_db')
 def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, drop_table: bool = False):
@@ -1013,19 +1031,22 @@ def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, d
         'drop_table': drop_table,
         'handler_name': 'UNDEPLOY_DATABASE'
     }
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 def __get_logs(job_id: int):
     """
     Retrieve the logs associated with the specified job id
     """
-    request = requests.post(
-        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/logs",
-        json={"task_id": job_id}, auth=mlflow._basic_auth
+    request = requests.get(
+        get_jobs_uri(mlflow.get_tracking_uri() or
+                     get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/monitoring/job-logs/" + str(job_id),
+        auth=mlflow._basic_auth
     )
     if not request.ok:
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
+
 
 @_mlflow_patch('watch_job')
 def _watch_job(job_id: int):
@@ -1037,7 +1058,7 @@ def _watch_job(job_id: int):
     :raise SpliceMachineException: If the job being watched fails
     """
     previous_lines = []
-    warn = False # If there were any warnings from the log, we want to notify the user explicitly
+    warn = False  # If there were any warnings from the log, we want to notify the user explicitly
     while True:
         logs_retrieved = __get_logs(job_id)
         logs_retrieved.remove('')
@@ -1047,16 +1068,16 @@ def _watch_job(job_id: int):
             if logs_retrieved[log_idx] in previous_lines:
                 break
 
-        idx = log_idx+1 if log_idx else log_idx # First time getting logs, go to 0th index, else log_idx+1
+        idx = log_idx + 1 if log_idx else log_idx  # First time getting logs, go to 0th index, else log_idx+1
         for n in logs_retrieved[idx:]:
             if 'WARNING' in n:
                 warnings.warn(n)
                 warn = True
-            print(f'\n{n}',end='')
+            print(f'\n{n}', end='')
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
-        if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1]  # Remove empty line
+        if 'TASK_COMPLETED' in previous_lines[-1]:  # Finishing Statement
             # Check for a failure first, and raise an error if so
             for log in reversed(previous_lines):
                 if 'ERROR' in log and 'Task Failed' in log:
@@ -1064,7 +1085,7 @@ def _watch_job(job_id: int):
                         'An error occured in your Job. See the log above for more information'
                     ) from None
             if warn:
-                print('\n','Note! Your deployment had some warnings you should consider.')
+                print('\n', 'Note! Your deployment had some warnings you should consider.')
             return
 
         time.sleep(1)
@@ -1088,7 +1109,8 @@ def _get_deployed_models() -> PandasDF:
     print('Rows without a Schema or Table name indicate that the deployment table no longer exists '
           '(based on the TableID). This could be because the table was dropped, or the deployment was DELETED')
     request = requests.get(
-        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
+        get_jobs_uri(
+            mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/monitoring/deployments",
         auth=mlflow._basic_auth
     )
     if not request.ok:
@@ -1101,7 +1123,8 @@ def apply_patches():
     Apply all the Gorilla Patches; \
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
-    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
+               _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes, _fetch_logs,
