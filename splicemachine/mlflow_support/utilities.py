@@ -223,7 +223,6 @@ def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact
             host + '/artifacts/upload-artifact',
             auth=auth,
             data=payload,
-            headers={'Content-Type': 'multipart/form-data'},
             files={'artifact': file}
         )
     if not r.ok:
