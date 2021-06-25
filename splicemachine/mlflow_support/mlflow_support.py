@@ -780,10 +780,13 @@ def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = '
     print("Processing...")
 
     request_payload = {
-        'handler_name': 'DEPLOY_AWS', 'run_id': run_id,
-        'region': region, 'user': __get_active_user(),
-        'instance_type': instance_type, 'instance_count': instance_count,
-        'deployment_mode': deployment_mode, 'app_name': app_name
+        'handler_name': 'DEPLOY_AWS',
+        'job_payload': {
+            'run_id': run_id,
+            'region': region, 'user': __get_active_user(),
+            'instance_type': instance_type, 'instance_count': instance_count,
+            'deployment_mode': deployment_mode, 'app_name': app_name
+        }
     }
 
     return __initiate_job(request_payload, '/jobs/initiate-job')
@@ -814,14 +817,16 @@ def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_i
     """
     request_payload = {
         'handler_name': 'DEPLOY_AZURE',
-        'endpoint_name': endpoint_name,
-        'resource_group': resource_group,
-        'workspace': workspace,
-        'region': region,
-        'run_id': run_id,
-        'cpu_cores': cpu_cores,
-        'allocated_ram': allocated_ram,
-        'model_name': model_name
+        'job_payload': {
+            'endpoint_name': endpoint_name,
+            'resource_group': resource_group,
+            'workspace': workspace,
+            'region': region,
+            'run_id': run_id,
+            'cpu_cores': cpu_cores,
+            'allocated_ram': allocated_ram,
+            'model_name': model_name
+        }
     }
     return __initiate_job(request_payload, '/jobs/initiate-job')
 
@@ -873,13 +878,18 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     print("Processing...")
 
     payload = {
-        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'DEPLOY_KUBERNETES',
-        'service_port': service_port, 'base_replicas': base_replicas, 'autoscaling_enabled': autoscaling_enabled,
-        'max_replicas': max_replicas, 'target_cpu_utilization': target_cpu_utilization,
-        'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
-        'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
-        'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request, 'cpu_limit': cpu_limit,
-        'memory_request': memory_request, 'expose_external': expose_external
+        'handler_name': 'DEPLOY_KUBERNETES',
+        'job_payload': {
+            'run_id': run_id or mlflow.active_run().info.run_uuid,
+            'service_port': service_port, 'base_replicas': base_replicas,
+            'autoscaling_enabled': autoscaling_enabled,
+            'max_replicas': max_replicas, 'target_cpu_utilization': target_cpu_utilization,
+            'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
+            'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
+            'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request,
+            'cpu_limit': cpu_limit,
+            'memory_request': memory_request, 'expose_external': expose_external
+        }
     }
 
     return __initiate_job(payload, '/jobs/initiate-job')
@@ -895,7 +905,8 @@ def _undeploy_kubernetes(run_id: str):
     print("Processing...")
 
     payload = {
-        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'UNDEPLOY_KUBERNETES'
+        'job_payload': {'run_id': run_id or mlflow.active_run().info.run_uuid},
+        'handler_name': 'UNDEPLOY_KUBERNETES'
     }
 
     return __initiate_job(payload, '/api/rest/initiate')
@@ -999,11 +1010,14 @@ def _deploy_db(db_schema_name: str,
         df_schema = None
 
     payload = {
-        'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
-        'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
-        'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema,
-        'max_batch_size': max_batch_size
+        'handler_name': 'DEPLOY_DATABASE',
+        'job_payload': {'db_table': db_table_name, 'db_schema': db_schema_name,
+                        'run_id': run_id or mlflow.active_run().info.run_uuid,
+                        'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
+                        'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific,
+                        'replace': replace,
+                        'reference_table': reference_table, 'reference_schema': reference_schema,
+                        'max_batch_size': max_batch_size}
     }
 
     return __initiate_job(payload, '/jobs/initiate-job')
@@ -1025,11 +1039,13 @@ def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, d
     :return: Job ID to track job progress with the mlflow.watch_job function
     """
     payload = {
-        'run_id': run_id,
-        'db_schema': schema_name.upper() if schema_name else None,
-        'db_table': table_name.upper() if table_name else None,
-        'drop_table': drop_table,
-        'handler_name': 'UNDEPLOY_DATABASE'
+        'handler_name': 'UNDEPLOY_DATABASE',
+        'job_payload': {
+            'run_id': run_id,
+            'db_schema': schema_name.upper() if schema_name else None,
+            'db_table': table_name.upper() if table_name else None,
+            'drop_table': drop_table
+        }
     }
     return __initiate_job(payload, '/jobs/initiate-job')
 
