@@ -312,9 +312,9 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
                                          'you should pass a value to the model_lib parameter of the model type you '
                                          'want to save, or call the original mlflow.<flavor>.log_model(). '
                                          'Supported values are available here: '
-                                         'https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                         'https://www.mlflow.org/docs/1.15.0/models.html#built-in-model-flavors\n'
                                          'as well as \'pyfunc\' '
-                                         'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
+                                         'https://www.mlflow.org/docs/1.15.0/models.html#python-function-python-function')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))

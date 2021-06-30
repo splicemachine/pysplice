@@ -1,15 +1,15 @@
 from splicemachine.spark.utils import spark_df_size
 import pandas as pd
-from ipywidgets import widgets, Layout, interact
-from IPython.display import display, clear_output
 import re
 
 import warnings
 
 try:
+    from ipywidgets import widgets, Layout, interact
+    from IPython.display import display, clear_output
     import pandas_profiling, spark_df_profiling
 except:
-    warnings.warn('You do not have the necessary extensions for these functions (pandas_profiling, spark_df_profiling). '
+    warnings.warn('You do not have the necessary extensions (pandas_profiling, spark_df_profiling) for Feature Store search. '
                   'Please run `pip install splicemachine[notebook]` to use these functions.')
 
 def __filter_df(pdf, search_input) -> pd.DataFrame:

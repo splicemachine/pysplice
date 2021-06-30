@@ -154,7 +154,9 @@ class PySpliceContext:
         """
         try: # Try to create the dataframe as it exists
             return self.spark_session.createDataFrame(pdf)
-        except TypeError:
+        except TypeError as e:
+            print(f'Spark failed to convert Pandas DF to Spark df implicitly. Converting bad columns to StringType to '
+                  f'help Spark.')
             p_df = pdf.copy()
             # This means there was an NaN conversion error
             from pyspark.sql.functions import udf
