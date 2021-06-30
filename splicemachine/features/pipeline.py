@@ -1,3 +1,5 @@
+from splicemachine import SpliceMachineException
+from splicemachine.spark.context import ExtPySpliceContext
 from splicemachine.features.constants import PipeLanguage
 
 class Pipeline:
@@ -25,6 +27,9 @@ class Pipeline:
             if last.language == PipeLanguage.python and pipe.language in [PipeLanguage.pyspark, PipeLanguage.sql]:
                 df = pipe._pandas_to_spark(df)
             if pipe.language == PipeLanguage.sql:
+                if isinstance(pipe.splice_ctx, ExtPySpliceContext):
+                    raise SpliceMachineException(f'Error encountered with Pipe {pipe.name}: Cannot execute SQL statements on DataFrames '
+                                                    'when using an ExtPySpliceContext. Please give your pipe a PySpliceContext with pipe.set_splice_ctx()')
                 df = pipe._df_to_sql(df)
             df = pipe.apply(df)
             last = pipe
