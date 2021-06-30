@@ -89,7 +89,7 @@ try:
     _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 except:
     print("It looks like you're running outside the Splice K8s Cloud Service. "
-          "You must run mlflow.set_mlflow_uri(<url>) and pass in the URL to the MLFlow UI or set the "
+          "You must run mlflow.set_tracking_uri(<url>) and pass in the URL to the MLFlow UI or set the "
           "MLFLOW_URL environment variable before importing", file=stderr)
     _TRACKING_URL = ''
 
@@ -121,13 +121,13 @@ def __try_auto_login():
     """
     jwt = os.environ.get('SPLICE_JUPYTER_JWTTOKEN') or os.environ.get('SPLICE_JWT')
     if jwt:
-        mlflow.login_director(jwt_token=jwt)
+        mlflow.login_mlflow(jwt_token=jwt)
     user = os.environ.get('SPLICE_JUPYTER_USER') or os.environ.get('SPLICE_USER')
     password = os.environ.get('SPLICE_JUPYTER_PASSWORD') or os.environ.get('SPLICE_PASSWORD')
     if user and password:
-        mlflow.login_director(username=user, password=password)
+        mlflow.login_mlflow(username=user, password=password)
     if not any([user, password, jwt]):
-        warnings.warn('Please log in by calling mlflow.login_director and providing either username and password or '
+        warnings.warn('Please log in by calling mlflow.login_mlflow and providing either username and password or '
                       'jwt_token. Or, set the SPLICE_USER and SPLICE_PASSWORD environment variables or SPLICE_JWT '
                       'before importing')
 
@@ -159,7 +159,7 @@ def __get_active_user():
     if get_user():
         return get_user()
     return SpliceMachineException(
-        "Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
+        "Could not detect active user. Please run mlflow.login_mlflow() and pass in your Splice"
         "username and password or JWT token.")
 
 
@@ -690,9 +690,16 @@ def _download_artifact(name, local_path=None, run_id=None):
         file.write(r.content)
     print(f'Done. File has been written to {file_name}')
 
-
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):
+    """
+    Deprecated, see login_mlflow
+    """
+    warnings.warn("Deprecated. Use mlflow.login_mlflow", DeprecationWarning)
+    _login_mlflow(username=username, password=password, jwt_token=jwt_token)
+
+@_mlflow_patch('login_mlflow')
+def _login_mlflow(username=None, password=None, jwt_token=None):
     """
     Authenticate into the MLManager Director
 
@@ -726,7 +733,7 @@ def __initiate_job(payload, endpoint):
     if not hasattr(mlflow, '_basic_auth'):
         raise Exception(
             "You have not logged into MLManager director."
-            " Please run mlflow.login_director(username, password)"
+            " Please run mlflow.login_mlflow(username, password)"
         )
     request = requests.post(
         get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + endpoint,
@@ -1109,7 +1116,8 @@ def _get_deployed_models() -> PandasDF:
 @_mlflow_patch('set_tracking_uri')
 def _set_tracking_uri(uri):
     """
-    Overload of original function to control the mlflow tracking client
+    Sets the tracking uri of the mlflow client
+
     :param uri: MLflow URI
     """
     global _CLIENT
@@ -1121,10 +1129,7 @@ def _set_tracking_uri(uri):
 
 def _set_mlflow_uri(uri):
     """
-    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
-
-    :param uri: (str) the URL of your mlflow UI.
-    :return: None
+    Deprecated, see set_tracking_uri
     """
     mlflow.set_tracking_uri(uri)
 
@@ -1137,8 +1142,9 @@ def apply_patches():
                _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
-               _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes, _fetch_logs,
-               _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set, _undeploy_db, _set_tracking_uri]
+               _login_mlflow, _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes,
+               _fetch_logs, _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set, _undeploy_db,
+               _set_tracking_uri]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
