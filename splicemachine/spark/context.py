@@ -154,7 +154,7 @@ class PySpliceContext:
         """
         try: # Try to create the dataframe as it exists
             return self.spark_session.createDataFrame(pdf)
-        except TypeError:
+        except (TypeError, ValueError):
             p_df = pdf.copy()
             # This means there was an NaN conversion error
             from pyspark.sql.functions import udf
@@ -764,6 +764,62 @@ class PySpliceContext:
         self.createTable(dataframe, schema_table_name, primary_keys=primary_keys,
                                  create_table_options=create_table_options, to_upper=to_upper)
         self.insert(dataframe, schema_table_name, to_upper=to_upper)
+
+    def createDataFrameSql(self, dataframe):
+        """
+        Prepares a dataframe so that SQL statements can be executed on it
+        :param dataframe: The Spark DataFrame on which to execute the SQL
+
+        :return: string representation of dataframe to be used in SQL 'FROM' clauses
+        """
+        jvm = self.spark_session.sparkContext._jvm
+
+        schema_str = ', '.join([f'{f.name} {CONVERSIONS[str(f.dataType)]}' for f in dataframe.schema.fields ])
+        java_import(jvm, 'com.splicemachine.spark.splicemachine.{SpliceJDBCOptions, SpliceJDBCUtil, SplicemachineContext}')
+        java_import(jvm, 'com.splicemachine.derby.vti.SpliceDatasetVTI')
+        jvm.com.splicemachine.derby.vti.SpliceDatasetVTI.datasetThreadLocal.set(dataframe._jdf)
+        
+        return f'(select * from new com.splicemachine.derby.vti.SpliceDatasetVTI() as SpliceDatasetVTI({schema_str}))'
+
+    def sql(self, sql, dataframe):
+        """
+        Runs a Splice SQL statement against the provided dataframe, and returns the resulting dataframe. 
+        This is Splice Machine dialect SQL, not Spark SQL. 
+        This SQL can be joined to other Splice Machine tables via a given alias.
+        To use this function, you must have {table} in your FROM clause, where {table} will become your dataframe
+        :Example:
+            .. code-block:: python
+
+                import pandas as pd
+                df1 = pd.DataFrame({'a': ['T', 'T']})
+                df = spark.createDataFrame(df1)
+                df2 = splice.sql(df, 'select a + 10 from {table}')
+                df2.show()
+
+        You can join to other Splice Tables as well by giving your table an alias. 
+        If you have a table foo(col1 int, col2 varchar(500))
+        :Example:
+            .. code-block:: python
+
+                import pandas as pd
+                df1 = pd.DataFrame({'a': ['T', 'T']})
+                df = spark.createDataFrame(df1)
+                df2 = splice.sql(df, 'select a + 10 from {table} as t join foo b on t.a=b.col2')
+                df2.show()
+
+
+        :param sql: The  SQL to execute. Must contain the format variable 'table' (ex. 'SELECT * FROM {table})"
+        :param dataframe: The Spark DataFrame on which to execute the SQL
+
+        :return: resulting Spark DataFrame
+        """
+        table = self.createDataFrameSql(dataframe)
+        try:
+            sql = sql.format(table=table)
+        except KeyError as e:
+            raise SpliceMachineException(f"Experienced the following error when formatting your sql: {str(e)}. "\
+                                            "Your sql must contain the format variable 'table' (ex. 'SELECT * FROM {table} as t)")
+        return self.df(sql)
 
 class ExtPySpliceContext(PySpliceContext):
     """

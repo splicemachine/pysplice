@@ -1,7 +1,7 @@
 from sys import stderr
 from typing import List, Dict, Optional, Union, Any, Callable
-from datetime import datetime
-import json
+from datetime import datetime, date
+from inspect import getsource
 
 from IPython.display import display
 import pandas as pd
@@ -1107,8 +1107,10 @@ class FeatureStore:
                                                         f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
                                                         f" class provided by splicemachine.features"
 
+        func.__globals__.pop('splice', None)
+        func.__globals__.pop('spark', None)
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f }
+        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f, "code": getsource(func) }
 
         print(f'Registering Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
@@ -1126,8 +1128,10 @@ class FeatureStore:
         """
         assert name != "None", "Name of pipe cannot be None!"
 
+        func.__globals__.pop('splice', None)
+        func.__globals__.pop('spark', None)
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "description": description, "func": f }
+        p_dict = { "description": description, "func": f, "code": getsource(func) }
 
         print(f'Updating Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
@@ -1150,8 +1154,16 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip() if func else None
-        p_dict = { "description": description, "func": f }
+        if func:
+            func.__globals__.pop('splice', None)
+            func.__globals__.pop('spark', None)
+            f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
+            c = getsource(func)
+        else:
+            f = None
+            c = None
+
+        p_dict = { "description": description, "func": f , "code": c}
         params = { "version" : version }
 
         print(f'Altering Pipe {name} in the Feature Store')
@@ -1220,32 +1232,34 @@ class FeatureStore:
             pipelines.append(Pipeline(**pl))
         return pipelines
 
-    def create_pipeline(self, name: str, pipeline_start_ts: datetime, pipeline_interval: str, pipes: List[Union[str, Pipe]], description: Optional[str] = None) -> Pipeline:
+    def create_pipeline(self, name: str, pipeline_start_date: datetime, pipeline_interval: str, pipes: List[Union[str, Pipe]], description: Optional[str] = None) -> Pipeline:
         """
         Creates and returns a new pipeline
 
         :param name: The pipeline name. This must be unique to other pipelines
-        :param pipeline_start_ts: The start time of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future
+        :param pipeline_start_date: The start date of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future. 
+                                    Any granularity smaller than a day will be ignored.
         :param pipeline_interval: str The interval at which to run the pipeline. Either a cron expression or an Airflow cron preset
         :param pipes: An (ordered) list of the pipes (or pipe names) that make up this pipeline
         :param description: (Optional[str]) An optional description of the pipeline
         :return:
         """
         pipes = [p if isinstance(p, str) else p._to_json() for p in pipes]
-        p_dict = { "name": name, "description": description, "pipeline_start_ts": str(pipeline_start_ts), "pipeline_interval": pipeline_interval, "pipes": pipes }
+        p_dict = { "name": name, "description": description, "pipeline_start_date": str(pipeline_start_date), "pipeline_interval": pipeline_interval, "pipes": pipes }
 
         print(f'Registering Pipeline {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPELINES, RequestType.POST, self._auth, body=p_dict)
         r['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in r['pipes']]
         return Pipeline(**r)
 
-    def update_pipeline(self, name: str, pipeline_start_ts: datetime, pipeline_interval: str, pipes: List[Union[str, Pipe]], description: Optional[str] = None) -> Pipeline:
+    def update_pipeline(self, name: str, pipeline_start_date: datetime, pipeline_interval: str, pipes: List[Union[str, Pipe]], description: Optional[str] = None) -> Pipeline:
         """
         Creates and returns a new version of a pipeline. Use this function when you want to
         make changes to a pipeline without affecting its dependencies
 
         :param name: The pipeline name. This must be unique to other pipelines
-        :param pipeline_start_ts: The start time of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future
+        :param pipeline_start_date: The start date of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future. 
+                                    Any granularity smaller than a day will be ignored.
         :param pipeline_interval: str The interval at which to run the pipeline. Either a cron expression or an Airflow cron preset
         :param pipes: An (ordered) list of the pipes (or pipe names) that make up this pipeline
         :param description: (Optional[str]) An optional description of the pipeline
@@ -1254,21 +1268,22 @@ class FeatureStore:
         assert name != "None", "Name of pipeline cannot be None!"
 
         pipes = [p if isinstance(p, str) else p._to_json() for p in pipes]
-        p_dict = { "description": description, "pipeline_start_ts": str(pipeline_start_ts), "pipeline_interval": pipeline_interval, "pipes": pipes }
+        p_dict = { "description": description, "pipeline_start_date": str(pipeline_start_date), "pipeline_interval": pipeline_interval, "pipes": pipes }
 
         print(f'Updating Pipeline {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.PIPELINES}/{name}', RequestType.PUT, self._auth, body=p_dict)
         r['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in r['pipes']]
         return Pipeline(**r)
 
-    def alter_pipeline(self, name: str, pipeline_start_ts: Optional[datetime] = None, pipeline_interval: Optional[str] = None, pipes: Optional[List[Union[str, Pipe]]] = None, 
+    def alter_pipeline(self, name: str, pipeline_start_date: Optional[date] = None, pipeline_interval: Optional[str] = None, pipes: Optional[List[Union[str, Pipe]]] = None, 
                     description: Optional[str] = None, version: Union[int, str] = 'latest') -> Pipe:
         """
         Alters an existing version of a pipeline. Use this method when you want to make changes to a version of a pipeline
         that has no dependencies, or when you want to change version-independent metadata, such as description.
 
         :param name: The pipeline name. This must be unique to other pipelines
-        :param pipeline_start_ts: The start time of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future
+        :param pipeline_start_date: The start date of the pipe when deployed. This can be in the past, if a backfill is desired, or in the future. 
+                                    Any granularity smaller than a day will be ignored.
         :param pipeline_interval: str The interval at which to run the pipeline. Either a cron expression or an Airflow cron preset
         :param pipes: An (ordered) list of the pipes (or pipe names) that make up this pipeline
         :param description: (Optional[str]) An optional description of the pipeline
@@ -1276,12 +1291,12 @@ class FeatureStore:
         :return:
         """
         assert name != "None", "Name of pipeline cannot be None!"
-        assert pipeline_start_ts or pipeline_start_ts or pipes or description, "At least one attribute must be entered to alter"
+        assert pipeline_start_date or pipeline_interval or pipes or description, "At least one attribute must be entered to alter"
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
         pipes = [p if isinstance(p, str) else p._to_json() for p in pipes] if pipes else None
-        p_dict = { "description": description, "pipeline_start_ts": str(pipeline_start_ts) if pipeline_start_ts else None, "pipeline_interval": pipeline_interval, "pipes": pipes }
+        p_dict = { "description": description, "pipeline_start_date": str(pipeline_start_date) if pipeline_start_date else None, "pipeline_interval": pipeline_interval, "pipes": pipes }
         params = { "version" : version }
 
         print(f'Altering Pipeline {name} in the Feature Store')
