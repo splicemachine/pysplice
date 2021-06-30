@@ -54,7 +54,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Dict, Optional, List, Union
 
 import gorilla
-import h2o
 import mlflow
 import mlflow.pyfunc
 from mlflow.tracking.fluent import ActiveRun
@@ -78,17 +77,13 @@ from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
 
-try: # PySpark/H2O 3.X
-    from h2o.model.model_base import ModelBase as H2OModel
-except: # PySpark/H2O 2.X
-    from h2o.estimators.estimator_base import ModelBase as H2OModel
-
 # For recording notebook history
 try:
     from IPython import get_ipython
     import nbformat as nbf
+
     ipython = get_ipython()
-    mlflow._notebook_history = bool(ipython) # If running outside a notebook/ipython, this will be False
+    mlflow._notebook_history = bool(ipython)  # If running outside a notebook/ipython, this will be False
 except:
     mlflow._notebook_history = False
 
@@ -98,7 +93,8 @@ try:
     _TRACKING_URL = get_pod_uri("mlflow", "5001", _TESTING)
 except:
     print("It looks like you're running outside the Splice K8s Cloud Service. "
-          "You must run mlflow.set_mlflow_uri(<url>) and pass in the URL to the MLFlow UI", file=stderr)
+          "You must run mlflow.set_mlflow_uri(<url>) and pass in the URL to the MLFlow UI or set the "
+          "MLFLOW_URL environment variable before importing", file=stderr)
     _TRACKING_URL = ''
 
 _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=_TRACKING_URL)
@@ -107,15 +103,18 @@ mlflow.client = _CLIENT
 _GORILLA_SETTINGS = gorilla.Settings(allow_hit=True, store_hit=True)
 _PYTHON_VERSION = py_version.split('|')[0].strip()
 
+
 class SpliceActiveRun(ActiveRun):
     """
     A wrapped active run for Splice Machine that calls our custom mlflow.end_run, so we can record the notebook
     history
     """
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         status = RunStatus.FINISHED if exc_type is None else RunStatus.FAILED
         mlflow.end_run(RunStatus.to_string(status))
         return exc_type is None
+
 
 def __try_auto_login():
     """
@@ -124,12 +123,18 @@ def __try_auto_login():
 
     :return: None
     """
-    jwt = os.environ.get('SPLICE_JUPYTER_JWTTOKEN')
+    jwt = os.environ.get('SPLICE_JUPYTER_JWTTOKEN') or os.environ.get('SPLICE_JWT')
     if jwt:
         mlflow.login_director(jwt_token=jwt)
-    user, password = os.environ.get('SPLICE_JUPYTER_USER'), os.environ.get('SPLICE_JUPYTER_PASSWORD')
+    user = os.environ.get('SPLICE_JUPYTER_USER') or os.environ.get('SPLICE_USER')
+    password = os.environ.get('SPLICE_JUPYTER_PASSWORD') or os.environ.get('SPLICE_PASSWORD')
     if user and password:
         mlflow.login_director(username=user, password=password)
+    if not any([user, password, jwt]):
+        warnings.warn('Please log in by calling mlflow.login_director and providing either username and password or '
+                      'jwt_token. Or, set the SPLICE_USER and SPLICE_PASSWORD environment variables or SPLICE_JWT '
+                      'before importing')
+
 
 def _mlflow_patch(name):
     """
@@ -151,13 +156,16 @@ def _get_current_run_data():
     """
     return mlflow.client.get_run(mlflow.active_run().info.run_id).data
 
+
 def __get_active_user():
     if hasattr(mlflow, '_username'):
         return mlflow._username
     if get_user():
         return get_user()
-    return SpliceMachineException("Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
-                                  "username and password or JWT token.")
+    return SpliceMachineException(
+        "Could not detect active user. Please run mlflow.login_director() and pass in your Splice"
+        "username and password or JWT token.")
+
 
 @_mlflow_patch('get_run_ids_by_name')
 def _get_run_ids_by_name(run_name, experiment_id=None):
@@ -176,6 +184,7 @@ def _get_run_ids_by_name(run_name, experiment_id=None):
                 run_ids.append(run.data.tags['Run ID'])
     return run_ids
 
+
 @_mlflow_patch('register_splice_context')
 def _register_splice_context(splice_context):
     """
@@ -187,6 +196,7 @@ def _register_splice_context(splice_context):
     assert isinstance(splice_context, PySpliceContext), "You must pass in a PySpliceContext to this method"
     mlflow._splice_context = splice_context
 
+
 @_mlflow_patch('register_feature_store')
 def _register_feature_store(fs: FeatureStore):
     """
@@ -197,6 +207,7 @@ def _register_feature_store(fs: FeatureStore):
     """
     mlflow._feature_store = fs
     mlflow._feature_store.mlflow_ctx = mlflow
+
 
 def _check_for_splice_ctx():
     """
@@ -273,7 +284,7 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
     zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
     with TemporaryDirectory() as tempdir:
         mlmodel_dir = f'{tempdir}/model'
-        if model_lib:
+        if model_lib: # User passed in the model library or they called mlflow.<flavor>.log_model. This is desired behavior
             try:
                 import mlflow
                 import_module(f'mlflow.{model_lib}')
@@ -288,33 +299,47 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
             except Exception as e:
                 print(str(e))
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
-                                             f'flavor https://www.mlflow.org/docs/1.8.0/models.html#built-in-model-flavors\n'
+                                             f'flavor https://www.mlflow.org/docs/1.15.0/models.html#built-in-model-flavors\n'
                                              f'Or you can build a pyfunc model\n'
-                                             'https://www.mlflow.org/docs/1.8.0/models.html#python-function-python-function')
-        # deprecated behavior
-        elif isinstance(model, H2OModel):
-            import mlflow.h2o
-            mlflow.set_tag('splice.h2o_version', h2o.__version__)
-            mlflow.h2o.save_model(model, mlmodel_dir, **flavor_options)
-            file_ext = FileExtensions.h2o
+                                             'https://www.mlflow.org/docs/1.15.0/models.html#python-function-python-function')
+
+        # Deprecated behavior and will be removed in the future
         elif isinstance(model, SparkModel):
             import mlflow.spark
             mlflow.set_tag('splice.spark_version', pyspark.__version__)
             mlflow.spark.save_model(model, mlmodel_dir, **flavor_options)
             file_ext = FileExtensions.spark
+            warnings.warn('Deprecated behavior, call mlflow.spark.log_model in the future')
         elif isinstance(model, ScikitModel):
             import mlflow.sklearn
             mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
             mlflow.sklearn.save_model(model, mlmodel_dir, **flavor_options)
             file_ext = FileExtensions.sklearn
-        else:
-            raise SpliceMachineException('Model type not supported for logging. If you received this error,'
-                                         'you should pass a value to the model_lib parameter of the model type you '
-                                         'want to save, or call the original mlflow.<flavor>.log_model(). '
+            warnings.warn('Deprecated behavior, call mlflow.sklearn.log_model in the future')
+        else: # Deprecated, we want users calling mlflow.h2o.log_model instead
+            try:
+                import h2o
+                from h2o.h2o import ModelBase as H2OModel
+                # deprecated behavior
+                if isinstance(model, H2OModel):
+                    import mlflow.h2o
+                    mlflow.set_tag('splice.h2o_version', h2o.__version__)
+                    mlflow.h2o.save_model(model, mlmodel_dir, **flavor_options)
+                    file_ext = FileExtensions.h2o
+                    warnings.warn('Deprecated behavior, call mlflow.h2o.log_model in the future')
+                else:
+                    raise
+            except:
+                raise SpliceMachineException('Model type may not supported for automatic logging. If you received this error, '
+                                         'you should pass a value to the model_lib parameter of the mlflow model flavor '
+                                         'you want to save, or call the original mlflow.<flavor>.log_model(). '
                                          'Supported values are available here: '
                                          'https://www.mlflow.org/docs/1.15.0/models.html#built-in-model-flavors\n'
                                          'as well as \'pyfunc\' '
-                                         'https://www.mlflow.org/docs/1.15.0/models.html#python-function-python-function')
+                                         'https://www.mlflow.org/docs/1.15.0/models.html#python-function-python-function. '
+                                         'If you received this error while trying to log a pyfunc model, you likely '
+                                         'need to pass in the pyfunc model as the python_model parameter '
+                                         '[mlflow.pyfunc.log_model(python_model=my_model)]. If you are logging an H2O ')
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
@@ -361,7 +386,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
                 nbf.write(nb, temp_file.name)
                 run_name = mlflow.get_run(mlflow.current_run_id()).to_dictionary()['data']['tags']['mlflow.runName']
                 mlflow.log_artifact(temp_file.name, name=f'{run_name}_run_log.ipynb')
-                typ,ext = ('html','html') if save_html else ('script','py')
+                typ, ext = ('html', 'html') if save_html else ('script', 'py')
                 os.system(f'jupyter nbconvert --to {typ} {temp_file.name}')
                 mlflow.log_artifact(f'{temp_file.name[:-1]}.{ext}', name=f'{run_name}_run_log.{ext}')
                 os.system(f'pip freeze > {temp_file.name}.txt')
@@ -372,6 +397,7 @@ def _end_run(status=RunStatus.to_string(RunStatus.FINISHED), save_html=True):
                           'the run log.')
     orig = gorilla.get_original_attribute(mlflow, "end_run")
     orig(status=status)
+
 
 @_mlflow_patch('start_run')
 def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested=False):
@@ -411,10 +437,11 @@ def _start_run(run_id=None, tags=None, experiment_id=None, run_name=None, nested
         mlflow.set_tag('Run ID', mlflow.active_run().info.run_uuid)
     if run_name:
         mlflow.set_tag('mlflow.runName', run_name)
-    if hasattr(mlflow,'_active_training_set'):
+    if hasattr(mlflow, '_active_training_set'):
         mlflow._active_training_set._register_metadata(mlflow)
 
     return SpliceActiveRun(active_run)
+
 
 @_mlflow_patch('remove_active_training_set')
 def _remove_active_training_set():
@@ -423,7 +450,7 @@ def _remove_active_training_set():
     the feature store), which will in turn stop the automated logging of features to the active mlflow run. To recreate
     an active training set, call fs.get_training_set or fs.get_training_set_from_view in the Feature Store.
     """
-    if hasattr(mlflow,'_active_training_set'):
+    if hasattr(mlflow, '_active_training_set'):
         del mlflow._active_training_set
 
 
@@ -490,7 +517,7 @@ def _log_model_params(pipeline_or_model):
         raise Exception("Could not parse model type: " + str(model))
     for param in verbose_parameters:
         value = verbose_parameters[param]
-        if value: # Spark 3.0 leafCol returns an empty parameter, mlflow fails if you try to log an empty string
+        if value:  # Spark 3.0 leafCol returns an empty parameter, mlflow fails if you try to log an empty string
             try:
                 value = float(value)
                 mlflow.log_param(param.split('-')[0], value)
@@ -536,6 +563,7 @@ def _get_model_name(run_id):
     :return: (str or None) The model name if it exists
     """
     return mlflow.client.get_run(run_id).data.tags.get('splice.model_name')
+
 
 @_mlflow_patch('log_model')
 def _log_model(model, name='model', model_lib=None, **flavor_options):
@@ -615,7 +643,7 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
                 mlmodel = yaml.safe_load(mlmodel_file.read())
                 try:
                     loader_module = mlmodel['flavors']['python_function']['loader_module']
-                except KeyError: # If the python_function isn't available, fallback and try the raw model flavor
+                except KeyError:  # If the python_function isn't available, fallback and try the raw model flavor
                     # We will look through the other flavors in the MLModel yaml
                     loader_module = None
                     for flavor in mlmodel['flavors'].keys():
@@ -624,14 +652,14 @@ def _load_model(run_id=None, name=None, as_pyfunc=False):
                             break
                     if not loader_module:
                         raise SpliceMachineException(f"Unable to load the mlflow loader. Ensure this ML model has "
-                                                 f"been saved using an mlflow module")
+                                                     f"been saved using an mlflow module")
             mlflow_module = loader_module.split('.')[1]  # get the mlflow.(MODULE)
             import_module(loader_module)
         return getattr(mlflow, mlflow_module).load_model(tempdir)
 
 
 @_mlflow_patch('log_artifact')
-def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
+def _log_artifact(file_name, name=None, run_uuid=None, artifact_path=None):
     """
     Log an artifact for the active run
 
@@ -667,6 +695,7 @@ def _log_artifact(file_name, name=None, run_uuid=None, artifact_path = None):
     insert_artifact(host, file_name, name, run_id, file_ext, mlflow._basic_auth, artifact_path)
     print(f'Saved artifact as {name} in mlflow')
 
+
 @_mlflow_patch('download_artifact')
 def _download_artifact(name, local_path=None, run_id=None):
     """
@@ -685,6 +714,7 @@ def _download_artifact(name, local_path=None, run_id=None):
         file.write(r.content)
     print(f'Done. File has been written to {file_name}')
 
+
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):
     """
@@ -697,7 +727,8 @@ def _login_director(username=None, password=None, jwt_token=None):
     Either (username/password) for basic auth or jwt_token must be provided. Basic authentication takes precedence if set (mlflow default)
     """
     if (username and not password) or (password and not username):
-        raise SpliceMachineException("You must either set both username and password, or neither. You cannot set just one")
+        raise SpliceMachineException(
+            "You must either set both username and password, or neither. You cannot set just one")
 
     if username and password:
         mlflow._basic_auth = HTTPBasicAuth(username, password)
@@ -867,6 +898,7 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
 
     return __initiate_job(payload, '/api/rest/initiate')
 
+
 @_mlflow_patch('undeploy_kubernetes')
 def _undeploy_kubernetes(run_id: str):
     """
@@ -955,9 +987,8 @@ def _deploy_db(db_schema_name: str,
     print("Deploying model to database...")
 
     # database converts all object names to upper case, so we need to as well in our metadata
-    db_schema_name=db_schema_name.upper()
-    db_table_name=db_table_name.upper()
-
+    db_schema_name = db_schema_name.upper()
+    db_table_name = db_table_name.upper()
 
     # ~ Backwards Compatability ~
     if verbose:
@@ -972,7 +1003,7 @@ def _deploy_db(db_schema_name: str,
 
     if df is not None:
         if isinstance(df, PandasDF):
-            _check_for_splice_ctx() # We will need a splice context to convert to sparkDF
+            _check_for_splice_ctx()  # We will need a splice context to convert to sparkDF
             df_schema = mlflow._splice_context.pandasToSpark(df).schema.json()
         elif isinstance(df, SparkDF):
             df_schema = df.schema.json()
@@ -985,11 +1016,12 @@ def _deploy_db(db_schema_name: str,
         'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
         'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
         'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema, 
+        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema,
         'max_batch_size': max_batch_size
     }
 
     return __initiate_job(payload, '/api/rest/initiate')
+
 
 @_mlflow_patch('undeploy_db')
 def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, drop_table: bool = False):
@@ -1015,6 +1047,7 @@ def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, d
     }
     return __initiate_job(payload, '/api/rest/initiate')
 
+
 def __get_logs(job_id: int):
     """
     Retrieve the logs associated with the specified job id
@@ -1027,6 +1060,7 @@ def __get_logs(job_id: int):
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
     return request.json()['logs']
 
+
 @_mlflow_patch('watch_job')
 def _watch_job(job_id: int):
     """
@@ -1037,7 +1071,7 @@ def _watch_job(job_id: int):
     :raise SpliceMachineException: If the job being watched fails
     """
     previous_lines = []
-    warn = False # If there were any warnings from the log, we want to notify the user explicitly
+    warn = False  # If there were any warnings from the log, we want to notify the user explicitly
     while True:
         logs_retrieved = __get_logs(job_id)
         logs_retrieved.remove('')
@@ -1047,16 +1081,16 @@ def _watch_job(job_id: int):
             if logs_retrieved[log_idx] in previous_lines:
                 break
 
-        idx = log_idx+1 if log_idx else log_idx # First time getting logs, go to 0th index, else log_idx+1
+        idx = log_idx + 1 if log_idx else log_idx  # First time getting logs, go to 0th index, else log_idx+1
         for n in logs_retrieved[idx:]:
             if 'WARNING' in n:
                 warnings.warn(n)
                 warn = True
-            print(f'\n{n}',end='')
+            print(f'\n{n}', end='')
 
         previous_lines = copy.deepcopy(logs_retrieved)  # O(1) checking
-        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1] # Remove empty line
-        if 'TASK_COMPLETED' in previous_lines[-1]: # Finishing Statement
+        previous_lines = previous_lines if previous_lines[-1] else previous_lines[:-1]  # Remove empty line
+        if 'TASK_COMPLETED' in previous_lines[-1]:  # Finishing Statement
             # Check for a failure first, and raise an error if so
             for log in reversed(previous_lines):
                 if 'ERROR' in log and 'Task Failed' in log:
@@ -1064,7 +1098,7 @@ def _watch_job(job_id: int):
                         'An error occured in your Job. See the log above for more information'
                     ) from None
             if warn:
-                print('\n','Note! Your deployment had some warnings you should consider.')
+                print('\n', 'Note! Your deployment had some warnings you should consider.')
             return
 
         time.sleep(1)
@@ -1088,7 +1122,8 @@ def _get_deployed_models() -> PandasDF:
     print('Rows without a Schema or Table name indicate that the deployment table no longer exists '
           '(based on the TableID). This could be because the table was dropped, or the deployment was DELETED')
     request = requests.get(
-        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
+        get_jobs_uri(
+            mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
         auth=mlflow._basic_auth
     )
     if not request.ok:
@@ -1101,7 +1136,8 @@ def apply_patches():
     Apply all the Gorilla Patches; \
     All Gorilla Patched MUST be predixed with '_' before their destination in MLflow
     """
-    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact, _log_feature_transformations,
+    targets = [_register_feature_store, _register_splice_context, _lp, _lm, _timer, _log_artifact,
+               _log_feature_transformations,
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes, _fetch_logs,
