@@ -2,7 +2,7 @@ from os import environ as env_vars
 import os
 
 from sys import getsizeof
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pyspark.ml.base import Model as SparkModel
 from pyspark.ml.pipeline import PipelineModel
@@ -148,6 +148,39 @@ class SparkUtils:
                 vec_stage = i
                 break
         return SparkUtils.get_cols(vec_stage)
+
+class ModelUtils:
+    """
+    A class for attempting to automatically log Spark, SKlearn, and H2O models (because we support them for in DB deployment
+    """
+    @staticmethod
+    def try_get_model_flavor(model) -> Optional[str]:
+
+        """
+        Tries to get the model flavor. Will return if the model is of flavor H2O, sklearn or spark
+        :param model: The model object
+        :return: the flavor or None
+        """
+        # Try Spark
+        try:
+            from pyspark.ml.base import Model as SparkModel
+            if isinstance(model, SparkModel):
+                return 'spark'
+        except: # PySpark is not installed
+            pass
+        # Try sklearn
+        try:
+            from sklearn.base import BaseEstimator as ScikitModel
+            if isinstance(model, ScikitModel):
+                return 'sklearn'
+        except: # Sklearn not installed
+            pass
+        try:
+            from h2o.h2o import ModelBase as H2OModel
+            if isinstance(model, H2OModel):
+                return 'h2o'
+        except: # H2O not installed
+            pass
 
 
 def get_user():

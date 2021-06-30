@@ -9,8 +9,10 @@ try:
     from IPython.display import display, clear_output
     import pandas_profiling, spark_df_profiling
 except:
-    warnings.warn('You do not have the necessary extensions (pandas_profiling, spark_df_profiling) for Feature Store search. '
-                  'Please run `pip install splicemachine[notebook]` to use these functions.')
+    warnings.warn(
+        'You do not have the necessary extensions (pandas_profiling, spark_df_profiling, IPython, ipywidgets) '
+        'for Feature Store search. Please run `pip install splicemachine[notebook]` to use these functions.')
+
 
 def __filter_df(pdf, search_input) -> pd.DataFrame:
     """
@@ -27,20 +29,19 @@ def __filter_df(pdf, search_input) -> pd.DataFrame:
     res_df = pdf
 
     # Add an & at the beginning because the first word is exclusize
-    ops = ['&'] + [i for i in search_input if i in ('&','|')] # Need to know if each one is an "and" or an "or"
+    ops = ['&'] + [i for i in search_input if i in ('&', '|')]  # Need to know if each one is an "and" or an "or"
 
-    for op,word in zip(ops, re.split('\\&|\\|', search_input)):
+    for op, word in zip(ops, re.split('\\&|\\|', search_input)):
         word = word.strip()
         try:
             temp_df = pdf[pdf['name'].str.contains(word, case=False) |
                           pdf['tags'].astype('str').str.contains(word, case=False, regex=False) |
                           pdf['attributes'].astype('str').str.contains(word, case=False, regex=False) |
                           pdf['feature_set_name'].str.contains(word, case=False, regex=False)]
-            res_df = pd.concat([res_df, temp_df]) if op=='|' else res_df[res_df.name.isin(temp_df.name)]
-        except: # The user used invalid regex, set result to None
+            res_df = pd.concat([res_df, temp_df]) if op == '|' else res_df[res_df.name.isin(temp_df.name)]
+        except:  # The user used invalid regex, set result to None
             temp_df = pd.DataFrame([])
             res_df = pd.concat([res_df, temp_df])
-
 
     res_df.reset_index(drop=True, inplace=True)
     return res_df
@@ -55,8 +56,8 @@ def feature_search_internal(fs, pandas_profile=True):
     beakerx.pandas_display_table()
 
     pdf = fs.get_features_by_name()
-    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags',
-               'attributes','last_update_ts','last_update_username','compliance_level']]
+    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description', 'feature_set_name', 'tags',
+               'attributes', 'last_update_ts', 'last_update_username', 'compliance_level']]
 
     ############################################################################################
     searchText = widgets.Text(layout=Layout(width='80%'), description='Search:')
@@ -68,7 +69,7 @@ def feature_search_internal(fs, pandas_profile=True):
 
     searchText.on_submit(handle_submit)
 
-    def on_feature_select( row, col, tabledisplay):
+    def on_feature_select(row, col, tabledisplay):
         redisplay(tabledisplay)
         feature_name = tabledisplay.values[row][0]
         print('Generating Data Report...')
@@ -76,7 +77,7 @@ def feature_search_internal(fs, pandas_profile=True):
         if pandas_profile:
             df_size = spark_df_size(data)
             print('Gathering data')
-            if df_size >= 5e8: # It's too big for pandas
+            if df_size >= 5e8:  # It's too big for pandas
                 print("Dataset is too large. Profiling with Spark instead")
                 display(spark_df_profiling.ProfileReport(data.cache(), explorative=False))
             else:
@@ -92,11 +93,10 @@ def feature_search_internal(fs, pandas_profile=True):
               'with "&" and "|" Enter a single Feature name for a detailed report. ')
         display(searchText)
         td.setDoubleClickAction(on_feature_select)
-#         td.setColumnFrozen('name',True)
+        #         td.setColumnFrozen('name',True)
         display(td)
 
-
-    table_data=pdf
+    table_data = pdf
     table = TableDisplay(table_data)
     redisplay(table)
 
@@ -110,8 +110,8 @@ def feature_search_external(fs, pandas_profile=True):
     """
 
     pdf = fs.get_features_by_name()
-    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description','feature_set_name','tags',
-               'attributes','last_update_ts','last_update_username','compliance_level']]
+    pdf = pdf[['name', 'feature_type', 'feature_data_type', 'description', 'feature_set_name', 'tags',
+               'attributes', 'last_update_ts', 'last_update_username', 'compliance_level']]
 
     @interact
     def column_search(Filter=''):
@@ -129,7 +129,7 @@ def feature_search_external(fs, pandas_profile=True):
             df_size = spark_df_size(data)
             print('Profiling Data')
             if pandas_profile:
-                if df_size >= 5e8: # It's too big for pandas
+                if df_size >= 5e8:  # It's too big for pandas
                     print("Dataset is too large. Profiling with Spark instead")
                     display(spark_df_profiling.ProfileReport(data.cache(), explorative=True))
                 else:

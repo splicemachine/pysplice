@@ -58,21 +58,17 @@ import mlflow
 import mlflow.pyfunc
 from mlflow.tracking.fluent import ActiveRun
 from mlflow.entities import RunStatus
-import pyspark
 import requests
-import sklearn
 import yaml
 import warnings
 
 from pandas.core.frame import DataFrame as PandasDF
-from pyspark.ml.base import Model as SparkModel
 from pyspark.sql import DataFrame as SparkDF
 from requests.auth import HTTPBasicAuth
-from sklearn.base import BaseEstimator as ScikitModel
 
 from splicemachine.features import FeatureStore
 from splicemachine.mlflow_support.constants import (FileExtensions, DatabaseSupportedLibs)
-from splicemachine.mlflow_support.utilities import (SparkUtils, get_pod_uri, get_user,
+from splicemachine.mlflow_support.utilities import (SparkUtils, ModelUtils, get_pod_uri, get_user,
                                                     insert_artifact, download_artifact, get_jobs_uri)
 from splicemachine import SpliceMachineException
 from splicemachine.spark.context import PySpliceContext
@@ -284,6 +280,8 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
     zip_buffer = ZipFile(buffer, mode="a", compression=ZIP_DEFLATED, allowZip64=False)
     with TemporaryDirectory() as tempdir:
         mlmodel_dir = f'{tempdir}/model'
+        auto_flavor = ModelUtils.try_get_model_flavor(model)
+        model_lib = model_lib or auto_flavor
         if model_lib: # User passed in the model library or they called mlflow.<flavor>.log_model. This is desired behavior
             try:
                 import mlflow
@@ -304,33 +302,8 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
                                              'https://www.mlflow.org/docs/1.15.0/models.html#python-function-python-function')
 
         # Deprecated behavior and will be removed in the future
-        elif isinstance(model, SparkModel):
-            import mlflow.spark
-            mlflow.set_tag('splice.spark_version', pyspark.__version__)
-            mlflow.spark.save_model(model, mlmodel_dir, **flavor_options)
-            file_ext = FileExtensions.spark
-            warnings.warn('Deprecated behavior, call mlflow.spark.log_model in the future')
-        elif isinstance(model, ScikitModel):
-            import mlflow.sklearn
-            mlflow.set_tag('splice.sklearn_version', sklearn.__version__)
-            mlflow.sklearn.save_model(model, mlmodel_dir, **flavor_options)
-            file_ext = FileExtensions.sklearn
-            warnings.warn('Deprecated behavior, call mlflow.sklearn.log_model in the future')
-        else: # Deprecated, we want users calling mlflow.h2o.log_model instead
-            try:
-                import h2o
-                from h2o.h2o import ModelBase as H2OModel
-                # deprecated behavior
-                if isinstance(model, H2OModel):
-                    import mlflow.h2o
-                    mlflow.set_tag('splice.h2o_version', h2o.__version__)
-                    mlflow.h2o.save_model(model, mlmodel_dir, **flavor_options)
-                    file_ext = FileExtensions.h2o
-                    warnings.warn('Deprecated behavior, call mlflow.h2o.log_model in the future')
-                else:
-                    raise
-            except:
-                raise SpliceMachineException('Model type may not supported for automatic logging. If you received this error, '
+        else:
+            raise SpliceMachineException('Model type may not supported for automatic logging. If you received this error, '
                                          'you should pass a value to the model_lib parameter of the mlflow model flavor '
                                          'you want to save, or call the original mlflow.<flavor>.log_model(). '
                                          'Supported values are available here: '
@@ -340,6 +313,9 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
                                          'If you received this error while trying to log a pyfunc model, you likely '
                                          'need to pass in the pyfunc model as the python_model parameter '
                                          '[mlflow.pyfunc.log_model(python_model=my_model)]. If you are logging an H2O ')
+        if auto_flavor:
+            flavor_version = FileExtensions.map_to_module(auto_flavor).__version__
+            mlflow.set_tag(f'splice.{auto_flavor}_version', flavor_version)
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
             zip_buffer.write(model_file, arcname=path.relpath(model_file, mlmodel_dir))
@@ -1130,6 +1106,27 @@ def _get_deployed_models() -> PandasDF:
         raise SpliceMachineException(request.text)
     return PandasDF(dict(request.json()))
 
+@_mlflow_patch('set_tracking_uri')
+def _set_tracking_uri(uri):
+    """
+    Overload of original function to control the mlflow tracking client
+    :param uri: MLflow URI
+    """
+    global _CLIENT
+    orig = gorilla.get_original_attribute(mlflow, "set_tracking_uri")
+    orig(uri=uri)
+    _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=uri)
+    mlflow.client = _CLIENT
+
+
+def _set_mlflow_uri(uri):
+    """
+    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
+
+    :param uri: (str) the URL of your mlflow UI.
+    :return: None
+    """
+    mlflow.set_tracking_uri(uri)
 
 def apply_patches():
     """
@@ -1141,23 +1138,10 @@ def apply_patches():
                _log_model_params, _log_pipeline_stages, _log_model, _load_model, _download_artifact,
                _start_run, _current_run_id, _current_exp_id, _deploy_aws, _deploy_azure, _deploy_db, _login_director,
                _get_run_ids_by_name, _get_deployed_models, _deploy_kubernetes, _undeploy_kubernetes, _fetch_logs,
-               _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set, _undeploy_db]
+               _watch_job, _end_run, _set_mlflow_uri, _remove_active_training_set, _undeploy_db, _set_tracking_uri]
 
     for target in targets:
         gorilla.apply(gorilla.Patch(mlflow, target.__name__.lstrip('_'), target, settings=_GORILLA_SETTINGS))
-
-
-def _set_mlflow_uri(uri):
-    """
-    Set the tracking uri for mlflow. Only needed if running outside of the Splice Machine K8s Cloud Service
-
-    :param uri: (str) the URL of your mlflow UI.
-    :return: None
-    """
-    global _CLIENT
-    mlflow.set_tracking_uri(uri)
-    _CLIENT = mlflow.tracking.MlflowClient(tracking_uri=uri)
-    mlflow.client = _CLIENT
 
 
 def main():

@@ -1,9 +1,7 @@
 from sys import stderr
 from typing import List, Dict, Optional, Union, Any, Callable
 from datetime import datetime
-import json
 
-from IPython.display import display
 import pandas as pd
 from pandas import DataFrame as PandasDF
 import cloudpickle
@@ -22,6 +20,7 @@ from splicemachine.notebook import _in_splice_compatible_env
 from splicemachine.spark import PySpliceContext, ExtPySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
+from .utils import display
 from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
 from .utils.training_utils import ReturnType, _format_training_set_output
 from .pipelines import FeatureAggregation, AggWindow
@@ -32,6 +31,7 @@ from .constants import PipeLanguage, SQL, FeatureType, PipeType
 from .training_view import TrainingView
 import warnings
 from requests.auth import HTTPBasicAuth
+
 
 class FeatureStore:
     def __init__(self, splice_ctx: PySpliceContext = None) -> None:
@@ -59,7 +59,7 @@ class FeatureStore:
         """
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_SETS, RequestType.GET, self._auth,
-                         { "name": feature_set_names } if feature_set_names else None)
+                         {"name": feature_set_names} if feature_set_names else None)
         return [FeatureSet(**fs) for fs in r]
 
     def remove_training_view(self, name: str, version: Union[str, int] = 'latest'):
@@ -75,7 +75,8 @@ class FeatureStore:
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
         print(f"Removing Training View {name}...", end=' ')
-        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.DELETE, self._auth, params={'version': version})
+        make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.DELETE, self._auth,
+                     params={'version': version})
         print('Done.')
 
     def get_summary(self) -> Dict[str, str]:
@@ -106,7 +107,8 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{training_view}', RequestType.GET, self._auth, params={'version': version})
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{training_view}', RequestType.GET, self._auth,
+                         params={'version': version})
         return TrainingView(**r[0])
 
     def get_training_views(self, _filter: Dict[str, Union[int, str]] = None) -> List[TrainingView]:
@@ -129,7 +131,7 @@ class FeatureStore:
         :return: The training view id
         """
         # return self.splice_ctx.df(SQL.get_training_view_id.format(name=name)).collect()[0][0]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._auth, { "name": name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_ID, RequestType.GET, self._auth, {"name": name})
         return int(r)
 
     def get_features_by_name(self, names: Optional[List[str]] = None, as_list=False) -> Union[List[Feature], PandasDF]:
@@ -142,7 +144,7 @@ class FeatureStore:
         values, simply the describing metadata about the features. To create a training dataset with Feature values, see
         :py:meth:`features.FeatureStore.get_training_set` or :py:meth:`features.FeatureStore.get_feature_dataset`
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._auth, { "name": names })
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.GET, self._auth, {"name": names})
         return [Feature(**f) for f in r] if as_list else pd.DataFrame.from_dict(r)
 
     def training_view_exists(self, name: str) -> bool:
@@ -152,7 +154,8 @@ class FeatureStore:
         :param name: The training view name
         :return: bool True if the training view exists, False otherwise
         """
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_EXISTS, RequestType.GET, self._auth, params={ "name": name })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_EXISTS, RequestType.GET, self._auth,
+                         params={"name": name})
         return r
 
     def feature_exists(self, name: str) -> bool:
@@ -162,7 +165,7 @@ class FeatureStore:
         :param name: The feature name
         :return: bool True if the feature exists, False otherwise
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_EXISTS, RequestType.GET, self._auth, params={ "name": name })
+        r = make_request(self._FS_URL, Endpoints.FEATURE_EXISTS, RequestType.GET, self._auth, params={"name": name})
         return r
 
     def feature_set_exists(self, schema: str, table: str) -> bool:
@@ -174,7 +177,7 @@ class FeatureStore:
         :return: bool True if the feature exists, False otherwise
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_EXISTS, RequestType.GET, self._auth,
-                         params={ "schema": schema, "table": table })
+                         params={"schema": schema, "table": table})
         return r
 
     def get_feature_details(self, name: str) -> Feature:
@@ -184,11 +187,12 @@ class FeatureStore:
         :param name: The feature name
         :return: Feature
         """
-        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._auth, { "name": name })
+        r = make_request(self._FS_URL, Endpoints.FEATURE_DETAILS, RequestType.GET, self._auth, {"name": name})
         return Feature(**r)
 
     def get_feature_vector(self, features: List[Union[str, Feature]],
-                           join_key_values: Dict[str, str], return_primary_keys = True, return_sql=False) -> Union[str, PandasDF]:
+                           join_key_values: Dict[str, str], return_primary_keys=True, return_sql=False) -> Union[
+        str, PandasDF]:
         """
         Gets a feature vector given a list of Features and primary key values for their corresponding Feature Sets
 
@@ -199,13 +203,12 @@ class FeatureStore:
         :return: Pandas Dataframe or str (SQL statement)
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._auth, 
-            params={ "pks": return_primary_keys, "sql": return_sql }, 
-            body={ "features": features, "join_key_values": join_key_values })
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR, RequestType.POST, self._auth,
+                         params={"pks": return_primary_keys, "sql": return_sql},
+                         body={"features": features, "join_key_values": join_key_values})
         return r if return_sql else pd.DataFrame(r, index=[0])
 
-
-    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Union[str,Feature]]) -> str:
+    def get_feature_vector_sql_from_training_view(self, training_view: str, features: List[Union[str, Feature]]) -> str:
         """
         Returns the parameterized feature retrieval SQL used for online model serving.
 
@@ -221,8 +224,8 @@ class FeatureStore:
         :return: (str) the parameterized feature vector SQL
         """
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, self._auth, 
-            { "view": training_view }, features)
+        r = make_request(self._FS_URL, Endpoints.FEATURE_VECTOR_SQL, RequestType.POST, self._auth,
+                         {"view": training_view}, features)
         return r
 
     def get_feature_primary_keys(self, features: List[str]) -> Dict[str, List[str]]:
@@ -246,7 +249,7 @@ class FeatureStore:
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
         r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_FEATURES, RequestType.GET,
-                         self._auth, { "view": training_view, 'version': version })
+                         self._auth, {"view": training_view, 'version': version})
         return [Feature(**f) for f in r]
 
     def get_feature_description(self):
@@ -254,7 +257,8 @@ class FeatureStore:
         raise NotImplementedError
 
     def get_training_set(self, features: Union[List[Feature], List[str]], current_values_only: bool = False,
-                         start_time: datetime = None, end_time: datetime = None, label: str = None, return_pk_cols: bool = False, 
+                         start_time: datetime = None, end_time: datetime = None, label: str = None,
+                         return_pk_cols: bool = False,
                          return_ts_col: bool = False, return_type: str = 'spark',
                          return_sql: bool = False, save_as: str = None) -> SparkDF or str:
         """
@@ -317,10 +321,11 @@ class FeatureStore:
             raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
 
         features = [f if isinstance(f, str) else f.__dict__ for f in features]
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._auth, 
-                        params={ "current": current_values_only, "label": label, "pks": return_pk_cols, "ts": return_ts_col,
-                          'save_as':save_as, 'return_type': ReturnType.map_to_request(return_type)},
-                        body={ "features": features, "start_time": start_time, "end_time": end_time})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SETS, RequestType.POST, self._auth,
+                         params={"current": current_values_only, "label": label, "pks": return_pk_cols,
+                                 "ts": return_ts_col,
+                                 'save_as': save_as, 'return_type': ReturnType.map_to_request(return_type)},
+                         body={"features": features, "start_time": start_time, "end_time": end_time})
         create_time = r['metadata']['training_set_create_ts']
         start_time = r['metadata']['training_set_start_ts']
         end_time = r['metadata']['training_set_end_ts']
@@ -334,13 +339,12 @@ class FeatureStore:
             training_set_version = r['metadata'].get('training_set_version')
             self.link_training_set_to_mlflow(features, create_time, start_time, end_time, tvw,
                                              training_set_id=training_set_id,
-                                             training_set_version=training_set_version,training_set_name=save_as)
-
+                                             training_set_version=training_set_version, training_set_name=save_as)
 
         return _format_training_set_output(response=r, return_type=return_type, splice_ctx=self.splice_ctx)
 
     def get_training_set_by_name(self, name, version: int = None, return_pk_cols: bool = False,
-                                 return_ts_col: bool = False, return_sql = False, return_type: str = 'spark'):
+                                 return_ts_col: bool = False, return_sql=False, return_type: str = 'spark'):
         """
         Returns a Spark DF (or SQL) of an EXISTING Training Set (one that was saved with the save_as parameter in
         :py:meth:`~fs.get_training_set` or :py:meth:`~fs.get_training_set_from_view`. This is useful if you've deployed
@@ -366,7 +370,7 @@ class FeatureStore:
             raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
 
         r = make_request(self._FS_URL, f'{Endpoints.TRAINING_SETS}/{name}', RequestType.GET, self._auth,
-                        params={ "version": version, "pks": return_pk_cols, "ts": return_ts_col,
+                         params={"version": version, "pks": return_pk_cols, "ts": return_ts_col,
                                  'return_type': ReturnType.map_to_request(return_type)})
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
@@ -374,7 +378,7 @@ class FeatureStore:
         create_time = r['metadata']['training_set_create_ts']
         start_time = r['metadata']['training_set_start_ts']
         end_time = r['metadata']['training_set_end_ts']
-         # Link this to mlflow for reproducibility and model deployment
+        # Link this to mlflow for reproducibility and model deployment
         if self.mlflow_ctx and not return_sql:
             # These will only exist if the user called "save_as" otherwise they will be None
             training_set_id = r['metadata'].get('training_set_id')
@@ -452,9 +456,9 @@ class FeatureStore:
         # Generate the SQL needed to create the dataset
         features = [f if isinstance(f, str) else f.__dict__ for f in features] if features else None
         r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_VIEW, RequestType.POST, self._auth,
-                         params={ "view": training_view, "pks": return_pk_cols, "ts": return_ts_col,
-                                 'save_as': save_as, 'return_type': ReturnType.map_to_request(return_type) },
-                         body={"features": features, "start_time": start_time, "end_time": end_time },
+                         params={"view": training_view, "pks": return_pk_cols, "ts": return_ts_col,
+                                 'save_as': save_as, 'return_type': ReturnType.map_to_request(return_type)},
+                         body={"features": features, "start_time": start_time, "end_time": end_time},
                          headers={"Accept-Encoding": "gzip"})
         sql = r["sql"]
         tvw = TrainingView(**r["training_view"])
@@ -481,7 +485,6 @@ class FeatureStore:
         :return: Dict[str, Optional[str]]
         """
         raise NotImplementedError("To see available training views, run fs.describe_training_views()")
-
 
     def create_feature_set(self, schema_name: str, table_name: str, primary_keys: Dict[str, str],
                            desc: Optional[str] = None, features: Optional[List[Feature]] = None) -> FeatureSet:
@@ -529,11 +532,11 @@ class FeatureStore:
         table_name = table_name.upper()
 
         features = [f.__dict__ for f in features] if features else None
-        fset_dict = { "schema_name": schema_name,
-                      "table_name": table_name,
-                      "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
-                      "description": desc,
-                      "features": features}
+        fset_dict = {"schema_name": schema_name,
+                     "table_name": table_name,
+                     "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
+                     "description": desc,
+                     "features": features}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
         if features:
@@ -588,18 +591,19 @@ class FeatureStore:
         table_name = table_name.upper()
 
         features = [f.__dict__ for f in features] if features else None
-        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
-                      "description": desc,
-                      "features": features}
+        fset_dict = {"primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys},
+                     "description": desc,
+                     "features": features}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
         if features:
             print(f'Registering {len(features)} features for {schema_name}.{table_name} in the Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PUT, self._auth, body=fset_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PUT,
+                         self._auth, body=fset_dict)
         return FeatureSet(**r)
 
     def alter_feature_set(self, schema_name: str, table_name: str, primary_keys: Optional[Dict[str, str]] = None,
-                           desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> FeatureSet:
+                          desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> FeatureSet:
         """
         Alters the specified (or default latest) version of a feature set, if that version is not yet deployed. Use this method when you want to make changes to
         an undeployed version of a feature set, or when you want to change version-independant metadata, such as description.
@@ -618,17 +622,19 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-        params = { 'version': version }
-        fset_dict = { "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys} if primary_keys else None,
-                      "description": desc}
+        params = {'version': version}
+        fset_dict = {
+            "primary_keys": {pk: sql_to_datatype(primary_keys[pk]) for pk in primary_keys} if primary_keys else None,
+            "description": desc}
 
         print(f'Registering feature set {schema_name}.{table_name} in Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PATCH, self._auth, 
-            params=params, body=fset_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.FEATURE_SETS}/{schema_name}.{table_name}', RequestType.PATCH,
+                         self._auth,
+                         params=params, body=fset_dict)
         return FeatureSet(**r)
 
     def update_feature_metadata(self, name: str, desc: Optional[str] = None, tags: Optional[List[str]] = None,
-                                attributes: Optional[Dict[str,str]] = None):
+                                attributes: Optional[Dict[str, str]] = None):
         """
         Update the metadata of a feature
 
@@ -638,7 +644,7 @@ class FeatureStore:
         :param attributes: (optional) Dict of (str) attribute key/value pairs (default None)
         :return: updated Feature
         """
-        f_dict = { "description": desc, 'tags': tags, "attributes": attributes }
+        f_dict = {"description": desc, 'tags': tags, "attributes": attributes}
         print(f'Registering feature {name} in Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.FEATURES}/{name}', RequestType.PUT, self._auth,
                          body=f_dict)
@@ -675,11 +681,11 @@ class FeatureStore:
                                                         f"types include {FeatureType.get_valid()}. Use the FeatureType" \
                                                         f" class provided by splicemachine.features"
 
-        f_dict = { "name": name, "description": desc or '', "feature_data_type": sql_to_datatype(feature_data_type),
-                    "feature_type": feature_type, "tags": tags, "attributes": attributes }
+        f_dict = {"name": name, "description": desc or '', "feature_data_type": sql_to_datatype(feature_data_type),
+                  "feature_type": feature_type, "tags": tags, "attributes": attributes}
         print(f'Registering feature {name} in Feature Store')
-        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._auth, 
-            { "schema": schema_name, "table": table_name }, f_dict)
+        r = make_request(self._FS_URL, Endpoints.FEATURES, RequestType.POST, self._auth,
+                         {"schema": schema_name, "table": table_name}, f_dict)
         f = Feature(**r)
         return f
         # TODO: Backfill the feature
@@ -707,8 +713,9 @@ class FeatureStore:
         """
         assert name != "None", "Name of training view cannot be None!"
 
-        tv_dict = { "name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
-                    "join_columns": join_keys, "sql_text": sql}
+        tv_dict = {"name": name, "description": desc, "pk_columns": primary_keys, "ts_column": ts_col,
+                   "label_column": label_col,
+                   "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
         make_request(self._FS_URL, Endpoints.TRAINING_VIEWS, RequestType.POST, self._auth, body=tv_dict)
 
@@ -736,15 +743,16 @@ class FeatureStore:
         """
         assert name != "None", "Name of training view cannot be None!"
 
-        tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
-                    "join_columns": join_keys, "sql_text": sql}
+        tv_dict = {"description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
+                   "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PUT, self._auth, body=tv_dict)
         return TrainingView(**r)
 
-    def alter_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None, 
-                             join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None, label_col: Optional[str] = None, 
-                             desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> TrainingView:
+    def alter_training_view(self, name: str, sql: Optional[str] = None, primary_keys: Optional[List[str]] = None,
+                            join_keys: Optional[List[str]] = None, ts_col: Optional[str] = None,
+                            label_col: Optional[str] = None,
+                            desc: Optional[str] = None, version: Optional[Union[str, int]] = None) -> TrainingView:
         """
         Alters an existing version of a training view. Use this method when you want to make changes to a version of a training view
         that has no dependencies, or when you want to change version-independent metadata, such as description.
@@ -769,11 +777,12 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        params = { 'version': version }
-        tv_dict = { "description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
-                    "join_columns": join_keys, "sql_text": sql}
+        params = {'version': version}
+        tv_dict = {"description": desc, "pk_columns": primary_keys, "ts_column": ts_col, "label_column": label_col,
+                   "join_columns": join_keys, "sql_text": sql}
         print(f'Registering Training View {name} in the Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth, params=params, body=tv_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.TRAINING_VIEWS}/{name}', RequestType.PATCH, self._auth,
+                         params=params, body=tv_dict)
         return TrainingView(**r)
 
     def _process_features(self, features: List[Union[Feature, str]]) -> List[Feature]:
@@ -791,7 +800,8 @@ class FeatureStore:
                                                              " a feature name (string) or a Feature object"
         return all_features
 
-    def deploy_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = 'latest', migrate: bool = False):
+    def deploy_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = 'latest',
+                           migrate: bool = False):
         """
         Deploys a feature set to the database. This persists the feature stores existence.
         As of now, once deployed you cannot delete the feature set or add/delete features.
@@ -807,8 +817,9 @@ class FeatureStore:
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
-        print(f'Deploying Feature Set {schema_name}.{table_name}...',end=' ')
-        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth, { "schema": schema_name, "table": table_name, "version": version, "migrate": migrate })
+        print(f'Deploying Feature Set {schema_name}.{table_name}...', end=' ')
+        make_request(self._FS_URL, Endpoints.DEPLOY_FEATURE_SET, RequestType.POST, self._auth,
+                     {"schema": schema_name, "table": table_name, "version": version, "migrate": migrate})
         print('Done.')
 
     def get_features_from_feature_set(self, schema_name: str, table_name: str) -> List[Feature]:
@@ -833,7 +844,7 @@ class FeatureStore:
         :return: List of Features
         """
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
-                         params={'schema':schema_name, 'table':table_name})
+                         params={'schema': schema_name, 'table': table_name})
         features = [Feature(**feature) for feature in r.pop("features")]
         return features
 
@@ -867,7 +878,7 @@ class FeatureStore:
         table_name = table_name.upper()
 
         r = make_request(self._FS_URL, Endpoints.FEATURE_SET_DETAILS, RequestType.GET, self._auth,
-                         params={'schema':schema_name, 'table':table_name})
+                         params={'schema': schema_name, 'table': table_name})
         desc = r
         if not desc: raise SpliceMachineException(
             f"Feature Set {schema_name}.{table_name} not found. Check name and try again.")
@@ -908,7 +919,8 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth, {'name': training_view, 'version': version})
+        r = make_request(self._FS_URL, Endpoints.TRAINING_VIEW_DETAILS, RequestType.GET, self._auth,
+                         {'name': training_view, 'version': version})
         desc = r
         if not desc: raise SpliceMachineException(f"Training view {training_view} not found. Check name and try again.")
 
@@ -951,14 +963,14 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
 
-
         if return_type not in ReturnType.get_valid():
             raise SpliceMachineException(f'Return type must be one of {ReturnType.get_valid()}')
 
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._auth, 
-            { "schema": schema_name, "table": table_name, "label": label,
-              "pks": return_pk_cols, "ts": return_ts_col, 'return_type': ReturnType.map_to_request(return_type)})
-        
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET, self._auth,
+                         {"schema": schema_name, "table": table_name, "label": label,
+                          "pks": return_pk_cols, "ts": return_ts_col,
+                          'return_type': ReturnType.map_to_request(return_type)})
+
         metadata = r['metadata']
 
         tv_name = metadata['name']
@@ -985,7 +997,7 @@ class FeatureStore:
             :param name: feature name
             :return:
         """
-        print(f"Removing feature {name}...",end=' ')
+        print(f"Removing feature {name}...", end=' ')
         make_request(self._FS_URL, f'{Endpoints.FEATURES}/{name}', RequestType.DELETE, self._auth)
         print('Done.')
 
@@ -1005,9 +1017,10 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
 
-        return make_request(self._FS_URL, Endpoints.DEPLOYMENTS, RequestType.GET, self._auth, 
-            { 'schema': schema_name, 'table': table_name, 'name': training_set, 'feat': feature, 'fset': feature_set, 'version': version})
-      
+        return make_request(self._FS_URL, Endpoints.DEPLOYMENTS, RequestType.GET, self._auth,
+                            {'schema': schema_name, 'table': table_name, 'name': training_set, 'feat': feature,
+                             'fset': feature_set, 'version': version})
+
     def get_training_set_features(self, training_set: str = None):
         """
         Returns a list of all features from an available Training Set, as well as details about that Training Set
@@ -1015,12 +1028,13 @@ class FeatureStore:
         :param training_set: training set name
         :return: TrainingSet as dict
         """
-        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._auth, 
-            { 'name': training_set })
+        r = make_request(self._FS_URL, Endpoints.TRAINING_SET_FEATURES, RequestType.GET, self._auth,
+                         {'name': training_set})
         r['features'] = [Feature(**f) for f in r['features']]
         return r
 
-    def remove_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = None, purge: bool = False) -> None:
+    def remove_feature_set(self, schema_name: str, table_name: str, version: Union[str, int] = None,
+                           purge: bool = False) -> None:
         """
         Deletes a feature set if appropriate. You can currently delete a feature set in two scenarios:
         1. The feature set has not been deployed
@@ -1043,9 +1057,10 @@ class FeatureStore:
         if purge:
             warnings.warn("You've set purge=True, I hope you know what you are doing! This will delete any dependent"
                           " Training Sets (except ones used in an active model deployment)")
-        print(f'Removing Feature Set {schema_name}.{table_name}...',end=' ')
+        print(f'Removing Feature Set {schema_name}.{table_name}...', end=' ')
         make_request(self._FS_URL, Endpoints.FEATURE_SETS,
-                     RequestType.DELETE, self._auth, { "schema": schema_name, "table":table_name, "version": version, "purge": purge })
+                     RequestType.DELETE, self._auth,
+                     {"schema": schema_name, "table": table_name, "version": version, "purge": purge})
         print('Done.')
 
     def get_pipes(self, names: Optional[List[str]] = None) -> List[Pipe]:
@@ -1055,7 +1070,7 @@ class FeatureStore:
         :param names: The list of pipe names
         :return: List[Pipe] The list of Pipe objects
         """
-        r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.GET, self._auth, { "name": names })
+        r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.GET, self._auth, {"name": names})
         return [Pipe(**p, splice_ctx=self.splice_ctx) for p in r]
 
     def get_pipe(self, name: str, version: Optional[Union[str, int]] = 'latest') -> Pipe:
@@ -1067,7 +1082,7 @@ class FeatureStore:
         :return: List[Pipe] The list of Pipe objects
         """
         assert version, "version cannot be none!"
-        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, { "version": version })
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.GET, self._auth, {"version": version})
         return Pipe(**r[0], splice_ctx=self.splice_ctx)
 
     def get_pipe_versions(self, name: str) -> List[Pipe]:
@@ -1099,15 +1114,15 @@ class FeatureStore:
         :return:
         """
         assert ptype in PipeType.get_valid(), f"The pipe type {ptype} is not valid. Valid pipe " \
-                                                        f"types include {PipeType.get_valid()}. Use the PipeType" \
-                                                        f" class provided by splicemachine.features"
+                                              f"types include {PipeType.get_valid()}. Use the PipeType" \
+                                              f" class provided by splicemachine.features"
 
         assert lang in PipeLanguage.get_valid(), f"The pipe language {lang} is not supported. Currently supported" \
-                                                        f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
-                                                        f" class provided by splicemachine.features"
+                                                 f"languages include {PipeLanguage.get_valid()}. Use the PipeLanguage" \
+                                                 f" class provided by splicemachine.features"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "name": name, "description": description, "ptype": ptype, "lang": lang, "func": f }
+        p_dict = {"name": name, "description": description, "ptype": ptype, "lang": lang, "func": f}
 
         print(f'Registering Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, Endpoints.PIPES, RequestType.POST, self._auth, body=p_dict)
@@ -1126,14 +1141,14 @@ class FeatureStore:
         assert name != "None", "Name of pipe cannot be None!"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip()
-        p_dict = { "description": description, "func": f }
+        p_dict = {"description": description, "func": f}
 
         print(f'Updating Pipe {name} in the Feature Store')
         r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PUT, self._auth, body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
     def alter_pipe(self, name: str, func: Optional[Union[str, Callable]] = None, description: Optional[str] = None,
-                    version: Union[int, str] = 'latest') -> Pipe:
+                   version: Union[int, str] = 'latest') -> Pipe:
         """
         Alters an existing version of a pipe. Use this method when you want to make changes to a version of a pipe
         that has no dependencies, or when you want to change version-independent metadata, such as description.
@@ -1148,11 +1163,12 @@ class FeatureStore:
         assert func or description, "Please enter either a function or description"
 
         f = base64.encodebytes(cloudpickle.dumps(func)).decode('ascii').strip() if func else None
-        p_dict = { "description": description, "func": f }
-        params = { "version" : version }
+        p_dict = {"description": description, "func": f}
+        params = {"version": version}
 
         print(f'Altering Pipe {name} in the Feature Store')
-        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PATCH, self._auth, params=params, body=p_dict)
+        r = make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.PATCH, self._auth, params=params,
+                         body=p_dict)
         return Pipe(**r, splice_ctx=self.splice_ctx)
 
     def remove_pipe(self, name: str, version: Union[int, str] = None) -> None:
@@ -1165,7 +1181,7 @@ class FeatureStore:
         """
         assert name != "None", "Name of pipe cannot be None!"
 
-        p_dict = { "version": version }
+        p_dict = {"version": version}
 
         print(f'Removing Pipe {name} from the Feature Store')
         make_request(self._FS_URL, f'{Endpoints.PIPES}/{name}', RequestType.DELETE, self._auth, params=p_dict)
@@ -1217,7 +1233,7 @@ class FeatureStore:
 
         :param name: The Source name
         """
-        print(f'Deleting Source {name}...',end=' ')
+        print(f'Deleting Source {name}...', end=' ')
         make_request(self._FS_URL, Endpoints.SOURCE, method=RequestType.DELETE,
                      auth=self._auth, params={'name': name})
         print('Done.')
@@ -1226,7 +1242,8 @@ class FeatureStore:
                                                    start_time: datetime, schedule_interval: str,
                                                    aggregations: List[FeatureAggregation],
                                                    backfill_start_time: datetime = None, backfill_interval: str = None,
-                                                   description: Optional[str] = None, run_backfill: Optional[bool] = True
+                                                   description: Optional[str] = None,
+                                                   run_backfill: Optional[bool] = True
                                                    ):
         """
         Creates a temporal aggregation feature set by creating a pipeline linking a Source to a feature set.
@@ -1310,11 +1327,11 @@ class FeatureStore:
             'backfill_interval': backfill_interval,
             'description': description
         }
-        num_features = sum([len(f.agg_functions)*len(f.agg_windows) for f in aggregations])
+        num_features = sum([len(f.agg_functions) * len(f.agg_windows) for f in aggregations])
         print(f'Registering aggregation feature set {schema_name}.{table_name} and {num_features} features'
               f' in the Feature Store...', end=' ')
         r = make_request(self._FS_URL, Endpoints.AGG_FEATURE_SET_FROM_SOURCE, RequestType.POST, self._auth,
-                     params={'run_backfill': run_backfill}, body=agg_feature_set)
+                         params={'run_backfill': run_backfill}, body=agg_feature_set)
         print('Done.')
         msg = f'Your feature set {schema_name}.{table_name} has been registered in the feature store. '
         if run_backfill:
@@ -1384,7 +1401,6 @@ class FeatureStore:
         }
         return make_request(self._FS_URL, Endpoints.BACKFILL_INTERVALS, RequestType.GET, self._auth, params=p)
 
-
     def _retrieve_model_data_sets(self, schema_name: str, table_name: str):
         """
         Returns the training set dataframe and model table dataframe for a given deployed model.
@@ -1432,12 +1448,11 @@ class FeatureStore:
         table_name = table_name.upper()
 
         metadata = make_request(self._FS_URL, Endpoints.TRAINING_SET_FROM_DEPLOYMENT, RequestType.GET,
-                                self._auth, params={ "schema": schema_name, "table": table_name})['metadata']
+                                self._auth, params={"schema": schema_name, "table": table_name})['metadata']
 
         training_set_df, model_table_df = self._retrieve_model_data_sets(schema_name, table_name)
         features = [f.upper() for f in metadata['features'].split(',')]
         build_feature_drift_plot(features, training_set_df, model_table_df)
-
 
     def display_model_drift(self, schema_name: str, table_name: str, time_intervals: int,
                             start_time: datetime = None, end_time: datetime = None):
@@ -1486,8 +1501,6 @@ class FeatureStore:
             feature_search_internal(self, pandas_profile)
         else:
             feature_search_external(self, pandas_profile)
-
-
 
     def __get_pipeline(self, df, features, label, model_type):
         """
@@ -1547,7 +1560,6 @@ class FeatureStore:
                     self.mlflow_ctx.log_metrics(mlflow_results[r])
         finally:
             self.mlflow_ctx.end_run()
-
 
     def __prune_features_for_elimination(self, features) -> List[Feature]:
         """
@@ -1628,8 +1640,10 @@ class FeatureStore:
         return remaining_features, feature_importances.reset_index(
             drop=True) if return_importances else remaining_features
 
-    def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], create_time: datetime, start_time: datetime = None, 
-                                    end_time: datetime = None, tvw: TrainingView = None, current_values_only: bool = False,
+    def link_training_set_to_mlflow(self, features: Union[List[Feature], List[str]], create_time: datetime,
+                                    start_time: datetime = None,
+                                    end_time: datetime = None, tvw: TrainingView = None,
+                                    current_values_only: bool = False,
                                     training_set_id: Optional[int] = None, training_set_version: Optional[int] = None,
                                     training_set_name: Optional[str] = None):
 
@@ -1642,9 +1656,9 @@ class FeatureStore:
 
         if not tvw:
             tvw = TrainingView(pk_columns=[], ts_column=None, label_column=None, view_sql=None, name=None,
-                                description=None)
+                               description=None)
         ts = TrainingSet(training_view=tvw, features=features, create_time=create_time,
-                        start_time=start_time, end_time=end_time, training_set_id=training_set_id,
+                         start_time=start_time, end_time=end_time, training_set_id=training_set_id,
                          training_set_version=training_set_version, training_set_name=training_set_name)
 
         # If the user isn't getting historical values, that means there isn't really a start_time, as the user simply
@@ -1655,7 +1669,6 @@ class FeatureStore:
         self.mlflow_ctx._active_training_set: TrainingSet = ts
         ts._register_metadata(self.mlflow_ctx)
 
-    
     def set_feature_store_url(self, url: str):
         """
         Sets the Feature Store URL. You must call this before calling any feature store functions, or set the FS_URL
@@ -1699,7 +1712,7 @@ class FeatureStore:
         if token:
             self.set_token(token)
             return
-        
+
         user, password = _get_credentials()
         if user and password:
             self.login_fs(user, password)

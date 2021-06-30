@@ -27,6 +27,20 @@ class FileExtensions:
             'sklearn': 'pkl'
         }[flavor]
 
+    @staticmethod
+    def map_to_module(flavor: str):
+        """
+        Maps the flavor to the module that is imported
+        :param flavor: Mlflow flavor
+        :return: Python module string
+        """
+        return {
+            'spark': 'pyspark',
+            'h2o': 'h2o',
+            'keras': 'tensorflow.keras',
+            'sklearn': 'sklearn'
+        }[flavor]
+
 class DatabaseSupportedLibs:
     """
     Class containing supported model libraries for native database model deployment

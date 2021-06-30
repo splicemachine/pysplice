@@ -6,7 +6,6 @@ from multiprocessing.pool import ThreadPool
 import graphviz
 import numpy as np
 import pandas as pd
-import pyspark_dist_explore as dist_explore
 import scipy.stats as st
 from IPython.display import HTML
 from numpy.linalg import eigh
@@ -26,6 +25,7 @@ from pyspark.sql import Row
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, DoubleType, IntegerType, StringType
 from tqdm import tqdm
+from splicemachine import SpliceMachineException
 
 
 def get_confusion_matrix(spark, TP, TN, FP, FN):
@@ -1070,6 +1070,11 @@ def best_fit_distribution(data, col_name, bins, ax):
     """
     # Get histogram of original data
 
+    try:
+        import pyspark_dist_explore as dist_explore
+    except:
+        raise SpliceMachineException('You dont have the necessary packages to use this function (pyspark-dist-explore) '
+                                     'Install it directly or install the splicemachine[stats] extra')
     output = dist_explore.pandas_histogram(data, bins=bins)
     output.reset_index(level=0, inplace=True)
     output['index'] = output['index'].apply(lambda x: np.mean([float(i.strip()) for i in x.split('-')]))
