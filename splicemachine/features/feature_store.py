@@ -1336,8 +1336,10 @@ class FeatureStore:
         schema_name = schema_name.upper()
         table_name = table_name.upper()
         print(f'Deploying Pipeline {name}...',end=' ')
-        make_request(self._FS_URL, Endpoints.DEPLOY_PIPELINE, RequestType.POST, self._auth, { "name": name, "schema": schema_name, "table": table_name, "version": version })
+        r = make_request(self._FS_URL, Endpoints.DEPLOY_PIPELINE, RequestType.POST, self._auth, { "name": name, "schema": schema_name, "table": table_name, "version": version })
         print('Done.')
+        r['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in r['pipes']]
+        return Pipeline(**r)
 
     def undeploy_pipeline(self, name: str, version: Union[str, int] = 'latest'):
         """
@@ -1349,8 +1351,10 @@ class FeatureStore:
         if isinstance(version, str) and version != 'latest':
             raise SpliceMachineException("Version parameter must be a number or 'latest'")
         print(f'Undeploying Pipeline {name}...',end=' ')
-        make_request(self._FS_URL, Endpoints.UNDEPLOY_PIPELINE, RequestType.POST, self._auth, { "name": name, "version": version })
+        r = make_request(self._FS_URL, Endpoints.UNDEPLOY_PIPELINE, RequestType.POST, self._auth, { "name": name, "version": version })
         print('Done.')
+        r['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in r['pipes']]
+        return Pipeline(**r)
 
     def create_source(self, name: str, sql: str, event_ts_column: datetime,
                       update_ts_column: datetime, primary_keys: List[str]):
