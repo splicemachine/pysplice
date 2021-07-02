@@ -315,7 +315,7 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
                                          'need to pass in the pyfunc model as the python_model parameter '
                                          '[mlflow.pyfunc.log_model(python_model=my_model)]. If you are logging an H2O ')
         if auto_flavor:
-            flavor_version = FileExtensions.map_to_module(auto_flavor).__version__
+            flavor_version = import_module(FileExtensions.map_to_module(auto_flavor)).__version__
             mlflow.set_tag(f'splice.{auto_flavor}_version', flavor_version)
 
         for model_file in glob.glob(mlmodel_dir + "/**/*", recursive=True):
