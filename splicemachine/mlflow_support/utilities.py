@@ -214,6 +214,7 @@ def get_pod_uri(pod: str, port: str or int, _testing: bool = False):
             "Uh Oh! MLFLOW_URL variable was not found... are you running in the Cloud service?")
     return url
 
+
 def get_jobs_uri(mlflow_uri: str):
     """
     Returns the Jobs uri given an mlflow URI. The mlflow uri will either be a URL:5001 or
@@ -223,14 +224,15 @@ def get_jobs_uri(mlflow_uri: str):
     :return: The jobs uri
     """
     if mlflow_uri.endswith(':5001'):
-        return mlflow_uri.replace(':5001',':5003')
+        return mlflow_uri.replace(':5001', ':5003')
     elif mlflow_uri.endswith('/mlflow'):
         return mlflow_uri + '-jobs'
     else:
         raise SpliceMachineException(f'The provided URI {mlflow_uri} doesn\'t conform for the expected uri.'
                                      f'The Mlflow URI should either end :5001 or /mlflow')
 
-def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact_path = None):
+
+def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact_path=None):
     """
     Inserts an artifact into the Splice Artifact Store
 
@@ -243,22 +245,23 @@ def insert_artifact(host, filepath, name, run_id, file_extension, auth, artifact
     :param artifact_path: Optional artifact directory path. This is for storing directories as artifacts
     """
     payload = dict(
-        name = name,
-        run_id = run_id,
+        name=name,
+        run_id=run_id,
         file_extension=file_extension,
         artifact_path=artifact_path
     )
     print('Uploading file... ', end='')
     with open(filepath, 'rb') as file:
         r = requests.post(
-            host + '/api/rest/upload-artifact',
+            host + '/artifacts/upload-artifact',
             auth=auth,
             data=payload,
-            files={'file': file}
+            files={'artifact': file}
         )
     if not r.ok:
         raise SpliceMachineException(r.text)
     print('Done.')
+
 
 def download_artifact(host, name: str, run_id: str, auth) -> requests.models.Response:
     """
@@ -271,12 +274,12 @@ def download_artifact(host, name: str, run_id: str, auth) -> requests.models.Res
     :return: Http Response
     """
     payload = dict(
-        name = name,
-        run_id = run_id
+        name=name,
+        run_id=run_id
     )
     print(f'Downloading file {name}')
     r = requests.get(
-        host + '/api/rest/download-artifact',
+        host + '/artifacts/download-artifact',
         params=payload,
         auth=auth
     )

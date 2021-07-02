@@ -132,6 +132,7 @@ def __try_auto_login():
                       'before importing')
 
 
+
 def _mlflow_patch(name):
     """
     Create a MLFlow Patch that applies the default gorilla settings
@@ -159,7 +160,7 @@ def __get_active_user():
     if get_user():
         return get_user()
     return SpliceMachineException(
-        "Could not detect active user. Please run mlflow.login_mlflow() and pass in your Splice"
+        "Could not detect active user. Please run mlflow.login_mlflow() and pass in your Splice "
         "username and password or JWT token.")
 
 
@@ -295,7 +296,7 @@ def __get_serialized_mlmodel(model, model_lib=None, **flavor_options):
                     model_lib in DatabaseSupportedLibs.get_valid() else model_lib
 
             except Exception as e:
-                print(str(e))
+                warnings.warn(str(e))
                 raise SpliceMachineException(f'Failed to save model type {model_lib}. Ensure that is a supposed model '
                                              f'flavor https://www.mlflow.org/docs/1.15.0/models.html#built-in-model-flavors\n'
                                              f'Or you can build a pyfunc model\n'
@@ -690,6 +691,7 @@ def _download_artifact(name, local_path=None, run_id=None):
         file.write(r.content)
     print(f'Done. File has been written to {file_name}')
 
+
 @_mlflow_patch('login_director')
 def _login_director(username=None, password=None, jwt_token=None):
     """
@@ -777,13 +779,16 @@ def _deploy_aws(app_name: str, region: str = 'us-east-2', instance_type: str = '
     print("Processing...")
 
     request_payload = {
-        'handler_name': 'DEPLOY_AWS', 'run_id': run_id,
-        'region': region, 'user': __get_active_user(),
-        'instance_type': instance_type, 'instance_count': instance_count,
-        'deployment_mode': deployment_mode, 'app_name': app_name
+        'handler_name': 'DEPLOY_AWS',
+        'job_payload': {
+            'run_id': run_id,
+            'region': region, 'user': __get_active_user(),
+            'instance_type': instance_type, 'instance_count': instance_count,
+            'deployment_mode': deployment_mode, 'app_name': app_name
+        }
     }
 
-    return __initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/jobs/initiate-job')
 
 
 @_mlflow_patch('deploy_azure')
@@ -811,16 +816,18 @@ def _deploy_azure(endpoint_name: str, resource_group: str, workspace: str, run_i
     """
     request_payload = {
         'handler_name': 'DEPLOY_AZURE',
-        'endpoint_name': endpoint_name,
-        'resource_group': resource_group,
-        'workspace': workspace,
-        'region': region,
-        'run_id': run_id,
-        'cpu_cores': cpu_cores,
-        'allocated_ram': allocated_ram,
-        'model_name': model_name
+        'job_payload': {
+            'endpoint_name': endpoint_name,
+            'resource_group': resource_group,
+            'workspace': workspace,
+            'region': region,
+            'run_id': run_id,
+            'cpu_cores': cpu_cores,
+            'allocated_ram': allocated_ram,
+            'model_name': model_name
+        }
     }
-    return __initiate_job(request_payload, '/api/rest/initiate')
+    return __initiate_job(request_payload, '/jobs/initiate-job')
 
 
 @_mlflow_patch('deploy_kubernetes')
@@ -870,16 +877,22 @@ def _deploy_kubernetes(run_id: str, service_port: int = 80,
     print("Processing...")
 
     payload = {
-        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'DEPLOY_KUBERNETES',
-        'service_port': service_port, 'base_replicas': base_replicas, 'autoscaling_enabled': autoscaling_enabled,
-        'max_replicas': max_replicas, 'target_cpu_utilization': target_cpu_utilization,
-        'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
-        'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
-        'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request, 'cpu_limit': cpu_limit,
-        'memory_request': memory_request, 'expose_external': expose_external
+        'handler_name': 'DEPLOY_KUBERNETES',
+        'job_payload': {
+            'run_id': run_id or mlflow.active_run().info.run_uuid,
+            'service_port': service_port, 'base_replicas': base_replicas,
+            'autoscaling_enabled': autoscaling_enabled,
+            'max_replicas': max_replicas, 'target_cpu_utilization': target_cpu_utilization,
+            'disable_nginx': disable_nginx, 'gunicorn_workers': gunicorn_workers,
+            'resource_requests_enabled': resource_requests_enabled, 'memory_limit': memory_limit,
+            'resource_limits_enabled': resource_limits_enabled, 'cpu_request': cpu_request,
+            'cpu_limit': cpu_limit,
+            'memory_request': memory_request, 'expose_external': expose_external
+        }
     }
 
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 
 @_mlflow_patch('undeploy_kubernetes')
@@ -892,7 +905,8 @@ def _undeploy_kubernetes(run_id: str):
     print("Processing...")
 
     payload = {
-        'run_id': run_id or mlflow.active_run().info.run_uuid, 'handler_name': 'UNDEPLOY_KUBERNETES'
+        'job_payload': {'run_id': run_id or mlflow.active_run().info.run_uuid},
+        'handler_name': 'UNDEPLOY_KUBERNETES'
     }
 
     return __initiate_job(payload, '/api/rest/initiate')
@@ -996,14 +1010,18 @@ def _deploy_db(db_schema_name: str,
         df_schema = None
 
     payload = {
-        'db_table': db_table_name, 'db_schema': db_schema_name, 'run_id': run_id or mlflow.active_run().info.run_uuid,
-        'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
-        'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific, 'replace': replace,
-        'handler_name': 'DEPLOY_DATABASE', 'reference_table': reference_table, 'reference_schema': reference_schema,
-        'max_batch_size': max_batch_size
+        'handler_name': 'DEPLOY_DATABASE',
+        'job_payload': {'db_table': db_table_name, 'db_schema': db_schema_name,
+                        'run_id': run_id or mlflow.active_run().info.run_uuid,
+                        'primary_key': primary_key, 'df_schema': df_schema, 'create_model_table': create_model_table,
+                        'model_cols': model_cols, 'classes': classes, 'library_specific': library_specific,
+                        'replace': replace,
+                        'reference_table': reference_table, 'reference_schema': reference_schema,
+                        'max_batch_size': max_batch_size}
     }
 
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 
 @_mlflow_patch('undeploy_db')
@@ -1022,22 +1040,26 @@ def _undeploy_db(run_id: str, schema_name: str = None, table_name: str = None, d
     :return: Job ID to track job progress with the mlflow.watch_job function
     """
     payload = {
-        'run_id': run_id,
-        'db_schema': schema_name.upper() if schema_name else None,
-        'db_table': table_name.upper() if table_name else None,
-        'drop_table': drop_table,
-        'handler_name': 'UNDEPLOY_DATABASE'
+        'handler_name': 'UNDEPLOY_DATABASE',
+        'job_payload': {
+            'run_id': run_id,
+            'db_schema': schema_name.upper() if schema_name else None,
+            'db_table': table_name.upper() if table_name else None,
+            'drop_table': drop_table
+        }
     }
-    return __initiate_job(payload, '/api/rest/initiate')
+    return __initiate_job(payload, '/jobs/initiate-job')
+
 
 
 def __get_logs(job_id: int):
     """
     Retrieve the logs associated with the specified job id
     """
-    request = requests.post(
-        get_jobs_uri(mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/logs",
-        json={"task_id": job_id}, auth=mlflow._basic_auth
+    request = requests.get(
+        get_jobs_uri(mlflow.get_tracking_uri() or
+                     get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/monitoring/job-logs/" + str(job_id),
+        auth=mlflow._basic_auth
     )
     if not request.ok:
         raise SpliceMachineException(f"Could not retrieve the logs for job {job_id}: {request.status_code}")
@@ -1106,7 +1128,7 @@ def _get_deployed_models() -> PandasDF:
           '(based on the TableID). This could be because the table was dropped, or the deployment was DELETED')
     request = requests.get(
         get_jobs_uri(
-            mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/api/rest/deployments",
+            mlflow.get_tracking_uri() or get_pod_uri('mlflow', 5003, _testing=_TESTING)) + "/monitoring/deployments",
         auth=mlflow._basic_auth
     )
     if not request.ok:
