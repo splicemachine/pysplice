@@ -5,9 +5,14 @@ import datetime as datetime
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pyspark.sql.functions as f
-from pyspark_dist_explore import distplot
 from itertools import count, islice
+import warnings
 
+try:
+    from pyspark_dist_explore import distplot
+except:
+    warnings.warn("You need pyspark-dist-explore installed to use this function. Install it directly or the "
+                  "splicemachine[stats] extra ")
 
 def calculate_outlier_bounds(df, column_name):
     """

@@ -2,3 +2,4 @@ tqdm
 scipy
 graphviz
 numpy
+pyspark-dist-explore==0.1.8

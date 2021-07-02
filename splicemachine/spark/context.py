@@ -55,28 +55,21 @@ class PySpliceContext:
 
         self._unit_testing = _unit_testing
 
-        if not _unit_testing:  # Private Internal Argument to Override Using JVM
-            self.spark_sql_context = sparkSession._wrapped
-            self.spark_session = sparkSession
-            self.jvm = self.spark_sql_context._sc._jvm
-            java_import(self.jvm, self._spliceSparkPackagesName)
-            java_import(
-                self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions")
-            java_import(
-                self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils")
-            java_import(self.jvm, "scala.collection.JavaConverters._")
-            java_import(self.jvm, "com.splicemachine.derby.impl.*")
-            java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
-            self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
-                self.spark_sql_context._jsc)
-            self.context = self._splicemachineContext()
+        self.spark_sql_context = sparkSession._wrapped
+        self.spark_session = sparkSession
+        self.jvm = self.spark_sql_context._sc._jvm
+        java_import(self.jvm, self._spliceSparkPackagesName)
+        java_import(
+            self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions")
+        java_import(
+            self.jvm, "org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils")
+        java_import(self.jvm, "scala.collection.JavaConverters._")
+        java_import(self.jvm, "com.splicemachine.derby.impl.*")
+        java_import(self.jvm, 'org.apache.spark.api.python.PythonUtils')
+        self.jvm.com.splicemachine.derby.impl.SpliceSpark.setContext(
+            self.spark_sql_context._jsc)
+        self.context = self._splicemachineContext()
 
-        else:
-            from .tests.mocked import MockedScalaContext
-            self.spark_sql_context = sparkSession._wrapped
-            self.spark_session = sparkSession
-            self.jvm = ''
-            self.context = MockedScalaContext(self.jdbcurl)
 
     def columnNamesCaseSensitive(self, caseSensitive):
         """
@@ -155,6 +148,8 @@ class PySpliceContext:
         try: # Try to create the dataframe as it exists
             return self.spark_session.createDataFrame(pdf)
         except (TypeError, ValueError):
+            print(f'Spark failed to convert Pandas DF to Spark df implicitly. Converting bad columns to StringType to '
+                  f'help Spark.')
             p_df = pdf.copy()
             # This means there was an NaN conversion error
             from pyspark.sql.functions import udf
