@@ -21,11 +21,15 @@ REQUIREMENTS_FILE = "requirements.txt"
 with open(REQUIREMENTS_FILE, "r") as dependencies_file:
     DEPENDENCIES = dependencies_file.readlines()
 
-with open('notebook_requirements.txt', 'r') as fs_deps:
-    NOTEBOOK_DEPS = fs_deps.readlines()
+with open('notebook_requirements.txt', 'r') as nb_deps:
+    NOTEBOOK_DEPS = nb_deps.readlines()
 
-with open('stats_requirements.txt', 'r') as fs_deps:
-    STATS_DEPS = fs_deps.readlines()
+with open('stats_requirements.txt', 'r') as stats_deps:
+    STATS_DEPS = stats_deps.readlines()
+
+with open('ml_requirements.txt', 'r') as ml_deps:
+    ML_DEPS = ml_deps.readlines()
+
 
 setup(
     name="splicemachine",
@@ -34,7 +38,8 @@ setup(
     extras_require={
         'notebook': NOTEBOOK_DEPS,
         'stats': STATS_DEPS,
-        'all': NOTEBOOK_DEPS + STATS_DEPS
+        'ml': ML_DEPS,
+        'all': NOTEBOOK_DEPS + STATS_DEPS + ML_DEPS
     },
     packages=find_packages(),
     license='Apache License, Version 2.0',
