@@ -1209,7 +1209,7 @@ class FeatureStore:
         Returns a list of pipelines whose names are provided
 
         :param names: The list of pipeline names
-        :return: List[Piplinee] The list of Pipeline objects
+        :return: List[Pipline] The list of Pipeline objects
         """
         r = make_request(self._FS_URL, Endpoints.PIPELINES, RequestType.GET, self._auth, { "name": names })
         pipelines = []
@@ -1240,9 +1240,23 @@ class FeatureStore:
         Returns a pipeline version or list of pipeline versions for a provided pipeline name
 
         :param name: The pipeline name
-        :return: List[Pipe] The list of Pipeline objects
+        :return: List[Pipeline] The list of Pipeline objects
         """
         r = make_request(self._FS_URL, f'{Endpoints.PIPELINES}/{name}', RequestType.GET, self._auth)
+        pipelines = []
+        for pl in r:
+            pl['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in pl['pipes']]
+            pipelines.append(Pipeline(**pl))
+        return pipelines
+
+    def _get_deployed_pipelines(self) -> List[Pipeline]:
+        """
+        Returns a list of deployed pipeline versions
+
+        :param names: The list of pipeline names
+        :return: List[Pipline] The list of Pipeline objects
+        """
+        r = make_request(self._FS_URL, Endpoints.PIPELINES, RequestType.GET, self._auth, { "deployed": True })
         pipelines = []
         for pl in r:
             pl['pipes'] = [Pipe(**p, splice_ctx=self.splice_ctx) for p in pl['pipes']]

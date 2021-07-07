@@ -4,7 +4,7 @@ from splicemachine.features.constants import PipeLanguage
 
 class Pipeline:
     def __init__(self, *, name, description, pipeline_start_date, pipeline_interval, pipeline_id=None, pipeline_version=None, pipes=None, feature_set_id=None, 
-                    feature_set_version=None, pipeline_url=None, **kwargs):
+                    feature_set_version=None, pipeline_url=None, feature_set=None, **kwargs):
         self.name = name.upper()
         self.description = description
         self.pipeline_start_date = pipeline_start_date
@@ -15,6 +15,7 @@ class Pipeline:
         self.feature_set_id = feature_set_id
         self.feature_set_version = feature_set_version
         self.pipeline_url = pipeline_url
+        self.feature_set = feature_set
         args = {k.lower(): kwargs[k] for k in kwargs}
         self.__dict__.update(args)
 
