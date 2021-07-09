@@ -16,7 +16,6 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
 from splicemachine.features.utils.feature_utils import sql_to_datatype
-from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
 from splicemachine.spark import PySpliceContext, ExtPySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
@@ -1697,6 +1696,8 @@ class FeatureStore:
         if not (hasattr(self, 'splice_ctx') and isinstance(self.splice_ctx, PySpliceContext)):
             raise SpliceMachineException('You must register a Splice Machine Context (PySpliceContext) in order to use '
                                          'this function currently')
+        # This will show a warning if packages are missing, and we don't want that at the top level to always be shown
+        from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
         if _in_splice_compatible_env():
             feature_search_internal(self, pandas_profile)
         else:
