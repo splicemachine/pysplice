@@ -16,13 +16,10 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 
 from splicemachine import SpliceMachineException
 from splicemachine.features.utils.feature_utils import sql_to_datatype
-from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
-from splicemachine.notebook import _in_splice_compatible_env
 from splicemachine.spark import PySpliceContext, ExtPySpliceContext
 from splicemachine.features import Feature, FeatureSet
 from .training_set import TrainingSet
 from .utils import display
-from .utils.drift_utils import build_feature_drift_plot, build_model_drift_plot
 from .utils.training_utils import ReturnType, _format_training_set_output
 from .pipelines import FeatureAggregation, AggWindow
 from .utils.http_utils import RequestType, make_request, _get_feature_store_url, Endpoints, _get_credentials, _get_token
@@ -1630,6 +1627,11 @@ class FeatureStore:
         :param table_name: name of the model table
         :return: None
         """
+        try:
+            from .utils.drift_utils import build_feature_drift_plot
+        except:
+            raise SpliceMachineException('You must have matplotlib installed to call this function')
+
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
@@ -1655,6 +1657,11 @@ class FeatureStore:
         :param start_time: if specified, filters to only show predictions occurring after this date/time
         :param end_time: if specified, filters to only show predictions occurring before this date/time
         """
+        try:
+            from .utils.drift_utils import build_model_drift_plot
+        except:
+            raise SpliceMachineException('You must have matplotlib installed to call this function')
+       
         # database stores object names in upper case
         schema_name = schema_name.upper()
         table_name = table_name.upper()
@@ -1680,10 +1687,17 @@ class FeatureStore:
         :param pandas_profile: Whether to use pandas / spark to profile the feature. If pandas is selected
         but the dataset is too large, it will fall back to Spark. Default Pandas.
         """
+        # Need IPython for this function
+        try:
+            from splicemachine.notebook import _in_splice_compatible_env
+        except:
+            raise SpliceMachineException('You must be running in IPython or Jupyter with IPython installed to use this function')
         # It may have the attr but be None
         if not (hasattr(self, 'splice_ctx') and isinstance(self.splice_ctx, PySpliceContext)):
             raise SpliceMachineException('You must register a Splice Machine Context (PySpliceContext) in order to use '
                                          'this function currently')
+        # This will show a warning if packages are missing, and we don't want that at the top level to always be shown
+        from splicemachine.features.utils.search_utils import feature_search_external, feature_search_internal
         if _in_splice_compatible_env():
             feature_search_internal(self, pandas_profile)
         else:
