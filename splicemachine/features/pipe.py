@@ -16,6 +16,7 @@ class Pipe:
         self.splice_ctx = splice_ctx
         self._args = byteify_string(args)
         self._kwargs = byteify_string(kwargs)
+        self._context = None
         args = {k.lower(): obj_kwargs[k] for k in obj_kwargs}
         self.__dict__.update(args)
 
@@ -60,6 +61,9 @@ class Pipe:
 
     def set_splice_ctx(self, splice_ctx):
         self.splice_ctx = splice_ctx
+
+    def set_context(self, context):
+        self._context = context
 
     def apply(self, *args, **kwargs):
         a = []
