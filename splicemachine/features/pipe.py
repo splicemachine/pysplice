@@ -16,7 +16,7 @@ class Pipe:
         self.splice_ctx = splice_ctx
         self._args = byteify_string(args)
         self._kwargs = byteify_string(kwargs)
-        self._context = None
+        self._context = {}
         args = {k.lower(): obj_kwargs[k] for k in obj_kwargs}
         self.__dict__.update(args)
 
@@ -81,6 +81,7 @@ class Pipe:
         kw.update(kwargs)
 
         func = cloudpickle.loads(self.func)
+        func.__globals__['context'] = self._context
         if self.language == PipeLanguage.pyspark:
             func.__globals__['splice'] = self.splice_ctx
             func.__globals__['spark'] = self.splice_ctx.spark_session
